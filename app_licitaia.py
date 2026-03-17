@@ -6,240 +6,100 @@ from calcular import calcular_presupuesto
 
 st.set_page_config(
     page_title="LicitaIA",
-    page_icon="📊",
-    layout="wide",
+    layout="wide"
 )
 
-def formato_euro(valor: float) -> str:
-    return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
+def euro(v):
+    return f"{v:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-st.markdown(
-    """
-    <style>
-    :root {
-        --bg: #f5f7fa;
-        --card: #ffffff;
-        --text: #1f2937;
-        --muted: #6b7280;
-        --border: #d1d5db;
-        --primary: #1f3b5b;
-        --primary-soft: #eaf0f6;
-        --accent: #2f5d8a;
-    }
+st.markdown("""
+<style>
 
-    .stApp {
-        background-color: var(--bg);
-    }
+body {
+background-color:#f4f6f9;
+}
 
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 1400px;
-    }
+.title-box {
+background:#1f3b5b;
+color:white;
+padding:20px;
+border-radius:8px;
+margin-bottom:25px;
+}
 
-    .hero {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-        color: white;
-        padding: 1.8rem 2rem;
-        border-radius: 14px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 8px 24px rgba(31, 59, 91, 0.15);
-    }
+.section {
+background:white;
+padding:20px;
+border-radius:8px;
+border:1px solid #e5e7eb;
+margin-bottom:20px;
+}
 
-    .hero h1 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-    }
+.metric {
+background:white;
+border:1px solid #e5e7eb;
+padding:15px;
+border-radius:8px;
+}
 
-    .hero p {
-        margin-top: 0.45rem;
-        margin-bottom: 0;
-        font-size: 1rem;
-        opacity: 0.95;
-    }
+</style>
+""", unsafe_allow_html=True)
 
-    .section-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 1.25rem 1.25rem;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-        margin-bottom: 1rem;
-    }
+st.markdown("""
+<div class="title-box">
+<h2>LicitaIA</h2>
+Estimación de presupuesto para redes de abastecimiento, saneamiento y reurbanización
+</div>
+""", unsafe_allow_html=True)
 
-    .section-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--primary);
-        margin-bottom: 0.9rem;
-    }
+aba_labels = [i["label"] for i in CATALOGO_ABA]
+san_labels = [i["label"] for i in CATALOGO_SAN]
+reurb_labels = [i["label"] for i in TIPOS_REURB]
 
-    .info-box {
-        background: var(--primary-soft);
-        border: 1px solid #d8e2ec;
-        border-radius: 12px;
-        padding: 1rem;
-        color: var(--text);
-        height: 100%;
-    }
+st.markdown("### Parámetros del proyecto")
 
-    .info-box h4 {
-        margin: 0 0 0.35rem 0;
-        color: var(--primary);
-        font-size: 1rem;
-    }
+col1, col2, col3 = st.columns(3)
 
-    .info-box p {
-        margin: 0.2rem 0;
-        color: var(--text);
-    }
+with col1:
+    metros_aba = st.number_input("Longitud ABA (m)", value=100.0)
+    aba_label = st.selectbox("Tipo ABA", aba_labels)
 
-    div[data-testid="stMetric"] {
-        background: white;
-        border: 1px solid var(--border);
-        padding: 1rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-    }
+with col2:
+    metros_san = st.number_input("Longitud SAN (m)", value=150.0)
+    san_label = st.selectbox("Tipo SAN", san_labels)
 
-    div[data-testid="stMetricLabel"] {
-        color: var(--muted);
-        font-weight: 600;
-    }
+with col3:
+    reurb_label = st.selectbox("Reurbanización", reurb_labels)
 
-    div[data-testid="stMetricValue"] {
-        color: var(--primary);
-    }
+st.write("")
 
-    section[data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #e5e7eb;
-    }
+calcular = st.button("Calcular presupuesto")
 
-    .small-note {
-        color: var(--muted);
-        font-size: 0.93rem;
-        margin-top: 0.25rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-    <div class="hero">
-        <h1>LicitaIA</h1>
-        <p>Herramienta de estimación presupuestaria para actuaciones de abastecimiento, saneamiento y reurbanización.</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-aba_labels = [item["label"] for item in CATALOGO_ABA]
-san_labels = [item["label"] for item in CATALOGO_SAN]
-reurb_labels = [item["label"] for item in TIPOS_REURB]
-
-with st.sidebar:
-    st.markdown("## Parámetros de cálculo")
-    st.markdown('<p class="small-note">Introduzca las magnitudes y seleccione las tipologías correspondientes.</p>', unsafe_allow_html=True)
-
-    st.markdown("### Abastecimiento")
-    metros_aba = st.number_input(
-        "Longitud ABA (m)",
-        min_value=0.0,
-        value=100.0,
-        step=10.0,
-    )
-    aba_label = st.selectbox(
-        "Tipología ABA",
-        aba_labels,
-        index=6 if len(aba_labels) > 6 else 0,
-    )
-
-    st.markdown("### Saneamiento")
-    metros_san = st.number_input(
-        "Longitud SAN (m)",
-        min_value=0.0,
-        value=150.0,
-        step=10.0,
-    )
-    san_label = st.selectbox(
-        "Tipología SAN",
-        san_labels,
-        index=4 if len(san_labels) > 4 else 0,
-    )
-
-    st.markdown("### Reurbanización")
-    reurb_label = st.selectbox(
-        "Tipología de reurbanización",
-        reurb_labels,
-        index=0,
-    )
-
-    st.markdown("")
-    calcular = st.button("Calcular presupuesto", use_container_width=True)
-
-precios_aba = next(item for item in CATALOGO_ABA if item["label"] == aba_label)
-precios_san = next(item for item in CATALOGO_SAN if item["label"] == san_label)
-reurbanizacion = next(item for item in TIPOS_REURB if item["label"] == reurb_label)
+precios_aba = next(i for i in CATALOGO_ABA if i["label"] == aba_label)
+precios_san = next(i for i in CATALOGO_SAN if i["label"] == san_label)
+reurbanizacion = next(i for i in TIPOS_REURB if i["label"] == reurb_label)
 
 if calcular:
+
     resultado = calcular_presupuesto(
         metros_aba=metros_aba,
         precios_aba=precios_aba,
         metros_san=metros_san,
         precios_san=precios_san,
-        reurbanizacion=reurbanizacion,
+        reurbanizacion=reurbanizacion
     )
 
-    st.markdown('<div class="section-title">Resumen ejecutivo</div>', unsafe_allow_html=True)
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Presupuesto total", formato_euro(resultado["total"]))
-    m2.metric("PEM", formato_euro(resultado["pem"]))
-    m3.metric("PBL sin IVA", formato_euro(resultado["pbl_sin_iva"]))
-
-    st.markdown("")
-    st.markdown('<div class="section-title">Parámetros seleccionados</div>', unsafe_allow_html=True)
+    st.markdown("### Resumen económico")
 
     c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown(
-            f"""
-            <div class="info-box">
-                <h4>Abastecimiento</h4>
-                <p><strong>Tipología:</strong> {aba_label}</p>
-                <p><strong>Longitud:</strong> {metros_aba:,.0f} m</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c2:
-        st.markdown(
-            f"""
-            <div class="info-box">
-                <h4>Saneamiento</h4>
-                <p><strong>Tipología:</strong> {san_label}</p>
-                <p><strong>Longitud:</strong> {metros_san:,.0f} m</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            f"""
-            <div class="info-box">
-                <h4>Reurbanización</h4>
-                <p><strong>Tipología:</strong> {reurb_label}</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
-    st.markdown("")
-    st.markdown('<div class="section-title">Desglose económico</div>', unsafe_allow_html=True)
+    c1.metric("Presupuesto total", euro(resultado["total"]))
+    c2.metric("PEM", euro(resultado["pem"]))
+    c3.metric("PBL sin IVA", euro(resultado["pbl_sin_iva"]))
+
+    st.write("")
+
+    st.markdown("### Desglose del presupuesto")
 
     etiquetas = {
         "obra_civil_aba": "Obra civil ABA",
@@ -257,33 +117,15 @@ if calcular:
         "margen_seguridad": "Margen de seguridad",
         "pbl_sin_iva": "PBL sin IVA",
         "iva": "IVA",
-        "total": "Total",
+        "total": "Total"
     }
 
-    filas = [
-        {"Concepto": etiquetas.get(clave, clave), "Importe": valor}
-        for clave, valor in resultado.items()
-    ]
-
-    df = pd.DataFrame(filas)
-    df["Importe"] = df["Importe"].apply(formato_euro)
+    df = pd.DataFrame([
+        {"Concepto": etiquetas.get(k, k), "Importe": euro(v)}
+        for k, v in resultado.items()
+    ])
 
     st.dataframe(df, use_container_width=True, hide_index=True)
 
 else:
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Instrucciones de uso</div>
-            <p style="margin-bottom: 0.5rem;">
-                Seleccione en la barra lateral las longitudes y tipologías correspondientes a abastecimiento,
-                saneamiento y reurbanización.
-            </p>
-            <p style="margin-bottom: 0;">
-                A continuación, pulse <strong>“Calcular presupuesto”</strong> para obtener el resumen económico
-                y el desglose detallado de la estimación.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.info("Introduzca los parámetros del proyecto y pulse 'Calcular presupuesto'.")
