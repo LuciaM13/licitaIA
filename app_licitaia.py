@@ -12,36 +12,8 @@ st.set_page_config(
 def euro(v):
     return f"{v:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-def texto_para_copiar(resultado, etiquetas):
-    claves = [
-        "obra_civil_aba",
-        "obra_civil_san",
-        "pavimentacion_aba",
-        "pavimentacion_san",
-        "acometidas_aba",
-        "acometidas_san",
-        "seguridad_salud",
-        "gestion_ambiental",
-        "pem",
-        "gastos_generales",
-        "beneficio_industrial",
-        "pbl_base",
-        "margen_seguridad",
-        "pbl_sin_iva",
-        "iva",
-        "total",
-    ]
-
-    lineas = []
-    for k in claves:
-        if k in resultado:
-            concepto = etiquetas.get(k, k)
-            lineas.append(f"{concepto}\t{euro(resultado[k])}")
-    return "\n".join(lineas)
-
 st.markdown("""
 <style>
-
 body {
     background-color:#f4f6f9;
 }
@@ -54,21 +26,12 @@ body {
     margin-bottom:25px;
 }
 
-.section {
-    background:white;
-    padding:20px;
-    border-radius:8px;
-    border:1px solid #e5e7eb;
-    margin-bottom:20px;
-}
-
 .metric {
     background:white;
     border:1px solid #e5e7eb;
     padding:15px;
     border-radius:8px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -119,13 +82,11 @@ if calcular:
     st.markdown("### Resumen económico")
 
     c1, c2, c3 = st.columns(3)
-
     c1.metric("Presupuesto total", euro(resultado["total"]))
     c2.metric("PEM", euro(resultado["pem"]))
     c3.metric("PBL sin IVA", euro(resultado["pbl_sin_iva"]))
 
     st.write("")
-
     st.markdown("### Desglose del presupuesto")
 
     etiquetas = {
@@ -147,23 +108,42 @@ if calcular:
         "total": "Total"
     }
 
-    df = pd.DataFrame([
-        {"Concepto": etiquetas.get(k, k), "Importe": euro(v)}
-        for k, v in resultado.items()
-    ])
+    orden = [
+        "obra_civil_aba",
+        "obra_civil_san",
+        "pavimentacion_aba",
+        "pavimentacion_san",
+        "acometidas_aba",
+        "acometidas_san",
+        "seguridad_salud",
+        "gestion_ambiental",
+        "pem",
+        "gastos_generales",
+        "beneficio_industrial",
+        "pbl_base",
+        "margen_seguridad",
+        "pbl_sin_iva",
+        "iva",
+        "total"
+    ]
 
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    filas = []
+    for k in orden:
+        if k in resultado:
+            filas.append({
+                "Concepto": etiquetas.get(k, k),
+                "Importe": euro(resultado[k])
+            })
 
-    st.write("")
-    st.markdown("### Texto copiable")
+    df = pd.DataFrame(filas)
 
-    texto_copiable = texto_para_copiar(resultado, etiquetas)
-
-    st.text_area(
-        "Copie este texto y péguelo en Google Docs o Word:",
-        value=texto_copiable,
-        height=300
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True
     )
+
+    st.caption("Puede seleccionar las celdas de la tabla y copiar con Ctrl+C para pegar el contenido en Google Docs o Word.")
 
 else:
     st.info("Introduzca los parámetros del proyecto y pulse 'Calcular presupuesto'.")
