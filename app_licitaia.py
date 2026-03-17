@@ -12,34 +12,61 @@ st.set_page_config(
 def euro(v):
     return f"{v:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
+def texto_para_copiar(resultado, etiquetas):
+    claves = [
+        "obra_civil_aba",
+        "obra_civil_san",
+        "pavimentacion_aba",
+        "pavimentacion_san",
+        "acometidas_aba",
+        "acometidas_san",
+        "seguridad_salud",
+        "gestion_ambiental",
+        "pem",
+        "gastos_generales",
+        "beneficio_industrial",
+        "pbl_base",
+        "margen_seguridad",
+        "pbl_sin_iva",
+        "iva",
+        "total",
+    ]
+
+    lineas = []
+    for k in claves:
+        if k in resultado:
+            concepto = etiquetas.get(k, k)
+            lineas.append(f"{concepto}\t{euro(resultado[k])}")
+    return "\n".join(lineas)
+
 st.markdown("""
 <style>
 
 body {
-background-color:#f4f6f9;
+    background-color:#f4f6f9;
 }
 
 .title-box {
-background:#1f3b5b;
-color:white;
-padding:20px;
-border-radius:8px;
-margin-bottom:25px;
+    background:#1f3b5b;
+    color:white;
+    padding:20px;
+    border-radius:8px;
+    margin-bottom:25px;
 }
 
 .section {
-background:white;
-padding:20px;
-border-radius:8px;
-border:1px solid #e5e7eb;
-margin-bottom:20px;
+    background:white;
+    padding:20px;
+    border-radius:8px;
+    border:1px solid #e5e7eb;
+    margin-bottom:20px;
 }
 
 .metric {
-background:white;
-border:1px solid #e5e7eb;
-padding:15px;
-border-radius:8px;
+    background:white;
+    border:1px solid #e5e7eb;
+    padding:15px;
+    border-radius:8px;
 }
 
 </style>
@@ -61,11 +88,11 @@ st.markdown("### Parámetros del proyecto")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    metros_aba = st.number_input("Longitud ABA (m)", value=100.0)
+    metros_aba = st.number_input("Longitud ABA (m)", min_value=0.0, value=100.0)
     aba_label = st.selectbox("Tipo ABA", aba_labels)
 
 with col2:
-    metros_san = st.number_input("Longitud SAN (m)", value=150.0)
+    metros_san = st.number_input("Longitud SAN (m)", min_value=0.0, value=150.0)
     san_label = st.selectbox("Tipo SAN", san_labels)
 
 with col3:
@@ -126,6 +153,17 @@ if calcular:
     ])
 
     st.dataframe(df, use_container_width=True, hide_index=True)
+
+    st.write("")
+    st.markdown("### Texto copiable")
+
+    texto_copiable = texto_para_copiar(resultado, etiquetas)
+
+    st.text_area(
+        "Copie este texto y péguelo en Google Docs o Word:",
+        value=texto_copiable,
+        height=300
+    )
 
 else:
     st.info("Introduzca los parámetros del proyecto y pulse 'Calcular presupuesto'.")
