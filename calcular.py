@@ -12,10 +12,20 @@ Este archivo hace tres cosas:
 
 Está separado de la interfaz para que sea más fácil de mantener, probar
 y reutilizar en el futuro.
+
+Correcciones respecto a la versión anterior:
+- El volumen de tierras a transportar descuenta arena y relleno (lo que
+  permanece en zanja), evitando sobreestimar carga, transporte y cánon.
+- El cánon de vertedero de demoliciones (hormigón, asfalto, adoquín) usa
+  el precio de cánon mixto (13,22 €/m³) en lugar del de tierras (1,60 €/m³).
+- Se añade soporte para un segundo tramo ABA (dos diámetros distintos).
+- Se añaden partidas de fibrocemento/amianto y redes provisionales.
+- Las tapas y pates de pozo son ahora configurables por el usuario.
+- Se añaden conexiones ABA como partida propia.
 """
 
-from dataclasses import dataclass
-from typing import Dict
+from dataclasses import dataclass, field
+from typing import Dict, List
 
 from datos import PCT_BI, PCT_CONTROL_CALIDAD, PCT_GG, PCT_IVA
 
@@ -29,15 +39,29 @@ class ParametrosProyecto:
     mucho más fácil leer qué datos necesita realmente el cálculo.
     """
 
-    # Redes principales
+    # ----------------------------------------------------------
+    # Redes principales — Tramo 1 ABA
+    # ----------------------------------------------------------
     metros_aba: float
     precios_aba: Dict[str, float]
+
+    # ----------------------------------------------------------
+    # Redes principales — Tramo 2 ABA (opcional; metros=0 si no aplica)
+    # ----------------------------------------------------------
+    metros_aba2: float
+    precios_aba2: Dict[str, float]
+
+    # ----------------------------------------------------------
+    # Redes principales — SAN y ovoide
+    # ----------------------------------------------------------
     metros_san: float
     precios_san: Dict[str, float]
     metros_ovoide: float
     precio_ovoide_m: float
 
+    # ----------------------------------------------------------
     # Geometría y excavación
+    # ----------------------------------------------------------
     ancho_zanja_aba_m: float
     profundidad_aba_m: float
     ancho_zanja_san_m: float
@@ -47,21 +71,33 @@ class ParametrosProyecto:
     pct_entibacion_aba: float
     pct_entibacion_san: float
 
+    # ----------------------------------------------------------
     # Materiales auxiliares
+    # ----------------------------------------------------------
     espesor_arena_aba_m: float
     espesor_arena_san_m: float
     espesor_relleno_aba_m: float
     espesor_relleno_san_m: float
 
+    # ----------------------------------------------------------
     # Demoliciones
+    # ----------------------------------------------------------
     dem_bordillo_m: float
     precio_dem_bordillo_m: float
     dem_acerado_m2: float
     precio_dem_acerado_m2: float
     dem_calzada_m2: float
     precio_dem_calzada_m2: float
+    # Espesor medio de demolición de calzada (m), para calcular volumen mixto
+    espesor_dem_calzada_m: float
+    uds_dem_arqueta_imbornal: int
+    precio_dem_arqueta_imbornal_ud: float
+    uds_dem_imbornal_tuberia: int
+    precio_dem_imbornal_tuberia_ud: float
 
+    # ----------------------------------------------------------
     # Reposiciones
+    # ----------------------------------------------------------
     rep_acerado_m2: float
     precio_rep_acerado_m2: float
     rep_bordillo_m: float
@@ -80,12 +116,10 @@ class ParametrosProyecto:
     rep_base_granular_m2: float
     precio_base_granular_m3: float
     espesor_base_granular_m: float
-    uds_dem_arqueta_imbornal: int
-    precio_dem_arqueta_imbornal_ud: float
-    uds_dem_imbornal_tuberia: int
-    precio_dem_imbornal_tuberia_ud: float
 
-    # Excavación y transporte
+    # ----------------------------------------------------------
+    # Excavación y transporte — precios unitarios
+    # ----------------------------------------------------------
     precio_exc_mecanica_hasta_25_m3: float
     precio_exc_mecanica_mas_25_m3: float
     precio_exc_manual_hasta_25_m3: float
@@ -94,37 +128,69 @@ class ParametrosProyecto:
     precio_entibacion_mas_25_m2: float
     precio_carga_m3: float
     precio_transporte_m3: float
+    # Cánon para tierras limpias de excavación
     precio_canon_tierras_m3: float
+    # Cánon para residuos mixtos (hormigón, asfalto, etc.)
+    precio_canon_mixto_m3: float
     precio_arena_m3: float
     precio_relleno_m3: float
 
+    # ----------------------------------------------------------
     # Elementos singulares
+    # ----------------------------------------------------------
     uds_valvulas: int
     precio_valvula: float
     uds_tomas_agua: int
     precio_toma_agua: float
+    # Conexiones ABA (acometida a red existente)
+    uds_conexiones_aba: int
+    precio_conexion_aba: float
+    # Conexiones SAN
     uds_conexiones_san: int
     precio_conexion_san: float
 
+    # ----------------------------------------------------------
     # Acometidas
+    # ----------------------------------------------------------
     uds_acometidas_aba: int
     precio_acometida_aba_ud: float
     uds_acometidas_san: int
     precio_acometida_san_ud: float
 
-    # Pozos, imbornales, marcos y materiales
+    # ----------------------------------------------------------
+    # Pozos, imbornales, marcos y materiales de pozo
+    # ----------------------------------------------------------
     uds_pozos: int
     precio_pozo_ud: float
     uds_imbornales: int
     precio_imbornal_ud: float
     uds_marcos: int
     precio_marco_ud: float
+    # Tapas y pates ahora son configurables (no hardcodeados)
     uds_tapas_pozo: int
     precio_tapa_pozo_ud: float
     uds_pates_pozo: int
     precio_pate_pozo_ud: float
 
+    # ----------------------------------------------------------
+    # Fibrocemento / amianto
+    # ----------------------------------------------------------
+    # Metros de tubería de fibrocemento a retirar (0 si no aplica)
+    metros_fibrocemento: float
+    precio_fibrocemento_m: float
+    # Importe fijo del Plan de Trabajo con Amianto (0 si no aplica)
+    importe_plan_amianto: float
+
+    # ----------------------------------------------------------
+    # Redes provisionales de suministro durante obras
+    # ----------------------------------------------------------
+    metros_red_provisional: float
+    precio_red_provisional_m: float
+    importe_montaje_provisional: float
+
+    # ----------------------------------------------------------
     # Otros costes
+    # ----------------------------------------------------------
     pct_servicios_afectados: float
     modo_ss: str
     importe_ss: float
@@ -135,6 +201,10 @@ class ParametrosProyecto:
     activar_colchon: bool
     pct_colchon: float
 
+
+# ============================================================
+# Funciones auxiliares de cálculo
+# ============================================================
 
 def _normalizar_modo(valor: str) -> str:
     """Devuelve siempre 'fijo' o 'porcentaje'."""
@@ -151,10 +221,11 @@ def _area_entibacion(longitud_m: float, profundidad_m: float, porcentaje: float)
     """
     Superficie estimada de entibación.
 
-    Fórmula usada:
-    2 lados de zanja * longitud * profundidad * porcentaje de tramos entibados
+    Fórmula:  2 lados × longitud_entibada × profundidad
+    donde longitud_entibada = longitud × porcentaje (fracción 0-1).
     """
-    return 2.0 * max(longitud_m, 0.0) * max(profundidad_m, 0.0) * max(porcentaje, 0.0)
+    longitud_entibada = max(longitud_m, 0.0) * max(porcentaje, 0.0)
+    return 2.0 * longitud_entibada * max(profundidad_m, 0.0)
 
 
 def _precio_excavacion(depth_m: float, manual: bool, params: ParametrosProyecto) -> float:
@@ -181,6 +252,10 @@ def _precio_entibacion(depth_m: float, params: ParametrosProyecto) -> float:
     )
 
 
+# ============================================================
+# Función principal de cálculo
+# ============================================================
+
 def calcular_presupuesto(parametros: ParametrosProyecto) -> dict:
     """
     Calcula el presupuesto completo.
@@ -195,37 +270,42 @@ def calcular_presupuesto(parametros: ParametrosProyecto) -> dict:
     # ======================================================
     # 1) Tuberías principales
     # ======================================================
-    cap_tuberia_aba = parametros.metros_aba * parametros.precios_aba["tuberia_m"]
-    cap_tuberia_san = parametros.metros_san * parametros.precios_san["tuberia_m"]
+    cap_tuberia_aba  = parametros.metros_aba  * parametros.precios_aba["tuberia_m"]
+    cap_tuberia_aba2 = parametros.metros_aba2 * parametros.precios_aba2["tuberia_m"]
+    cap_tuberia_san  = parametros.metros_san  * parametros.precios_san["tuberia_m"]
     cap_tuberia_ovoide = parametros.metros_ovoide * parametros.precio_ovoide_m
+
+    # Longitud total ABA (tramo 1 + tramo 2) para cálculos de zanja
+    metros_aba_total = parametros.metros_aba + parametros.metros_aba2
 
     # ======================================================
     # 2) Excavaciones y materiales auxiliares
     # ======================================================
+    # Usamos metros_aba_total para estimar excavación, arena y relleno ABA
     vol_zanja_aba = _volumen_zanja(
-        parametros.metros_aba, parametros.ancho_zanja_aba_m, parametros.profundidad_aba_m
+        metros_aba_total, parametros.ancho_zanja_aba_m, parametros.profundidad_aba_m
     )
     vol_zanja_san = _volumen_zanja(
         parametros.metros_san, parametros.ancho_zanja_san_m, parametros.profundidad_san_m
     )
 
-    vol_manual_aba = vol_zanja_aba * parametros.pct_exc_manual_aba
+    vol_manual_aba  = vol_zanja_aba * parametros.pct_exc_manual_aba
     vol_mecanica_aba = vol_zanja_aba - vol_manual_aba
-    vol_manual_san = vol_zanja_san * parametros.pct_exc_manual_san
+    vol_manual_san  = vol_zanja_san * parametros.pct_exc_manual_san
     vol_mecanica_san = vol_zanja_san - vol_manual_san
 
     precio_exc_mec_aba = _precio_excavacion(parametros.profundidad_aba_m, manual=False, params=parametros)
-    precio_exc_man_aba = _precio_excavacion(parametros.profundidad_aba_m, manual=True, params=parametros)
+    precio_exc_man_aba = _precio_excavacion(parametros.profundidad_aba_m, manual=True,  params=parametros)
     precio_exc_mec_san = _precio_excavacion(parametros.profundidad_san_m, manual=False, params=parametros)
-    precio_exc_man_san = _precio_excavacion(parametros.profundidad_san_m, manual=True, params=parametros)
+    precio_exc_man_san = _precio_excavacion(parametros.profundidad_san_m, manual=True,  params=parametros)
 
     cap_exc_mecanica_aba = vol_mecanica_aba * precio_exc_mec_aba
-    cap_exc_manual_aba = vol_manual_aba * precio_exc_man_aba
+    cap_exc_manual_aba   = vol_manual_aba   * precio_exc_man_aba
     cap_exc_mecanica_san = vol_mecanica_san * precio_exc_mec_san
-    cap_exc_manual_san = vol_manual_san * precio_exc_man_san
+    cap_exc_manual_san   = vol_manual_san   * precio_exc_man_san
 
     area_ent_aba = _area_entibacion(
-        parametros.metros_aba, parametros.profundidad_aba_m, parametros.pct_entibacion_aba
+        metros_aba_total, parametros.profundidad_aba_m, parametros.pct_entibacion_aba
     )
     area_ent_san = _area_entibacion(
         parametros.metros_san, parametros.profundidad_san_m, parametros.pct_entibacion_san
@@ -233,27 +313,34 @@ def calcular_presupuesto(parametros: ParametrosProyecto) -> dict:
     cap_entibacion_aba = area_ent_aba * _precio_entibacion(parametros.profundidad_aba_m, parametros)
     cap_entibacion_san = area_ent_san * _precio_entibacion(parametros.profundidad_san_m, parametros)
 
-    vol_total_tierras = vol_zanja_aba + vol_zanja_san
-    cap_carga_tierras = vol_total_tierras * parametros.precio_carga_m3
-    cap_transporte_tierras = vol_total_tierras * parametros.precio_transporte_m3
-    cap_canon_tierras = vol_total_tierras * parametros.precio_canon_tierras_m3
-
-    vol_arena_aba = parametros.metros_aba * parametros.ancho_zanja_aba_m * parametros.espesor_arena_aba_m
+    # ----- Volúmenes de arena y relleno (permanecen en zanja) -----
+    vol_arena_aba = metros_aba_total * parametros.ancho_zanja_aba_m * parametros.espesor_arena_aba_m
     vol_arena_san = parametros.metros_san * parametros.ancho_zanja_san_m * parametros.espesor_arena_san_m
     vol_arena_total = vol_arena_aba + vol_arena_san
     cap_arena = vol_arena_total * parametros.precio_arena_m3
 
-    vol_relleno_aba = parametros.metros_aba * parametros.ancho_zanja_aba_m * parametros.espesor_relleno_aba_m
+    vol_relleno_aba = metros_aba_total * parametros.ancho_zanja_aba_m * parametros.espesor_relleno_aba_m
     vol_relleno_san = parametros.metros_san * parametros.ancho_zanja_san_m * parametros.espesor_relleno_san_m
     vol_relleno_total = vol_relleno_aba + vol_relleno_san
     cap_relleno = vol_relleno_total * parametros.precio_relleno_m3
+
+    # ----- CORRECCIÓN: volumen neto de tierras a vertedero -----
+    # Se descuenta lo que queda en zanja (arena + relleno). El resto sale fuera.
+    vol_bruto_zanja = vol_zanja_aba + vol_zanja_san
+    vol_en_zanja    = vol_arena_total + vol_relleno_total
+    vol_total_tierras = max(vol_bruto_zanja - vol_en_zanja, 0.0)
+
+    cap_carga_tierras     = vol_total_tierras * parametros.precio_carga_m3
+    cap_transporte_tierras = vol_total_tierras * parametros.precio_transporte_m3
+    # Cánon de vertedero para tierras limpias de excavación
+    cap_canon_tierras = vol_total_tierras * parametros.precio_canon_tierras_m3
 
     # ======================================================
     # 3) Demoliciones
     # ======================================================
     cap_dem_bordillo = parametros.dem_bordillo_m * parametros.precio_dem_bordillo_m
-    cap_dem_acerado = parametros.dem_acerado_m2 * parametros.precio_dem_acerado_m2
-    cap_dem_calzada = parametros.dem_calzada_m2 * parametros.precio_dem_calzada_m2
+    cap_dem_acerado  = parametros.dem_acerado_m2 * parametros.precio_dem_acerado_m2
+    cap_dem_calzada  = parametros.dem_calzada_m2 * parametros.precio_dem_calzada_m2
     cap_dem_arqueta_imbornal = (
         parametros.uds_dem_arqueta_imbornal * parametros.precio_dem_arqueta_imbornal_ud
     )
@@ -261,12 +348,20 @@ def calcular_presupuesto(parametros: ParametrosProyecto) -> dict:
         parametros.uds_dem_imbornal_tuberia * parametros.precio_dem_imbornal_tuberia_ud
     )
 
+    # ----- CORRECCIÓN: cánon mixto para residuos de demolición -----
+    # Los residuos de demolición de calzada (hormigón, asfalto, adoquín) son
+    # residuos de construcción y demolición (RCD), no tierras limpias.
+    # Se aplica el cánon de vertedero mixto (13,22 €/m³) sobre el volumen
+    # estimado de esos residuos (superficie × espesor medio de la calzada).
+    vol_rcd_calzada = parametros.dem_calzada_m2 * max(parametros.espesor_dem_calzada_m, 0.0)
+    cap_canon_mixto = vol_rcd_calzada * parametros.precio_canon_mixto_m3
+
     # ======================================================
     # 4) Reposiciones
     # ======================================================
     cap_rep_acerado = parametros.rep_acerado_m2 * parametros.precio_rep_acerado_m2
     cap_rep_bordillo = parametros.rep_bordillo_m * parametros.precio_rep_bordillo_m
-    cap_rep_adoquin = parametros.rep_adoquin_m2 * parametros.precio_rep_adoquin_m2
+    cap_rep_adoquin  = parametros.rep_adoquin_m2 * parametros.precio_rep_adoquin_m2
     cap_rep_rodadura = (
         parametros.rep_rodadura_m2 * parametros.espesor_rodadura_m * parametros.precio_rodadura_m3
     )
@@ -287,60 +382,78 @@ def calcular_presupuesto(parametros: ParametrosProyecto) -> dict:
     # ======================================================
     # 5) Elementos singulares y acometidas
     # ======================================================
-    cap_valvulas = parametros.uds_valvulas * parametros.precio_valvula
-    cap_tomas_agua = parametros.uds_tomas_agua * parametros.precio_toma_agua
-    cap_conexiones_san = parametros.uds_conexiones_san * parametros.precio_conexion_san
-    cap_acometidas_aba = parametros.uds_acometidas_aba * parametros.precio_acometida_aba_ud
-    cap_acometidas_san = parametros.uds_acometidas_san * parametros.precio_acometida_san_ud
-    cap_pozos = parametros.uds_pozos * parametros.precio_pozo_ud
-    cap_imbornales = parametros.uds_imbornales * parametros.precio_imbornal_ud
-    cap_marcos = parametros.uds_marcos * parametros.precio_marco_ud
-    cap_tapas_pozo = parametros.uds_tapas_pozo * parametros.precio_tapa_pozo_ud
-    cap_pates_pozo = parametros.uds_pates_pozo * parametros.precio_pate_pozo_ud
+    cap_valvulas        = parametros.uds_valvulas        * parametros.precio_valvula
+    cap_tomas_agua      = parametros.uds_tomas_agua      * parametros.precio_toma_agua
+    cap_conexiones_aba  = parametros.uds_conexiones_aba  * parametros.precio_conexion_aba
+    cap_conexiones_san  = parametros.uds_conexiones_san  * parametros.precio_conexion_san
+    cap_acometidas_aba  = parametros.uds_acometidas_aba  * parametros.precio_acometida_aba_ud
+    cap_acometidas_san  = parametros.uds_acometidas_san  * parametros.precio_acometida_san_ud
+    cap_pozos           = parametros.uds_pozos           * parametros.precio_pozo_ud
+    cap_imbornales      = parametros.uds_imbornales      * parametros.precio_imbornal_ud
+    cap_marcos          = parametros.uds_marcos          * parametros.precio_marco_ud
+    cap_tapas_pozo      = parametros.uds_tapas_pozo      * parametros.precio_tapa_pozo_ud
+    cap_pates_pozo      = parametros.uds_pates_pozo      * parametros.precio_pate_pozo_ud
 
     # ======================================================
-    # 6) Parcial de ejecución material antes de porcentajes
+    # 6) Fibrocemento / amianto
     # ======================================================
-    parcial_directo = sum(
-        [
-            cap_tuberia_aba,
-            cap_tuberia_san,
-            cap_tuberia_ovoide,
-            cap_exc_mecanica_aba,
-            cap_exc_manual_aba,
-            cap_exc_mecanica_san,
-            cap_exc_manual_san,
-            cap_entibacion_aba,
-            cap_entibacion_san,
-            cap_carga_tierras,
-            cap_transporte_tierras,
-            cap_canon_tierras,
-            cap_arena,
-            cap_relleno,
-            cap_dem_bordillo,
-            cap_dem_acerado,
-            cap_dem_calzada,
-            cap_dem_arqueta_imbornal,
-            cap_dem_imbornal_tuberia,
-            cap_rep_acerado,
-            cap_rep_bordillo,
-            cap_rep_adoquin,
-            cap_rep_rodadura,
-            cap_rep_base_pavimento,
-            cap_rep_hormigon,
-            cap_rep_base_granular,
-            cap_valvulas,
-            cap_tomas_agua,
-            cap_conexiones_san,
-            cap_acometidas_aba,
-            cap_acometidas_san,
-            cap_pozos,
-            cap_imbornales,
-            cap_marcos,
-            cap_tapas_pozo,
-            cap_pates_pozo,
-        ]
-    )
+    cap_fibrocemento   = parametros.metros_fibrocemento * parametros.precio_fibrocemento_m
+    cap_plan_amianto   = parametros.importe_plan_amianto  # importe fijo
+
+    # ======================================================
+    # 7) Redes provisionales de suministro
+    # ======================================================
+    cap_red_provisional = parametros.metros_red_provisional * parametros.precio_red_provisional_m
+    cap_montaje_provisional = parametros.importe_montaje_provisional  # importe fijo
+
+    # ======================================================
+    # 8) Parcial de ejecución material antes de porcentajes
+    # ======================================================
+    parcial_directo = sum([
+        cap_tuberia_aba,
+        cap_tuberia_aba2,
+        cap_tuberia_san,
+        cap_tuberia_ovoide,
+        cap_exc_mecanica_aba,
+        cap_exc_manual_aba,
+        cap_exc_mecanica_san,
+        cap_exc_manual_san,
+        cap_entibacion_aba,
+        cap_entibacion_san,
+        cap_carga_tierras,
+        cap_transporte_tierras,
+        cap_canon_tierras,
+        cap_canon_mixto,           # NUEVO: cánon RCD demoliciones
+        cap_arena,
+        cap_relleno,
+        cap_dem_bordillo,
+        cap_dem_acerado,
+        cap_dem_calzada,
+        cap_dem_arqueta_imbornal,
+        cap_dem_imbornal_tuberia,
+        cap_rep_acerado,
+        cap_rep_bordillo,
+        cap_rep_adoquin,
+        cap_rep_rodadura,
+        cap_rep_base_pavimento,
+        cap_rep_hormigon,
+        cap_rep_base_granular,
+        cap_valvulas,
+        cap_tomas_agua,
+        cap_conexiones_aba,        # NUEVO: conexiones ABA
+        cap_conexiones_san,
+        cap_acometidas_aba,
+        cap_acometidas_san,
+        cap_pozos,
+        cap_imbornales,
+        cap_marcos,
+        cap_tapas_pozo,
+        cap_pates_pozo,
+        cap_fibrocemento,          # NUEVO: retirada fibrocemento
+        cap_plan_amianto,          # NUEVO: Plan de Trabajo con Amianto
+        cap_red_provisional,       # NUEVO: tubería provisional
+        cap_montaje_provisional,   # NUEVO: montaje/desmontaje provisional
+    ])
 
     cap_servicios_afectados = parcial_directo * parametros.pct_servicios_afectados
 
@@ -355,76 +468,88 @@ def calcular_presupuesto(parametros: ParametrosProyecto) -> dict:
     )
 
     # ======================================================
-    # 7) Estructura final del presupuesto
+    # 9) Estructura final del presupuesto
     # ======================================================
     pem = parcial_directo + cap_servicios_afectados + cap_seguridad_salud + cap_gestion_ambiental
-    control_calidad_ref = pem * PCT_CONTROL_CALIDAD
-    gastos_generales = pem * PCT_GG
+    control_calidad_ref  = pem * PCT_CONTROL_CALIDAD
+    gastos_generales     = pem * PCT_GG
     beneficio_industrial = pem * PCT_BI
-    pbl_base = pem + gastos_generales + beneficio_industrial
-    margen_seguridad = pbl_base * parametros.pct_colchon if parametros.activar_colchon else 0.0
-    pbl_sin_iva = pbl_base + margen_seguridad
-    iva = pbl_sin_iva * PCT_IVA
-    total = pbl_sin_iva + iva
+    pbl_base             = pem + gastos_generales + beneficio_industrial
+    margen_seguridad     = pbl_base * parametros.pct_colchon if parametros.activar_colchon else 0.0
+    pbl_sin_iva          = pbl_base + margen_seguridad
+    iva                  = pbl_sin_iva * PCT_IVA
+    total                = pbl_sin_iva + iva
 
     return {
-        # Cantidades auxiliares
-        "vol_zanja_aba": vol_zanja_aba,
-        "vol_zanja_san": vol_zanja_san,
-        "vol_total_tierras": vol_total_tierras,
-        "area_entibacion_aba": area_ent_aba,
-        "area_entibacion_san": area_ent_san,
-        "vol_arena_total": vol_arena_total,
-        "vol_relleno_total": vol_relleno_total,
+        # ---- Cantidades auxiliares ----
+        "vol_zanja_aba":        vol_zanja_aba,
+        "vol_zanja_san":        vol_zanja_san,
+        "vol_bruto_zanja":      vol_bruto_zanja,
+        "vol_en_zanja":         vol_en_zanja,
+        "vol_total_tierras":    vol_total_tierras,
+        "vol_rcd_calzada":      vol_rcd_calzada,
+        "area_entibacion_aba":  area_ent_aba,
+        "area_entibacion_san":  area_ent_san,
+        "vol_arena_total":      vol_arena_total,
+        "vol_relleno_total":    vol_relleno_total,
 
-        # Capítulos directos
-        "tuberia_aba": cap_tuberia_aba,
-        "tuberia_san": cap_tuberia_san,
-        "tuberia_ovoide": cap_tuberia_ovoide,
-        "exc_mecanica_aba": cap_exc_mecanica_aba,
-        "exc_manual_aba": cap_exc_manual_aba,
-        "exc_mecanica_san": cap_exc_mecanica_san,
-        "exc_manual_san": cap_exc_manual_san,
-        "entibacion_aba": cap_entibacion_aba,
-        "entibacion_san": cap_entibacion_san,
-        "carga_tierras": cap_carga_tierras,
-        "transporte_tierras": cap_transporte_tierras,
-        "canon_tierras": cap_canon_tierras,
-        "arena": cap_arena,
-        "relleno": cap_relleno,
-        "dem_bordillo": cap_dem_bordillo,
-        "dem_acerado": cap_dem_acerado,
-        "dem_calzada": cap_dem_calzada,
+        # ---- Capítulos directos ----
+        "tuberia_aba":          cap_tuberia_aba,
+        "tuberia_aba2":         cap_tuberia_aba2,
+        "tuberia_san":          cap_tuberia_san,
+        "tuberia_ovoide":       cap_tuberia_ovoide,
+        "exc_mecanica_aba":     cap_exc_mecanica_aba,
+        "exc_manual_aba":       cap_exc_manual_aba,
+        "exc_mecanica_san":     cap_exc_mecanica_san,
+        "exc_manual_san":       cap_exc_manual_san,
+        "entibacion_aba":       cap_entibacion_aba,
+        "entibacion_san":       cap_entibacion_san,
+        "carga_tierras":        cap_carga_tierras,
+        "transporte_tierras":   cap_transporte_tierras,
+        "canon_tierras":        cap_canon_tierras,
+        "canon_mixto":          cap_canon_mixto,
+        "arena":                cap_arena,
+        "relleno":              cap_relleno,
+        "dem_bordillo":         cap_dem_bordillo,
+        "dem_acerado":          cap_dem_acerado,
+        "dem_calzada":          cap_dem_calzada,
         "dem_arqueta_imbornal": cap_dem_arqueta_imbornal,
         "dem_imbornal_tuberia": cap_dem_imbornal_tuberia,
-        "rep_acerado": cap_rep_acerado,
-        "rep_bordillo": cap_rep_bordillo,
-        "rep_adoquin": cap_rep_adoquin,
-        "rep_rodadura": cap_rep_rodadura,
-        "rep_base_pavimento": cap_rep_base_pavimento,
-        "rep_hormigon": cap_rep_hormigon,
-        "rep_base_granular": cap_rep_base_granular,
-        "valvulas": cap_valvulas,
-        "tomas_agua": cap_tomas_agua,
-        "conexiones_san": cap_conexiones_san,
-        "acometidas_aba": cap_acometidas_aba,
-        "acometidas_san": cap_acometidas_san,
-        "pozos": cap_pozos,
-        "imbornales": cap_imbornales,
-        "marcos": cap_marcos,
-        "tapas_pozo": cap_tapas_pozo,
-        "pates_pozo": cap_pates_pozo,
-        "parcial_directo": parcial_directo,
-        "servicios_afectados": cap_servicios_afectados,
-        "seguridad_salud": cap_seguridad_salud,
-        "gestion_ambiental": cap_gestion_ambiental,
-        "pem": pem,
+        "rep_acerado":          cap_rep_acerado,
+        "rep_bordillo":         cap_rep_bordillo,
+        "rep_adoquin":          cap_rep_adoquin,
+        "rep_rodadura":         cap_rep_rodadura,
+        "rep_base_pavimento":   cap_rep_base_pavimento,
+        "rep_hormigon":         cap_rep_hormigon,
+        "rep_base_granular":    cap_rep_base_granular,
+        "valvulas":             cap_valvulas,
+        "tomas_agua":           cap_tomas_agua,
+        "conexiones_aba":       cap_conexiones_aba,
+        "conexiones_san":       cap_conexiones_san,
+        "acometidas_aba":       cap_acometidas_aba,
+        "acometidas_san":       cap_acometidas_san,
+        "pozos":                cap_pozos,
+        "imbornales":           cap_imbornales,
+        "marcos":               cap_marcos,
+        "tapas_pozo":           cap_tapas_pozo,
+        "pates_pozo":           cap_pates_pozo,
+        "fibrocemento":         cap_fibrocemento,
+        "plan_amianto":         cap_plan_amianto,
+        "red_provisional":      cap_red_provisional,
+        "montaje_provisional":  cap_montaje_provisional,
+
+        # ---- Estructura final ----
+        "parcial_directo":        parcial_directo,
+        "servicios_afectados":    cap_servicios_afectados,
+        "seguridad_salud":        cap_seguridad_salud,
+        "gestion_ambiental":      cap_gestion_ambiental,
+        "pem":                    pem,
         "control_calidad_referencia": control_calidad_ref,
-        "gastos_generales": gastos_generales,
-        "beneficio_industrial": beneficio_industrial,
-        "pbl_base": pbl_base,
-        "colchon_comercial": margen_seguridad,
-        "pbl_sin_iva": pbl_sin_iva,
-        "iva": iva,
-        "total": total,
+        "gastos_generales":       gastos_generales,
+        "beneficio_industrial":   beneficio_industrial,
+        "pbl_base":               pbl_base,
+        "colchon_comercial":      margen_seguridad,
+        "pbl_sin_iva":            pbl_sin_iva,
+        "iva":                    iva,
+        "total":                  total,
     }
