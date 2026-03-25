@@ -3,7 +3,7 @@ from __future__ import annotations
 """
 app_licitaia.py
 ===============
-Aplicación Streamlit de LicitaIA.
+Aplicación Streamlit de Cálculo de presupuestos.
 
 Objetivo:
 - recoger los datos de una actuación
@@ -34,7 +34,7 @@ if BASE_DIR not in sys.path:
 from calcular import ParametrosProyecto, calcular_presupuesto
 import datos as d
 
-st.set_page_config(page_title="LicitaIA", layout="wide")
+st.set_page_config(page_title="Cálculo de presupuestos", layout="wide")
 
 
 # ----------------------------------------------------------
@@ -55,12 +55,6 @@ def indice_seguro(labels: List[str], valor: str, default: int = 0) -> int:
     return labels.index(valor) if valor in labels else default
 
 
-def aplicar_caso_ejemplo() -> None:
-    """Carga en session_state un caso de ejemplo para no rellenarlo todo a mano."""
-    for clave, valor in d.CASO_PLIEGO_EMASESA.items():
-        st.session_state[clave] = valor
-
-
 # ----------------------------------------------------------
 # Estilo visual básico
 # ----------------------------------------------------------
@@ -77,6 +71,7 @@ st.markdown(
     .soft-box {
         background: #f6f9fc;
         border: 1px solid #dbe7f3;
+        color: #000000;
         padding: 14px 16px;
         border-radius: 12px;
         margin-bottom: 12px;
@@ -84,12 +79,13 @@ st.markdown(
     .note-box {
         background: #eef6ff;
         border-left: 6px solid #1f5f8b;
+        color: #000000;
         padding: 14px 16px;
         border-radius: 10px;
         margin: 10px 0 16px 0;
     }
     .small-text {
-        color: #4f6578;
+        color: #000000;
         font-size: 0.95rem;
     }
     </style>
@@ -100,7 +96,7 @@ st.markdown(
 st.markdown(
     """
     <div class="main-card">
-        <h2 style="margin-bottom: 0.35rem;">LicitaIA · Presupuesto de redes y reurbanización</h2>
+        <h2 style="margin-bottom: 0.35rem;">Cálculo de presupuestos</h2>
         <div style="font-size: 1.03rem;">
             Esta app genera un <b>presupuesto desglosado</b> para obras de abastecimiento, saneamiento y reposición urbana.
             <br><br>
@@ -130,21 +126,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-col_preset, col_text = st.columns([1, 3])
-with col_preset:
-    if st.button("Cargar caso de ejemplo"):
-        aplicar_caso_ejemplo()
-        st.rerun()
-with col_text:
-    st.markdown(
-        """
-        <div class="soft-box small-text">
-        El caso de ejemplo rellena la pantalla con un escenario base parecido a una obra real para que puedas empezar rápido.
-        Luego puedes modificar cualquier dato.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 # Etiquetas visibles
 aba_labels = [x["label"] for x in d.CATALOGO_ABA]
@@ -250,7 +231,7 @@ with g1:
         value=float(st.session_state.get("profundidad_aba_m", d.GEOMETRIA_DEFAULT["profundidad_aba_m"])),
         help="Si supera 2,5 m, la app cambia automáticamente a los precios profundos del CSV.",
     )
-    pct_manual_aba = st.slider(
+    pct_manual_aba = st.number_input(
         "Excavación manual ABA (%)",
         min_value=0.0,
         max_value=100.0,
@@ -259,13 +240,15 @@ with g1:
                 "excavacion_manual_aba", d.GEOMETRIA_DEFAULT["porcentaje_excavacion_manual_aba"]
             )
         ),
+        step=1.0,
         help="Porcentaje del volumen de zanja ABA que quieres considerar como excavación manual.",
     )
-    pct_entibacion_aba = st.slider(
+    pct_entibacion_aba = st.number_input(
         "Tramo entibado ABA (%)",
         min_value=0.0,
         max_value=100.0,
         value=float(st.session_state.get("entibacion_aba", d.GEOMETRIA_DEFAULT["porcentaje_entibacion_aba"])),
+        step=1.0,
         help="Porcentaje de la longitud ABA que necesita entibación.",
     )
     espesor_arena_aba = st.number_input(
@@ -297,7 +280,7 @@ with g2:
         value=float(st.session_state.get("profundidad_san_m", d.GEOMETRIA_DEFAULT["profundidad_san_m"])),
         help="Si supera 2,5 m, la app usa automáticamente el precio profundo.",
     )
-    pct_manual_san = st.slider(
+    pct_manual_san = st.number_input(
         "Excavación manual SAN (%)",
         min_value=0.0,
         max_value=100.0,
@@ -306,13 +289,15 @@ with g2:
                 "excavacion_manual_san", d.GEOMETRIA_DEFAULT["porcentaje_excavacion_manual_san"]
             )
         ),
+        step=1.0,
         help="Porcentaje del volumen de zanja SAN que quieres considerar manual.",
     )
-    pct_entibacion_san = st.slider(
+    pct_entibacion_san = st.number_input(
         "Tramo entibado SAN (%)",
         min_value=0.0,
         max_value=100.0,
         value=float(st.session_state.get("entibacion_san", d.GEOMETRIA_DEFAULT["porcentaje_entibacion_san"])),
+        step=1.0,
         help="Porcentaje de la longitud SAN que necesita entibación.",
     )
     espesor_arena_san = st.number_input(
