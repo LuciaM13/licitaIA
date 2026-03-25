@@ -1,58 +1,75 @@
-#Bloque 1 - Los porcentajes de la fórmula de presupuesto
-PCT_SS      = 0.11    # Seguridad y Salud
-PCT_GA      = 0.04    # Gestión Ambiental
-PCT_GG      = 0.13    # Gastos Generales
-PCT_BI      = 0.06    # Beneficio Industrial
-PCT_COLCHON = 0.10    # Colchón de seguridad
-PCT_IVA     = 0.21    # IVA
+from __future__ import annotations
 
+# Impuestos y coeficientes generales
+PCT_GG = 0.13
+PCT_BI = 0.06
+PCT_IVA = 0.21
 
+# Valores por defecto alineados con el pliego subido por el usuario
+# PBL sin IVA: 289.161,57 €
+# SS: 8.400,00 €
+# GA: 12.225,00 €
+VALORES_PLIEGO = {
+    "obra_civil_aba": 54633.99,
+    "obra_civil_san": 63039.17,
+    "pavimentacion_aba": 29472.47,
+    "pavimentacion_san": 34492.96,
+    "acometidas_aba": 17748.32,
+    "acometidas_san": 22981.01,
+    "seguridad_salud": 8400.00,
+    "gestion_ambiental": 12225.00,
+}
 
+# Magnitudes físicas observadas en el pliego concreto
+DEFAULTS_PLIEGO = {
+    "metros_aba_80": 132.0,
+    "metros_aba_100": 61.0,
+    "metros_san": 132.0,
+    "num_acometidas_aba": 26,
+    "num_acometidas_san": 26,
+    "num_valvulas": 4,
+    "num_tomas_agua": 2,
+    "num_conexiones_san": 4,
+    "num_pozos": 7,
+    "num_imbornales": 12,
+}
+
+# Catálogos unitarios orientativos (€/m o €/ud). No sustituyen una medición real.
 CATALOGO_ABA = [
-    {"label": "PE-100  Ø 90 mm",   "obra_civil": 73,   "pavimentacion": 88,  "acometidas": 69},
-    {"label": "PE-100  Ø 110 mm",  "obra_civil": 79,   "pavimentacion": 88,  "acometidas": 71},
-    {"label": "PE-100  Ø 160 mm",  "obra_civil": 103,  "pavimentacion": 89,  "acometidas": 67},
-    {"label": "PE-100  Ø 200 mm",  "obra_civil": 130,  "pavimentacion": 91,  "acometidas": 60},
-    {"label": "FD  Ø 80 mm",       "obra_civil": 131,  "pavimentacion": 88,  "acometidas": 77},
-    {"label": "FD  Ø 100 mm",      "obra_civil": 135,  "pavimentacion": 88,  "acometidas": 80},
-    {"label": "FD  Ø 150 mm",      "obra_civil": 166,  "pavimentacion": 88,  "acometidas": 88},
-    {"label": "FD  Ø 200 mm",      "obra_civil": 217,  "pavimentacion": 91,  "acometidas": 72},
-    {"label": "FD  Ø 250 mm",      "obra_civil": 252,  "pavimentacion": 94,  "acometidas": 65},
-    {"label": "FD  Ø 300 mm",      "obra_civil": 308,  "pavimentacion": 97,  "acometidas": 70},
-    {"label": "FD  Ø 400 mm",      "obra_civil": 587,  "pavimentacion": 103, "acometidas": 64},
-    {"label": "FD  Ø 500 mm",      "obra_civil": 692,  "pavimentacion": 108, "acometidas": 72},
-    {"label": "FD  Ø 600 mm",      "obra_civil": 829,  "pavimentacion": 114, "acometidas": 60},
-    {"label": "FD  Ø 800 mm",      "obra_civil": 1444, "pavimentacion": 126, "acometidas": 48},
-    {"label": "FD  Ø 1000 mm",     "obra_civil": 1839, "pavimentacion": 137, "acometidas": 56},
-    {"label": "FD  Ø 1200 mm",     "obra_civil": 2196, "pavimentacion": 149, "acometidas": 32},
+    {"label": "PE-100 Ø 90 mm", "obra_civil": 73.0, "pavimentacion": 88.0},
+    {"label": "PE-100 Ø 110 mm", "obra_civil": 79.0, "pavimentacion": 88.0},
+    {"label": "PE-100 Ø 160 mm", "obra_civil": 103.0, "pavimentacion": 89.0},
+    {"label": "FD Ø 80 mm", "obra_civil": 131.0, "pavimentacion": 88.0},
+    {"label": "FD Ø 100 mm", "obra_civil": 135.0, "pavimentacion": 88.0},
+    {"label": "FD Ø 150 mm", "obra_civil": 166.0, "pavimentacion": 88.0},
 ]
 
 CATALOGO_SAN = [
-    {"label": "Gres  Ø 300 mm",     "obra_civil": 292,  "pavimentacion": 97,  "acometidas": 70},
-    {"label": "Gres  Ø 400 mm",     "obra_civil": 393,  "pavimentacion": 103, "acometidas": 64},
-    {"label": "Gres  Ø 500 mm",     "obra_civil": 466,  "pavimentacion": 108, "acometidas": 54},
-    {"label": "Gres  Ø 600 mm",     "obra_civil": 578,  "pavimentacion": 114, "acometidas": 60},
-    {"label": "HA  Ø 300 mm",       "obra_civil": 318,  "pavimentacion": 97,  "acometidas": 70},
-    {"label": "HA  Ø 400 mm",       "obra_civil": 331,  "pavimentacion": 103, "acometidas": 64},
-    {"label": "HA  Ø 500 mm",       "obra_civil": 407,  "pavimentacion": 108, "acometidas": 54},
-    {"label": "HA  Ø 600 mm",       "obra_civil": 426,  "pavimentacion": 114, "acometidas": 60},
-    {"label": "HA  Ø 800 mm",       "obra_civil": 600,  "pavimentacion": 126, "acometidas": 48},
-    {"label": "HA  Ø 1000 mm",      "obra_civil": 765,  "pavimentacion": 137, "acometidas": 56},
-    {"label": "HA  Ø 1200 mm",      "obra_civil": 1039, "pavimentacion": 149, "acometidas": 32},
-    {"label": "HA+PE80  Ø 800 mm",  "obra_civil": 675,  "pavimentacion": 126, "acometidas": 48},
-    {"label": "HA+PE80  Ø 1000 mm", "obra_civil": 869,  "pavimentacion": 137, "acometidas": 56},
-    {"label": "HA+PE80  Ø 1500 mm", "obra_civil": 1851, "pavimentacion": 166, "acometidas": 38},
-    {"label": "HA+PE80  Ø 2000 mm", "obra_civil": 2603, "pavimentacion": 195, "acometidas": 48},
-    {"label": "PVC-U  Ø 315 mm",    "obra_civil": 280,  "pavimentacion": 98,  "acometidas": 72},
-    {"label": "PVC-U  Ø 400 mm",    "obra_civil": 308,  "pavimentacion": 103, "acometidas": 64},
-    {"label": "PVC-U  Ø 500 mm",    "obra_civil": 405,  "pavimentacion": 108, "acometidas": 54},
+    {"label": "Gres Ø 300 mm", "obra_civil": 292.0, "pavimentacion": 97.0},
+    {"label": "Gres Ø 400 mm", "obra_civil": 393.0, "pavimentacion": 103.0},
+    {"label": "PVC-U Ø 315 mm", "obra_civil": 280.0, "pavimentacion": 98.0},
+    {"label": "PVC-U Ø 400 mm", "obra_civil": 308.0, "pavimentacion": 103.0},
 ]
 
 TIPOS_REURB = [
-    {"label": "Acerado hidráulico + calzada aglomerado",  "factor_aba": 1.00, "factor_san": 1.00},
-    {"label": "Acerado granítico + calzada aglomerado",   "factor_aba": 1.20, "factor_san": 1.18},
-    {"label": "Solo acerado hidráulico (sin calzada)",     "factor_aba": 0.62, "factor_san": 0.60},
-    {"label": "Solo acerado granítico (sin calzada)",      "factor_aba": 0.72, "factor_san": 0.70},
-    {"label": "Calzada aglomerado (sin acerado)",          "factor_aba": 0.50, "factor_san": 0.48},
-    {"label": "Terrizo / sin urbanizar",                   "factor_aba": 0.08, "factor_san": 0.06},
+    {"label": "Acerado hidráulico + calzada aglomerado", "factor_aba": 1.00, "factor_san": 1.00},
+    {"label": "Acerado granítico + calzada aglomerado", "factor_aba": 1.20, "factor_san": 1.18},
+    {"label": "Solo acerado hidráulico (sin calzada)", "factor_aba": 0.62, "factor_san": 0.60},
+    {"label": "Calzada aglomerado (sin acerado)", "factor_aba": 0.50, "factor_san": 0.48},
+    {"label": "Terrizo / sin urbanizar", "factor_aba": 0.08, "factor_san": 0.06},
 ]
+
+# Costes unitarios por defecto para partidas que faltaban en la versión original.
+# Se calculan a partir de los importes de capítulo del pliego para que el resultado
+# quede razonablemente calibrado cuando se usan las magnitudes del pliego.
+COSTES_UNITARIOS_DEFAULT = {
+    "acometida_aba": VALORES_PLIEGO["acometidas_aba"] / DEFAULTS_PLIEGO["num_acometidas_aba"],
+    "acometida_san": VALORES_PLIEGO["acometidas_san"] / DEFAULTS_PLIEGO["num_acometidas_san"],
+    # Reparto orientativo interno del capítulo de abastecimiento
+    "valvula": 900.0,
+    "toma_agua": 650.0,
+    # Reparto orientativo interno del capítulo de saneamiento
+    "conexion_san": 850.0,
+    "pozo": 1600.0,
+    "imbornal": 780.0,
+}
