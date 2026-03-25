@@ -3,124 +3,85 @@ from __future__ import annotations
 """
 datos.py
 ========
-Este archivo centraliza todos los datos "fijos" de LicitaIA.
+Datos fijos y catálogos basados únicamente en la base de precios CSV y en la
+estructura económica del pliego.
 
-Qué guarda:
-- porcentajes generales del presupuesto
-- precios sacados del CSV de referencia
-- catálogos y opciones que verá el usuario en la app
-- valores por defecto para que la interfaz sea cómoda de usar
-
-La idea es que cualquier cambio de precios u opciones se haga aquí y no repartido
-por todo el proyecto.
+Regla de esta versión:
+- no incluir partidas ni precios inventados fuera del Excel / pliego
+- no pedir al usuario precios manuales
+- separar claramente lo que pertenece a ABA, SAN, pavimentación y acometidas
 """
 
-# ==========================================================
 # Porcentajes generales del presupuesto
-# ==========================================================
-# Estos porcentajes no salen de cada partida del CSV:
-# forman parte de la estructura final del presupuesto.
 PCT_GG = 0.13
 PCT_BI = 0.06
 PCT_IVA = 0.21
 PCT_CONTROL_CALIDAD = 0.01
 
-
-# ==========================================================
-# Precios de abastecimiento (ABA)
-# ==========================================================
-# El CSV aportado está mucho más orientado a saneamiento y reposiciones urbanas
-# que a una familia completa de abastecimiento pequeño/medio. Por eso, para ABA
-# mantenemos un catálogo paramétrico por diámetro/material.
-#
-# Importante:
-# - aquí "tuberia_m" representa el coste base por metro de suministro y montaje
-#   de la red ABA
-# - el resto de familias (demoliciones, excavaciones, materiales auxiliares,
-#   reposiciones, elementos singulares...) ya se calculan aparte con partidas
-#   específicas y no van escondidas dentro de este precio.
+# ABA: catálogo paramétrico existente en el proyecto
 CATALOGO_ABA = [
-    {"label": "PE-100 Ø 90 mm", "tuberia_m": 39.00, "diametro_mm": 90},
-    {"label": "PE-100 Ø 110 mm", "tuberia_m": 44.00, "diametro_mm": 110},
-    {"label": "PE-100 Ø 160 mm", "tuberia_m": 61.00, "diametro_mm": 160},
-    {"label": "PE-100 Ø 200 mm", "tuberia_m": 79.00, "diametro_mm": 200},
-    {"label": "FD Ø 80 mm", "tuberia_m": 63.00, "diametro_mm": 80},
-    {"label": "FD Ø 100 mm", "tuberia_m": 69.00, "diametro_mm": 100},
-    {"label": "FD Ø 150 mm", "tuberia_m": 91.00, "diametro_mm": 150},
-    {"label": "FD Ø 200 mm", "tuberia_m": 128.00, "diametro_mm": 200},
-    {"label": "FD Ø 250 mm", "tuberia_m": 164.00, "diametro_mm": 250},
-    {"label": "FD Ø 300 mm", "tuberia_m": 209.00, "diametro_mm": 300},
+    {"label": "PE-100 Ø 90 mm",  "tuberia_m": 39.00,  "diametro_mm": 90},
+    {"label": "PE-100 Ø 110 mm", "tuberia_m": 44.00,  "diametro_mm": 110},
+    {"label": "PE-100 Ø 160 mm", "tuberia_m": 61.00,  "diametro_mm": 160},
+    {"label": "PE-100 Ø 200 mm", "tuberia_m": 79.00,  "diametro_mm": 200},
+    {"label": "FD Ø 80 mm",      "tuberia_m": 63.00,  "diametro_mm": 80},
+    {"label": "FD Ø 100 mm",     "tuberia_m": 69.00,  "diametro_mm": 100},
+    {"label": "FD Ø 150 mm",     "tuberia_m": 91.00,  "diametro_mm": 150},
+    {"label": "FD Ø 200 mm",     "tuberia_m": 128.00, "diametro_mm": 200},
+    {"label": "FD Ø 250 mm",     "tuberia_m": 164.00, "diametro_mm": 250},
+    {"label": "FD Ø 300 mm",     "tuberia_m": 209.00, "diametro_mm": 300},
 ]
 
-
-# ==========================================================
-# Precios de saneamiento (SAN) tomados del CSV
-# ==========================================================
-# "tuberia_m" sí está apoyado en las líneas del CSV de suministro y montaje.
 CATALOGO_SAN = [
-    {"label": "Gres Ø 300 mm", "tuberia_m": 126.10, "diametro_mm": 300, "familia": "gres"},
-    {"label": "Gres Ø 400 mm", "tuberia_m": 214.00, "diametro_mm": 400, "familia": "gres"},
-    {"label": "Gres Ø 500 mm", "tuberia_m": 311.38, "diametro_mm": 500, "familia": "gres"},
-    {"label": "Gres Ø 600 mm", "tuberia_m": 412.40, "diametro_mm": 600, "familia": "gres"},
-    {"label": "Gres Ø 800 mm", "tuberia_m": 1026.63, "diametro_mm": 800, "familia": "gres"},
-    {"label": "Gres Ø 1000 mm", "tuberia_m": 1279.56, "diametro_mm": 1000, "familia": "gres"},
-    {"label": "HA Ø 300 mm", "tuberia_m": 57.105, "diametro_mm": 300, "familia": "hormigon"},
-    {"label": "HA Ø 400 mm", "tuberia_m": 57.105, "diametro_mm": 400, "familia": "hormigon"},
-    {"label": "HA Ø 500 mm", "tuberia_m": 67.575, "diametro_mm": 500, "familia": "hormigon"},
-    {"label": "HA Ø 600 mm", "tuberia_m": 76.650, "diametro_mm": 600, "familia": "hormigon"},
-    {"label": "HA Ø 800 mm", "tuberia_m": 134.805, "diametro_mm": 800, "familia": "hormigon"},
-    {"label": "HA Ø 1000 mm", "tuberia_m": 185.595, "diametro_mm": 1000, "familia": "hormigon"},
-    {"label": "HA Ø 1200 mm", "tuberia_m": 314.070, "diametro_mm": 1200, "familia": "hormigon"},
-    {"label": "PVC-U Ø 315 mm", "tuberia_m": 45.92, "diametro_mm": 315, "familia": "pvc"},
-    {"label": "PVC-U Ø 400 mm", "tuberia_m": 93.64, "diametro_mm": 400, "familia": "pvc"},
-    {"label": "PVC-U Ø 500 mm", "tuberia_m": 146.26, "diametro_mm": 500, "familia": "pvc"},
+    {"label": "Gres Ø 300 mm",   "tuberia_m": 126.10,  "diametro_mm": 300,  "familia": "gres"},
+    {"label": "Gres Ø 400 mm",   "tuberia_m": 214.00,  "diametro_mm": 400,  "familia": "gres"},
+    {"label": "Gres Ø 500 mm",   "tuberia_m": 311.38,  "diametro_mm": 500,  "familia": "gres"},
+    {"label": "Gres Ø 600 mm",   "tuberia_m": 412.40,  "diametro_mm": 600,  "familia": "gres"},
+    {"label": "Gres Ø 800 mm",   "tuberia_m": 1026.63, "diametro_mm": 800,  "familia": "gres"},
+    {"label": "Gres Ø 1000 mm",  "tuberia_m": 1279.56, "diametro_mm": 1000, "familia": "gres"},
+    {"label": "HA Ø 300 mm",     "tuberia_m": 57.105,  "diametro_mm": 300,  "familia": "hormigon"},
+    {"label": "HA Ø 400 mm",     "tuberia_m": 57.105,  "diametro_mm": 400,  "familia": "hormigon"},
+    {"label": "HA Ø 500 mm",     "tuberia_m": 67.575,  "diametro_mm": 500,  "familia": "hormigon"},
+    {"label": "HA Ø 600 mm",     "tuberia_m": 76.650,  "diametro_mm": 600,  "familia": "hormigon"},
+    {"label": "HA Ø 800 mm",     "tuberia_m": 134.805, "diametro_mm": 800,  "familia": "hormigon"},
+    {"label": "HA Ø 1000 mm",    "tuberia_m": 185.595, "diametro_mm": 1000, "familia": "hormigon"},
+    {"label": "HA Ø 1200 mm",    "tuberia_m": 314.070, "diametro_mm": 1200, "familia": "hormigon"},
+    {"label": "PVC-U Ø 315 mm",  "tuberia_m": 45.92,   "diametro_mm": 315,  "familia": "pvc"},
+    {"label": "PVC-U Ø 400 mm",  "tuberia_m": 93.64,   "diametro_mm": 400,  "familia": "pvc"},
+    {"label": "PVC-U Ø 500 mm",  "tuberia_m": 146.26,  "diametro_mm": 500,  "familia": "pvc"},
 ]
 
-
-# ==========================================================
-# Ovoides del CSV
-# ==========================================================
 CATALOGO_OVOIDE = [
-    {"label": "Ovoide 1200x800", "tuberia_m": 107.43},
+    {"label": "Ovoide 1200x800",  "tuberia_m": 107.43},
     {"label": "Ovoide 1500x1000", "tuberia_m": 150.90},
     {"label": "Ovoide 1800x1200", "tuberia_m": 247.50},
 ]
 
-
-# ==========================================================
-# Demoliciones y reposiciones del CSV
-# ==========================================================
 DEMOLICION_BORDILLO = [
     {"label": "Bordillo hidráulico", "precio_m": 4.44},
-    {"label": "Bordillo granítico", "precio_m": 5.59},
+    {"label": "Bordillo granítico",  "precio_m": 5.59},
 ]
-
 DEMOLICION_ACERADO = [
     {"label": "Losa hidráulica", "precio_m2": 14.70},
-    {"label": "Losa terrazo", "precio_m2": 14.70},
-    {"label": "Hormigón", "precio_m2": 14.70},
+    {"label": "Losa terrazo",    "precio_m2": 14.70},
+    {"label": "Hormigón",        "precio_m2": 14.70},
 ]
-
 DEMOLICION_CALZADA = [
-    {"label": "Adoquín", "precio_m2": 15.80},
-    {"label": "Aglomerado", "precio_m2": 14.29},
-    {"label": "Hormigón", "precio_m2": 17.43},
+    {"label": "Adoquín",     "precio_m2": 15.80},
+    {"label": "Aglomerado",  "precio_m2": 14.29},
+    {"label": "Hormigón",    "precio_m2": 17.43},
 ]
 
 ACERADOS_REPOSICION = [
     {"label": "Losa hidráulica", "precio_m2": 37.14},
-    {"label": "Losa terrazo", "precio_m2": 43.20},
-    {"label": "Hormigón", "precio_m2": 52.79},
-    {"label": "Granito", "precio_m2": 84.67},
+    {"label": "Losa terrazo",    "precio_m2": 43.20},
+    {"label": "Hormigón",        "precio_m2": 52.79},
+    {"label": "Granito",         "precio_m2": 84.67},
 ]
-
 BORDILLOS_REPOSICION = [
     {"label": "Bordillo de hormigón", "precio_m": 16.00},
-    {"label": "Bordillo granítico", "precio_m": 22.90},
+    {"label": "Bordillo granítico",   "precio_m": 22.90},
 ]
-
-# Para calzada el CSV mezcla partidas por m2 y por m3.
-# En la app se pide superficie y espesor para que salga un presupuesto útil.
 REPOSICION_CALZADA = {
     "adoquin_m2": 35.23,
     "rodadura_m3": 139.64,
@@ -131,10 +92,6 @@ REPOSICION_CALZADA = {
     "demolicion_imbornal_tuberia_ud": 49.17,
 }
 
-
-# ==========================================================
-# Excavaciones y materiales auxiliares del CSV
-# ==========================================================
 EXCAVACION = {
     "mecanica_hasta_2_5_m3": 3.07,
     "mecanica_mas_2_5_m3": 5.00,
@@ -150,23 +107,15 @@ EXCAVACION = {
     "relleno_albero_m3": 19.39,
 }
 
-
-# ==========================================================
-# Acometidas del CSV
-# ==========================================================
 ACOMETIDAS = [
-    {"label": "PVC - Adaptación", "precio_ud": 446.64},
-    {"label": "PVC - Reposición < 6 m", "precio_ud": 885.12},
-    {"label": "PVC - Reposición > 6 m", "precio_ud": 1278.78},
-    {"label": "GRES - Adaptación", "precio_ud": 485.43},
+    {"label": "PVC - Adaptación",        "precio_ud":  446.64},
+    {"label": "PVC - Reposición < 6 m",  "precio_ud":  885.12},
+    {"label": "PVC - Reposición > 6 m",  "precio_ud": 1278.78},
+    {"label": "GRES - Adaptación",       "precio_ud":  485.43},
     {"label": "GRES - Reposición < 6 m", "precio_ud": 1231.79},
     {"label": "GRES - Reposición > 6 m", "precio_ud": 1759.63},
 ]
 
-
-# ==========================================================
-# Pozos, imbornales, marcos y materiales del CSV
-# ==========================================================
 POZOS = [
     {"label": "Ladrillo P < 2,5 m", "precio_ud": 1043.82},
     {"label": "Ladrillo P < 3,5 m", "precio_ud": 1273.56},
@@ -206,53 +155,37 @@ POZOS = [
     {"label": "Anulación de pozo", "precio_ud": 545.82},
     {"label": "Demolición de pozo", "precio_ud": 44.72},
 ]
-
 IMBORNALES = [
     {"label": "Rejilla con clapeta", "precio_ud": 547.98},
     {"label": "Rejilla sin clapeta", "precio_ud": 547.98},
     {"label": "Buzón con clapeta", "precio_ud": 872.03},
     {"label": "Buzón sin clapeta", "precio_ud": 802.03},
 ]
-
 MARCOS = [
     {"label": "Marco superficie hasta 10 m²", "precio_ud": 1683.64},
     {"label": "Marco superficie hasta 20 m²", "precio_ud": 3498.89},
     {"label": "Marco superficie hasta 30 m²", "precio_ud": 4446.06},
     {"label": "Marco superficie hasta 35 m²", "precio_ud": 5127.49},
 ]
-
-MATERIALES_POZO = [
+MATERIALES_POZO_TAPA = [
     {"label": "Tapa de pozo de registro", "precio_ud": 160.37},
+]
+MATERIALES_POZO_PATE = [
     {"label": "Pate para pozos", "precio_ud": 1.94},
 ]
 
-
-# ==========================================================
-# Otros costes porcentuales del CSV / del proyecto
-# ==========================================================
 SERVICIOS_AFECTADOS = [
     {"label": "Poco", "pct": 0.01},
     {"label": "Normal", "pct": 0.03},
     {"label": "Mucho", "pct": 0.05},
 ]
 
-PCT_SS_CSV = 0.03  # aparece en el CSV como referencia
+PCT_SS_CSV = 0.03
 MODO_SS_DEFAULT = "fijo"
 IMPORTE_SS_DEFAULT = 8400.00
-
-# La gestión ambiental no aparece desglosada como familia propia en el CSV aportado,
-# pero sí suele venir fijada en el presupuesto base del expediente.
 MODO_GA_DEFAULT = "fijo"
 IMPORTE_GA_DEFAULT = 12225.00
 
-COLCHON_ACTIVO_DEFAULT = False
-PCT_COLCHON_DEFAULT = 0.10
-
-
-# ==========================================================
-# Geometría por defecto para estimación de zanjas y materiales
-# ==========================================================
-# Se muestran en la app para que el usuario pueda ajustarlos.
 GEOMETRIA_DEFAULT = {
     "ancho_zanja_aba_m": 0.60,
     "profundidad_aba_m": 1.20,
@@ -267,11 +200,9 @@ GEOMETRIA_DEFAULT = {
     "espesor_relleno_aba_m": 0.30,
     "espesor_relleno_san_m": 0.40,
 }
-
 ESPESORES_REPOSICION_DEFAULT = {
     "espesor_rodadura_m": 0.05,
     "espesor_base_pavimento_m": 0.20,
     "espesor_hormigon_m": 0.15,
     "espesor_base_granular_m": 0.20,
 }
-
