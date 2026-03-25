@@ -660,13 +660,23 @@ with fb1:
     precio_fibrocemento_m = st.number_input(
         "Precio retirada fibrocemento (€/m)",
         min_value=0.0,
-        value=float(st.session_state.get("precio_fibrocemento_m", d.FIBROCEMENTO["retirada_m"])),
+        value=float(
+            st.session_state.get(
+                "precio_fibrocemento_m",
+                getattr(d, "FIBROCEMENTO", {}).get("retirada_m", 35.0),
+            )
+        ),
         help="Precio orientativo: embolsado, transporte y gestión en vertedero autorizado.",
     )
     importe_plan_amianto = st.number_input(
         "Importe Plan de Trabajo con Amianto — fijo (€)",
         min_value=0.0,
-        value=float(st.session_state.get("importe_plan_amianto", d.FIBROCEMENTO["plan_trabajo_fijo"])),
+        value=float(
+            st.session_state.get(
+                "importe_plan_amianto",
+                getattr(d, "FIBROCEMENTO", {}).get("plan_trabajo_fijo", 1200.0),
+            )
+        ),
         help="Coste fijo de redacción del PTWA, coordinación y documentación. Ajustar según empresa.",
     )
 
