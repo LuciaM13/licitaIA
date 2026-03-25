@@ -1,5 +1,19 @@
 from __future__ import annotations
 
+"""
+app_licitaia.py
+---------------
+Aplicación Streamlit de LicitaIA.
+
+Este archivo hace tres trabajos:
+1. dibuja la interfaz
+2. recoge los datos que introduce el usuario
+3. llama a la lógica de cálculo para obtener el presupuesto
+
+Además, incluye una comprobación opcional del CSV de precios para explicar qué parte
+está realmente cubierta por el modelo simplificado.
+"""
+
 import os
 import sys
 from typing import Dict
@@ -7,21 +21,25 @@ from typing import Dict
 import pandas as pd
 import streamlit as st
 
-# Evita errores de import en despliegues tipo Streamlit Cloud / Render
+# Evita errores de import en despliegues tipo Streamlit Cloud / Render.
+# Con esto Python buscará los módulos también en la misma carpeta del proyecto.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+from auditor_csv import resumir_csv
 from calcular import ParametrosProyecto, calcular_presupuesto
 from datos import (
     CATALOGO_ABA,
     CATALOGO_SAN,
     CASO_PLIEGO_EMASESA,
     COLCHON_ACTIVO_DEFAULT,
+    CSV_GROUP_STATUS,
     IMPORTE_GA_DEFAULT,
     IMPORTE_SS_DEFAULT,
     MODO_GA_DEFAULT,
     MODO_SS_DEFAULT,
+    PCT_COLCHON_DEFAULT,
     PCT_GA_DEFAULT,
     PCT_SS_DEFAULT,
     PRECIOS_UNIDADES,
@@ -32,11 +50,22 @@ st.set_page_config(page_title="LicitaIA", layout="wide")
 
 
 def euro(valor: float) -> str:
+    """Formatea números como euros con estilo español."""
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def seleccionar_por_label(catalogo: list[Dict], label: str) -> Dict:
+    """Devuelve el elemento del catálogo cuyo texto visible coincide con el label."""
     return next(item for item in catalogo if item["label"] == label)
+
+
+def construir_resultado_auditoria(ruta_csv: str) -> pd.DataFrame:
+    """Convierte el resumen del auditor en una tabla cómoda para Streamlit."""
+    resumen = resumir_csv(ruta_csv)
+    tabla = pd.DataFrame(resumen["detalle"])
+    tabla["Precio mínimo"] = tabla["Precio mínimo"].map(euro)
+    tabla["Precio máximo"] = tabla["Precio máximo"].map(euro)
+    return tabla, resumen
 
 
 st.markdown(
@@ -49,6 +78,13 @@ body { background-color: #f4f6f9; }
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 25px;
+}
+.help-box {
+    background: #eef4fb;
+    border-left: 6px solid #1f3b5b;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
 }
 </style>
 """,
@@ -65,6 +101,21 @@ Estimación de presupuesto para redes de abastecimiento, saneamiento y reurbaniz
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    """
+<div class="help-box">
+<b>Cómo calcula esta app:</b><br>
+1. Calcula obra civil y pavimentación por metro de red.<br>
+2. Calcula acometidas y elementos singulares por número de unidades.<br>
+3. Suma Seguridad y Salud y Gestión Ambiental como importe fijo o porcentaje.<br>
+4. Obtiene el PEM y después aplica GG, BI e IVA.<br>
+<br>
+<b>Importante:</b> el modelo es una <u>estimación simplificada</u>. No reproduce línea por línea toda la base de precios.
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
 if "preset_cargado" not in st.session_state:
     st.session_state.preset_cargado = False
 
@@ -76,7 +127,7 @@ with col_a:
             st.session_state[clave] = valor
         st.rerun()
 with col_b:
-    st.caption("Este botón rellena valores orientativos del caso base para arrancar más rápido.")
+    st.caption("Rellena automáticamente un caso de ejemplo parecido al pliego para empezar más rápido.")
 
 aba_labels = [item["label"] for item in CATALOGO_ABA]
 san_labels = [item["label"] for item in CATALOGO_SAN]
@@ -84,10 +135,17 @@ reurb_labels = [item["label"] for item in TIPOS_REURB]
 
 st.markdown("### Parámetros del proyecto")
 
+# Se agrupan en tres columnas para que el usuario entienda mejor el formulario:
+# - columna 1: abastecimiento
+# - columna 2: saneamiento
+# - columna 3: condicionantes generales
 col1, col2, col3 = st.columns(3)
 with col1:
     metros_aba = st.number_input(
-        "Longitud ABA (m)", min_value=0.0, value=float(st.session_state.get("longitud_aba", 100.0))
+        "Longitud ABA (m)",
+        min_value=0.0,
+        value=float(st.session_state.get("longitud_aba", 100.0)),
+        help="Metros de red de abastecimiento a ejecutar o renovar.",
     )
     aba_label = st.selectbox(
         "Tipo ABA",
@@ -95,20 +153,33 @@ with col1:
         index=aba_labels.index(st.session_state.get("tipo_aba", aba_labels[0]))
         if st.session_state.get("tipo_aba", aba_labels[0]) in aba_labels
         else 0,
+        help="Material y diámetro de la tubería de abastecimiento.",
     )
     uds_acometidas_aba = st.number_input(
-        "Nº acometidas ABA", min_value=0, value=int(st.session_state.get("uds_acometidas_aba", 0))
+        "Nº acometidas ABA",
+        min_value=0,
+        value=int(st.session_state.get("uds_acometidas_aba", 0)),
+        help="Número de acometidas de abastecimiento a intervenir.",
     )
     uds_valvulas = st.number_input(
-        "Nº válvulas", min_value=0, value=int(st.session_state.get("uds_valvulas", 0))
+        "Nº válvulas",
+        min_value=0,
+        value=int(st.session_state.get("uds_valvulas", 0)),
+        help="Válvulas de compuerta u otras equivalentes que quieras estimar.",
     )
     uds_tomas_agua = st.number_input(
-        "Nº tomas de agua", min_value=0, value=int(st.session_state.get("uds_tomas_agua", 0))
+        "Nº tomas de agua",
+        min_value=0,
+        value=int(st.session_state.get("uds_tomas_agua", 0)),
+        help="Tomas de agua, bocas de riego o elementos similares.",
     )
 
 with col2:
     metros_san = st.number_input(
-        "Longitud SAN (m)", min_value=0.0, value=float(st.session_state.get("longitud_san", 150.0))
+        "Longitud SAN (m)",
+        min_value=0.0,
+        value=float(st.session_state.get("longitud_san", 150.0)),
+        help="Metros de red de saneamiento a ejecutar o renovar.",
     )
     san_label = st.selectbox(
         "Tipo SAN",
@@ -116,16 +187,31 @@ with col2:
         index=san_labels.index(st.session_state.get("tipo_san", san_labels[0]))
         if st.session_state.get("tipo_san", san_labels[0]) in san_labels
         else 0,
+        help="Material y diámetro de la tubería de saneamiento.",
     )
     uds_acometidas_san = st.number_input(
-        "Nº acometidas SAN", min_value=0, value=int(st.session_state.get("uds_acometidas_san", 0))
+        "Nº acometidas SAN",
+        min_value=0,
+        value=int(st.session_state.get("uds_acometidas_san", 0)),
+        help="Número de acometidas de saneamiento a adaptar o ejecutar.",
     )
     uds_conexiones_san = st.number_input(
-        "Nº conexiones SAN", min_value=0, value=int(st.session_state.get("uds_conexiones_san", 0))
+        "Nº conexiones SAN",
+        min_value=0,
+        value=int(st.session_state.get("uds_conexiones_san", 0)),
+        help="Conexiones de la nueva red con la red existente.",
     )
-    uds_pozos = st.number_input("Nº pozos", min_value=0, value=int(st.session_state.get("uds_pozos", 0)))
+    uds_pozos = st.number_input(
+        "Nº pozos",
+        min_value=0,
+        value=int(st.session_state.get("uds_pozos", 0)),
+        help="Pozos de registro nuevos o adaptados.",
+    )
     uds_imbornales = st.number_input(
-        "Nº imbornales", min_value=0, value=int(st.session_state.get("uds_imbornales", 0))
+        "Nº imbornales",
+        min_value=0,
+        value=int(st.session_state.get("uds_imbornales", 0)),
+        help="Imbornales nuevos o repuestos.",
     )
 
 with col3:
@@ -135,6 +221,7 @@ with col3:
         index=reurb_labels.index(st.session_state.get("reurbanizacion", reurb_labels[0]))
         if st.session_state.get("reurbanizacion", reurb_labels[0]) in reurb_labels
         else 0,
+        help="Tipo general de reposición superficial. Afecta al coste de pavimentación mediante factores.",
     )
 
     st.markdown("#### Seguridad y salud")
@@ -143,12 +230,18 @@ with col3:
         ["fijo", "porcentaje"],
         horizontal=True,
         index=0 if st.session_state.get("modo_ss", MODO_SS_DEFAULT) == "fijo" else 1,
+        help="Elige si SS se mete como importe cerrado o como porcentaje sobre el parcial.",
     )
     importe_ss = st.number_input(
-        "Importe SS (€)", min_value=0.0, value=float(st.session_state.get("importe_ss", IMPORTE_SS_DEFAULT))
+        "Importe SS (€)",
+        min_value=0.0,
+        value=float(st.session_state.get("importe_ss", IMPORTE_SS_DEFAULT)),
     )
     pct_ss = st.number_input(
-        "SS (%)", min_value=0.0, max_value=100.0, value=float(st.session_state.get("pct_ss", PCT_SS_DEFAULT * 100))
+        "SS (%)",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(st.session_state.get("pct_ss", PCT_SS_DEFAULT * 100)),
     )
 
     st.markdown("#### Gestión ambiental")
@@ -157,12 +250,18 @@ with col3:
         ["fijo", "porcentaje"],
         horizontal=True,
         index=0 if st.session_state.get("modo_ga", MODO_GA_DEFAULT) == "fijo" else 1,
+        help="Elige si GA se mete como importe cerrado o como porcentaje sobre el parcial.",
     )
     importe_ga = st.number_input(
-        "Importe GA (€)", min_value=0.0, value=float(st.session_state.get("importe_ga", IMPORTE_GA_DEFAULT))
+        "Importe GA (€)",
+        min_value=0.0,
+        value=float(st.session_state.get("importe_ga", IMPORTE_GA_DEFAULT)),
     )
     pct_ga = st.number_input(
-        "GA (%)", min_value=0.0, max_value=100.0, value=float(st.session_state.get("pct_ga", PCT_GA_DEFAULT * 100))
+        "GA (%)",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(st.session_state.get("pct_ga", PCT_GA_DEFAULT * 100)),
     )
 
 st.markdown("### Configuración adicional")
@@ -171,12 +270,17 @@ with config_col1:
     activar_colchon = st.checkbox(
         "Activar colchón comercial",
         value=bool(st.session_state.get("activar_colchon", COLCHON_ACTIVO_DEFAULT)),
+        help="Añade un margen interno extra sobre el PBL base. Útil para simulaciones.",
     )
 with config_col2:
     pct_colchon = st.number_input(
-        "Colchón (%)", min_value=0.0, max_value=100.0, value=float(st.session_state.get("pct_colchon", 10.0))
+        "Colchón (%)",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(st.session_state.get("pct_colchon", PCT_COLCHON_DEFAULT * 100)),
     )
 
+# Convertimos las selecciones visuales en diccionarios con precios.
 precios_aba = seleccionar_por_label(CATALOGO_ABA, aba_label)
 precios_san = seleccionar_por_label(CATALOGO_SAN, san_label)
 reurbanizacion = seleccionar_por_label(TIPOS_REURB, reurb_label)
@@ -244,10 +348,39 @@ if st.button("Calcular presupuesto"):
     }
     orden = list(etiquetas.keys())
     filas = [{"Concepto": etiquetas[k], "Importe": euro(resultado[k])} for k in orden]
-    df = pd.DataFrame(filas)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    df_resultado = pd.DataFrame(filas)
+    st.dataframe(df_resultado, use_container_width=True, hide_index=True)
     st.caption(
-        "La partida de control de calidad se muestra como referencia interna para valorar rentabilidad, no como suma adicional automática."
+        "El control de calidad se muestra como referencia interna. No se suma automáticamente al total del presupuesto."
     )
 else:
     st.info("Introduce los parámetros del proyecto y pulsa 'Calcular presupuesto'.")
+
+
+st.markdown("### Comprobación del CSV de precios")
+st.caption(
+    "Esta revisión sirve para ver si el modelo simplificado recoge toda la información del CSV o si hay grupos que aún faltan."
+)
+
+ruta_csv_por_defecto = os.path.join(BASE_DIR, "240415_VALORACIÓN ACTUACIONES(S-BASE PRECIOS ABRIL-'24)).csv")
+ruta_csv = st.text_input("Ruta del CSV a revisar", value=ruta_csv_por_defecto)
+
+if st.button("Analizar CSV"):
+    if not os.path.exists(ruta_csv):
+        st.error("No se ha encontrado el CSV en esa ruta.")
+    else:
+        try:
+            tabla_auditoria, resumen = construir_resultado_auditoria(ruta_csv)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Líneas con precio", resumen["lineas_con_precio"])
+            c2.metric("Grupos detectados", resumen["grupos_detectados"])
+            c3.metric("Grupos directos/parciales", f"{resumen['grupos_directos']} / {resumen['grupos_parciales']}")
+            c4.metric("Grupos no cubiertos", resumen["grupos_no_cubiertos"])
+
+            st.dataframe(tabla_auditoria, use_container_width=True, hide_index=True)
+
+            st.warning(
+                "Conclusión rápida: el CSV sí aporta muchos precios unitarios, pero NO trae por sí solo GG, BI o IVA, y el modelo actual NO recoge todas las familias de líneas del CSV."
+            )
+        except Exception as exc:
+            st.error(f"No se ha podido analizar el CSV: {exc}")
