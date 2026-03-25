@@ -32,37 +32,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from calcular import ParametrosProyecto, calcular_presupuesto
-from datos import (
-    ACOMETIDAS,
-    ACERADOS_REPOSICION,
-    BORDILLOS_REPOSICION,
-    CATALOGO_ABA,
-    CATALOGO_OVOIDE,
-    CATALOGO_SAN,
-    CASO_PLIEGO_EMASESA,
-    COLCHON_ACTIVO_DEFAULT,
-    DEMOLICION_ACERADO,
-    DEMOLICION_BORDILLO,
-    DEMOLICION_CALZADA,
-    ESPESORES_REPOSICION_DEFAULT,
-    EXCAVACION,
-    GEOMETRIA_DEFAULT,
-    IMBORNALES,
-    IMPORTE_GA_DEFAULT,
-    IMPORTE_SS_DEFAULT,
-    MARCOS,
-    MATERIALES_POZO,
-    MODO_GA_DEFAULT,
-    MODO_SS_DEFAULT,
-    PCT_BI,
-    PCT_CONTROL_CALIDAD,
-    PCT_GG,
-    PCT_IVA,
-    PCT_SS_CSV,
-    POZOS,
-    REPOSICION_CALZADA,
-    SERVICIOS_AFECTADOS,
-)
+import datos as d
 
 st.set_page_config(page_title="LicitaIA", layout="wide")
 
@@ -87,7 +57,7 @@ def indice_seguro(labels: List[str], valor: str, default: int = 0) -> int:
 
 def aplicar_caso_ejemplo() -> None:
     """Carga en session_state un caso de ejemplo para no rellenarlo todo a mano."""
-    for clave, valor in CASO_PLIEGO_EMASESA.items():
+    for clave, valor in d.CASO_PLIEGO_EMASESA.items():
         st.session_state[clave] = valor
 
 
@@ -177,19 +147,19 @@ with col_text:
     )
 
 # Etiquetas visibles
-aba_labels = [x["label"] for x in CATALOGO_ABA]
-san_labels = [x["label"] for x in CATALOGO_SAN]
-ovoide_labels = [x["label"] for x in CATALOGO_OVOIDE]
-dem_bordillo_labels = [x["label"] for x in DEMOLICION_BORDILLO]
-dem_acerado_labels = [x["label"] for x in DEMOLICION_ACERADO]
-dem_calzada_labels = [x["label"] for x in DEMOLICION_CALZADA]
-rep_acerado_labels = [x["label"] for x in ACERADOS_REPOSICION]
-rep_bordillo_labels = [x["label"] for x in BORDILLOS_REPOSICION]
-acometida_labels = [x["label"] for x in ACOMETIDAS]
-pozo_labels = [x["label"] for x in POZOS]
-imbornal_labels = [x["label"] for x in IMBORNALES]
-marco_labels = [x["label"] for x in MARCOS]
-servicios_labels = [x["label"] for x in SERVICIOS_AFECTADOS]
+aba_labels = [x["label"] for x in d.CATALOGO_ABA]
+san_labels = [x["label"] for x in d.CATALOGO_SAN]
+ovoide_labels = [x["label"] for x in d.CATALOGO_OVOIDE]
+dem_bordillo_labels = [x["label"] for x in d.DEMOLICION_BORDILLO]
+dem_acerado_labels = [x["label"] for x in d.DEMOLICION_ACERADO]
+dem_calzada_labels = [x["label"] for x in d.DEMOLICION_CALZADA]
+rep_acerado_labels = [x["label"] for x in d.ACERADOS_REPOSICION]
+rep_bordillo_labels = [x["label"] for x in d.BORDILLOS_REPOSICION]
+acometida_labels = [x["label"] for x in d.ACOMETIDAS]
+pozo_labels = [x["label"] for x in d.POZOS]
+imbornal_labels = [x["label"] for x in d.IMBORNALES]
+marco_labels = [x["label"] for x in d.MARCOS]
+servicios_labels = [x["label"] for x in d.SERVICIOS_AFECTADOS]
 
 # ----------------------------------------------------------
 # BLOQUE 1 · Redes principales
@@ -271,13 +241,13 @@ with g1:
     ancho_zanja_aba = st.number_input(
         "Ancho de zanja ABA (m)",
         min_value=0.0,
-        value=float(st.session_state.get("ancho_zanja_aba_m", GEOMETRIA_DEFAULT["ancho_zanja_aba_m"])),
+        value=float(st.session_state.get("ancho_zanja_aba_m", d.GEOMETRIA_DEFAULT["ancho_zanja_aba_m"])),
         help="Ancho medio de zanja para la red ABA.",
     )
     profundidad_aba = st.number_input(
         "Profundidad media ABA (m)",
         min_value=0.0,
-        value=float(st.session_state.get("profundidad_aba_m", GEOMETRIA_DEFAULT["profundidad_aba_m"])),
+        value=float(st.session_state.get("profundidad_aba_m", d.GEOMETRIA_DEFAULT["profundidad_aba_m"])),
         help="Si supera 2,5 m, la app cambia automáticamente a los precios profundos del CSV.",
     )
     pct_manual_aba = st.slider(
@@ -286,7 +256,7 @@ with g1:
         max_value=100.0,
         value=float(
             st.session_state.get(
-                "excavacion_manual_aba", GEOMETRIA_DEFAULT["porcentaje_excavacion_manual_aba"]
+                "excavacion_manual_aba", d.GEOMETRIA_DEFAULT["porcentaje_excavacion_manual_aba"]
             )
         ),
         help="Porcentaje del volumen de zanja ABA que quieres considerar como excavación manual.",
@@ -295,20 +265,20 @@ with g1:
         "Tramo entibado ABA (%)",
         min_value=0.0,
         max_value=100.0,
-        value=float(st.session_state.get("entibacion_aba", GEOMETRIA_DEFAULT["porcentaje_entibacion_aba"])),
+        value=float(st.session_state.get("entibacion_aba", d.GEOMETRIA_DEFAULT["porcentaje_entibacion_aba"])),
         help="Porcentaje de la longitud ABA que necesita entibación.",
     )
     espesor_arena_aba = st.number_input(
         "Espesor arena ABA (m)",
         min_value=0.0,
-        value=float(st.session_state.get("espesor_arena_aba_m", GEOMETRIA_DEFAULT["espesor_arena_aba_m"])),
+        value=float(st.session_state.get("espesor_arena_aba_m", d.GEOMETRIA_DEFAULT["espesor_arena_aba_m"])),
         help="Espesor de cama de arena para ABA.",
     )
     espesor_relleno_aba = st.number_input(
         "Espesor relleno ABA (m)",
         min_value=0.0,
         value=float(
-            st.session_state.get("espesor_relleno_aba_m", GEOMETRIA_DEFAULT["espesor_relleno_aba_m"])
+            st.session_state.get("espesor_relleno_aba_m", d.GEOMETRIA_DEFAULT["espesor_relleno_aba_m"])
         ),
         help="Espesor medio de relleno valorado con la partida de albero/relleno.",
     )
@@ -318,13 +288,13 @@ with g2:
     ancho_zanja_san = st.number_input(
         "Ancho de zanja SAN (m)",
         min_value=0.0,
-        value=float(st.session_state.get("ancho_zanja_san_m", GEOMETRIA_DEFAULT["ancho_zanja_san_m"])),
+        value=float(st.session_state.get("ancho_zanja_san_m", d.GEOMETRIA_DEFAULT["ancho_zanja_san_m"])),
         help="Ancho medio de zanja para la red SAN.",
     )
     profundidad_san = st.number_input(
         "Profundidad media SAN (m)",
         min_value=0.0,
-        value=float(st.session_state.get("profundidad_san_m", GEOMETRIA_DEFAULT["profundidad_san_m"])),
+        value=float(st.session_state.get("profundidad_san_m", d.GEOMETRIA_DEFAULT["profundidad_san_m"])),
         help="Si supera 2,5 m, la app usa automáticamente el precio profundo.",
     )
     pct_manual_san = st.slider(
@@ -333,7 +303,7 @@ with g2:
         max_value=100.0,
         value=float(
             st.session_state.get(
-                "excavacion_manual_san", GEOMETRIA_DEFAULT["porcentaje_excavacion_manual_san"]
+                "excavacion_manual_san", d.GEOMETRIA_DEFAULT["porcentaje_excavacion_manual_san"]
             )
         ),
         help="Porcentaje del volumen de zanja SAN que quieres considerar manual.",
@@ -342,20 +312,20 @@ with g2:
         "Tramo entibado SAN (%)",
         min_value=0.0,
         max_value=100.0,
-        value=float(st.session_state.get("entibacion_san", GEOMETRIA_DEFAULT["porcentaje_entibacion_san"])),
+        value=float(st.session_state.get("entibacion_san", d.GEOMETRIA_DEFAULT["porcentaje_entibacion_san"])),
         help="Porcentaje de la longitud SAN que necesita entibación.",
     )
     espesor_arena_san = st.number_input(
         "Espesor arena SAN (m)",
         min_value=0.0,
-        value=float(st.session_state.get("espesor_arena_san_m", GEOMETRIA_DEFAULT["espesor_arena_san_m"])),
+        value=float(st.session_state.get("espesor_arena_san_m", d.GEOMETRIA_DEFAULT["espesor_arena_san_m"])),
         help="Espesor de cama de arena para SAN.",
     )
     espesor_relleno_san = st.number_input(
         "Espesor relleno SAN (m)",
         min_value=0.0,
         value=float(
-            st.session_state.get("espesor_relleno_san_m", GEOMETRIA_DEFAULT["espesor_relleno_san_m"])
+            st.session_state.get("espesor_relleno_san_m", d.GEOMETRIA_DEFAULT["espesor_relleno_san_m"])
         ),
         help="Espesor medio valorado como relleno/albero.",
     )
@@ -501,7 +471,7 @@ with e1:
         "Espesor rodadura (m)",
         min_value=0.0,
         value=float(
-            st.session_state.get("espesor_rodadura_m", ESPESORES_REPOSICION_DEFAULT["espesor_rodadura_m"])
+            st.session_state.get("espesor_rodadura_m", d.ESPESORES_REPOSICION_DEFAULT["espesor_rodadura_m"])
         ),
     )
 with e2:
@@ -510,7 +480,7 @@ with e2:
         min_value=0.0,
         value=float(
             st.session_state.get(
-                "espesor_base_pavimento_m", ESPESORES_REPOSICION_DEFAULT["espesor_base_pavimento_m"]
+                "espesor_base_pavimento_m", d.ESPESORES_REPOSICION_DEFAULT["espesor_base_pavimento_m"]
             )
         ),
     )
@@ -519,7 +489,7 @@ with e3:
         "Espesor hormigón (m)",
         min_value=0.0,
         value=float(
-            st.session_state.get("espesor_hormigon_m", ESPESORES_REPOSICION_DEFAULT["espesor_hormigon_m"])
+            st.session_state.get("espesor_hormigon_m", d.ESPESORES_REPOSICION_DEFAULT["espesor_hormigon_m"])
         ),
     )
 with e4:
@@ -528,7 +498,7 @@ with e4:
         min_value=0.0,
         value=float(
             st.session_state.get(
-                "espesor_base_granular_m", ESPESORES_REPOSICION_DEFAULT["espesor_base_granular_m"]
+                "espesor_base_granular_m", d.ESPESORES_REPOSICION_DEFAULT["espesor_base_granular_m"]
             )
         ),
     )
@@ -694,18 +664,18 @@ with o2:
         "Seguridad y salud",
         ["fijo", "porcentaje"],
         horizontal=True,
-        index=0 if st.session_state.get("modo_ss", MODO_SS_DEFAULT) == "fijo" else 1,
+        index=0 if st.session_state.get("modo_ss", d.MODO_SS_DEFAULT) == "fijo" else 1,
     )
     importe_ss = st.number_input(
         "Importe SS (€)",
         min_value=0.0,
-        value=float(st.session_state.get("importe_ss", IMPORTE_SS_DEFAULT)),
+        value=float(st.session_state.get("importe_ss", d.IMPORTE_SS_DEFAULT)),
     )
     pct_ss = st.number_input(
         "SS (%)",
         min_value=0.0,
         max_value=100.0,
-        value=float(PCT_SS_CSV * 100),
+        value=float(d.PCT_SS_CSV * 100),
         help="Valor de referencia del CSV: 3%. Puedes editarlo si quieres.",
     )
 with o3:
@@ -713,12 +683,12 @@ with o3:
         "Gestión ambiental",
         ["fijo", "porcentaje"],
         horizontal=True,
-        index=0 if st.session_state.get("modo_ga", MODO_GA_DEFAULT) == "fijo" else 1,
+        index=0 if st.session_state.get("modo_ga", d.MODO_GA_DEFAULT) == "fijo" else 1,
     )
     importe_ga = st.number_input(
         "Importe GA (€)",
         min_value=0.0,
-        value=float(st.session_state.get("importe_ga", IMPORTE_GA_DEFAULT)),
+        value=float(st.session_state.get("importe_ga", d.IMPORTE_GA_DEFAULT)),
     )
     pct_ga = st.number_input(
         "GA (%)",
@@ -733,7 +703,7 @@ aj1, aj2 = st.columns(2)
 with aj1:
     activar_colchon = st.checkbox(
         "Añadir colchón comercial",
-        value=bool(st.session_state.get("activar_colchon", COLCHON_ACTIVO_DEFAULT)),
+        value=bool(st.session_state.get("activar_colchon", d.COLCHON_ACTIVO_DEFAULT)),
         help="No es obligatorio. Sirve solo para simulación comercial.",
     )
 with aj2:
@@ -747,24 +717,24 @@ with aj2:
 # ----------------------------------------------------------
 # Preparación de catálogos elegidos
 # ----------------------------------------------------------
-precios_aba = buscar_por_label(CATALOGO_ABA, tipo_aba)
-precios_san = buscar_por_label(CATALOGO_SAN, tipo_san)
-precio_ovoide = buscar_por_label(CATALOGO_OVOIDE, tipo_ovoide)["tuberia_m"]
+precios_aba = buscar_por_label(d.CATALOGO_ABA, tipo_aba)
+precios_san = buscar_por_label(d.CATALOGO_SAN, tipo_san)
+precio_ovoide = buscar_por_label(d.CATALOGO_OVOIDE, tipo_ovoide)["tuberia_m"]
 
-precio_dem_bordillo = buscar_por_label(DEMOLICION_BORDILLO, tipo_dem_bordillo)["precio_m"]
-precio_dem_acerado = buscar_por_label(DEMOLICION_ACERADO, tipo_dem_acerado)["precio_m2"]
-precio_dem_calzada = buscar_por_label(DEMOLICION_CALZADA, tipo_dem_calzada)["precio_m2"]
-precio_rep_acerado = buscar_por_label(ACERADOS_REPOSICION, tipo_rep_acerado)["precio_m2"]
-precio_rep_bordillo = buscar_por_label(BORDILLOS_REPOSICION, tipo_rep_bordillo)["precio_m"]
+precio_dem_bordillo = buscar_por_label(d.DEMOLICION_BORDILLO, tipo_dem_bordillo)["precio_m"]
+precio_dem_acerado = buscar_por_label(d.DEMOLICION_ACERADO, tipo_dem_acerado)["precio_m2"]
+precio_dem_calzada = buscar_por_label(d.DEMOLICION_CALZADA, tipo_dem_calzada)["precio_m2"]
+precio_rep_acerado = buscar_por_label(d.ACERADOS_REPOSICION, tipo_rep_acerado)["precio_m2"]
+precio_rep_bordillo = buscar_por_label(d.BORDILLOS_REPOSICION, tipo_rep_bordillo)["precio_m"]
 
-precio_acometida_aba = buscar_por_label(ACOMETIDAS, tipo_acometida_aba)["precio_ud"]
-precio_acometida_san = buscar_por_label(ACOMETIDAS, tipo_acometida_san)["precio_ud"]
-precio_pozo = buscar_por_label(POZOS, tipo_pozo)["precio_ud"]
-precio_imbornal = buscar_por_label(IMBORNALES, tipo_imbornal)["precio_ud"]
-precio_marco = buscar_por_label(MARCOS, tipo_marco)["precio_ud"]
-precio_tapa_pozo = buscar_por_label(MATERIALES_POZO, "Tapa de pozo de registro")["precio_ud"]
-precio_pate_pozo = buscar_por_label(MATERIALES_POZO, "Pate para pozos")["precio_ud"]
-pct_servicios = buscar_por_label(SERVICIOS_AFECTADOS, nivel_servicios)["pct"]
+precio_acometida_aba = buscar_por_label(d.ACOMETIDAS, tipo_acometida_aba)["precio_ud"]
+precio_acometida_san = buscar_por_label(d.ACOMETIDAS, tipo_acometida_san)["precio_ud"]
+precio_pozo = buscar_por_label(d.POZOS, tipo_pozo)["precio_ud"]
+precio_imbornal = buscar_por_label(d.IMBORNALES, tipo_imbornal)["precio_ud"]
+precio_marco = buscar_por_label(d.MARCOS, tipo_marco)["precio_ud"]
+precio_tapa_pozo = buscar_por_label(d.MATERIALES_POZO, "Tapa de pozo de registro")["precio_ud"]
+precio_pate_pozo = buscar_por_label(d.MATERIALES_POZO, "Pate para pozos")["precio_ud"]
+pct_servicios = buscar_por_label(d.SERVICIOS_AFECTADOS, nivel_servicios)["pct"]
 
 # ----------------------------------------------------------
 # Cálculo
@@ -820,36 +790,36 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
         rep_bordillo_m=rep_bordillo_m,
         precio_rep_bordillo_m=precio_rep_bordillo,
         rep_adoquin_m2=rep_adoquin_m2,
-        precio_rep_adoquin_m2=REPOSICION_CALZADA["adoquin_m2"],
+        precio_rep_adoquin_m2=d.REPOSICION_CALZADA["adoquin_m2"],
         rep_rodadura_m2=rep_rodadura_m2,
-        precio_rodadura_m3=REPOSICION_CALZADA["rodadura_m3"],
+        precio_rodadura_m3=d.REPOSICION_CALZADA["rodadura_m3"],
         espesor_rodadura_m=espesor_rodadura,
         rep_base_pavimento_m2=rep_base_pavimento_m2,
-        precio_base_pavimento_m3=REPOSICION_CALZADA["base_pavimento_m3"],
+        precio_base_pavimento_m3=d.REPOSICION_CALZADA["base_pavimento_m3"],
         espesor_base_pavimento_m=espesor_base_pavimento,
         rep_hormigon_m2=rep_hormigon_m2,
-        precio_hormigon_m3=REPOSICION_CALZADA["hormigon_m3"],
+        precio_hormigon_m3=d.REPOSICION_CALZADA["hormigon_m3"],
         espesor_hormigon_m=espesor_hormigon,
         rep_base_granular_m2=rep_base_granular_m2,
-        precio_base_granular_m3=REPOSICION_CALZADA["base_granular_m3"],
+        precio_base_granular_m3=d.REPOSICION_CALZADA["base_granular_m3"],
         espesor_base_granular_m=espesor_base_granular,
         uds_dem_arqueta_imbornal=uds_dem_arqueta_imbornal,
-        precio_dem_arqueta_imbornal_ud=REPOSICION_CALZADA["demolicion_arqueta_imbornal_ud"],
+        precio_dem_arqueta_imbornal_ud=d.REPOSICION_CALZADA["demolicion_arqueta_imbornal_ud"],
         uds_dem_imbornal_tuberia=uds_dem_imbornal_tuberia,
-        precio_dem_imbornal_tuberia_ud=REPOSICION_CALZADA["demolicion_imbornal_tuberia_ud"],
+        precio_dem_imbornal_tuberia_ud=d.REPOSICION_CALZADA["demolicion_imbornal_tuberia_ud"],
 
         # Excavación y transporte
-        precio_exc_mecanica_hasta_25_m3=EXCAVACION["mecanica_hasta_2_5_m3"],
-        precio_exc_mecanica_mas_25_m3=EXCAVACION["mecanica_mas_2_5_m3"],
-        precio_exc_manual_hasta_25_m3=EXCAVACION["manual_hasta_2_5_m3"],
-        precio_exc_manual_mas_25_m3=EXCAVACION["manual_mas_2_5_m3"],
-        precio_entibacion_hasta_25_m2=EXCAVACION["entibacion_blindada_hasta_2_5_m2"],
-        precio_entibacion_mas_25_m2=EXCAVACION["entibacion_blindada_mas_2_5_m2"],
-        precio_carga_m3=EXCAVACION["carga_tierras_m3"],
-        precio_transporte_m3=EXCAVACION["transporte_vertedero_m3"],
-        precio_canon_tierras_m3=EXCAVACION["canon_vertedero_tierras_m3"],
-        precio_arena_m3=EXCAVACION["arena_m3"],
-        precio_relleno_m3=EXCAVACION["relleno_albero_m3"],
+        precio_exc_mecanica_hasta_25_m3=d.EXCAVACION["mecanica_hasta_2_5_m3"],
+        precio_exc_mecanica_mas_25_m3=d.EXCAVACION["mecanica_mas_2_5_m3"],
+        precio_exc_manual_hasta_25_m3=d.EXCAVACION["manual_hasta_2_5_m3"],
+        precio_exc_manual_mas_25_m3=d.EXCAVACION["manual_mas_2_5_m3"],
+        precio_entibacion_hasta_25_m2=d.EXCAVACION["entibacion_blindada_hasta_2_5_m2"],
+        precio_entibacion_mas_25_m2=d.EXCAVACION["entibacion_blindada_mas_2_5_m2"],
+        precio_carga_m3=d.EXCAVACION["carga_tierras_m3"],
+        precio_transporte_m3=d.EXCAVACION["transporte_vertedero_m3"],
+        precio_canon_tierras_m3=d.EXCAVACION["canon_vertedero_tierras_m3"],
+        precio_arena_m3=d.EXCAVACION["arena_m3"],
+        precio_relleno_m3=d.EXCAVACION["relleno_albero_m3"],
 
         # Elementos singulares
         uds_valvulas=uds_valvulas,
@@ -905,10 +875,10 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
         f"""
         <div class="note-box">
         <b>Cómo se forma el total:</b><br>
-        Presupuesto directo → PEM → + {int(PCT_GG*100)}% GG → + {int(PCT_BI*100)}% BI → + {int(PCT_IVA*100)}% IVA.
+        Presupuesto directo → PEM → + {int(d.PCT_GG*100)}% GG → + {int(d.PCT_BI*100)}% BI → + {int(d.PCT_IVA*100)}% IVA.
         <br><br>
         <b>Control de calidad de referencia:</b> {euro(resultado["control_calidad_referencia"])}
-        ({int(PCT_CONTROL_CALIDAD*100)}% del PEM). Se muestra como referencia interna y no se suma al total.
+        ({int(d.PCT_CONTROL_CALIDAD*100)}% del PEM). Se muestra como referencia interna y no se suma al total.
         </div>
         """,
         unsafe_allow_html=True,
