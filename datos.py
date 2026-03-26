@@ -1,170 +1,65 @@
-
 from __future__ import annotations
 
-# Estructura económica del pliego (Word/PPTP)
 PCT_GG = 0.13
 PCT_BI = 0.06
 PCT_IVA = 0.21
-IMPORTE_SS_DEFAULT = 8400.00
-IMPORTE_GA_DEFAULT = 12225.00
 
-CAPITULOS = [
-    "01 OBRA CIVIL ABASTECIMIENTO",
-    "02 OBRA CIVIL SANEAMIENTO",
-    "03 PAVIMENTACIÓN ABASTECIMIENTO",
-    "04 PAVIMENTACIÓN SANEAMIENTO",
-    "05 ACOMETIDAS ABASTECIMIENTO",
-    "06 ACOMETIDAS SANEAMIENTO",
-    "07 SEGURIDAD Y SALUD",
-    "08 GESTIÓN AMBIENTAL",
+CATALOGO_ABA = [
+    {"label": "FD Ø 80 mm", "tipo": "FD", "diametro_mm": 80, "precio_m": 63.00},
+    {"label": "FD Ø 100 mm", "tipo": "FD", "diametro_mm": 100, "precio_m": 69.00},
+    {"label": "FD Ø 150 mm", "tipo": "FD", "diametro_mm": 150, "precio_m": 91.00},
+    {"label": "FD Ø 200 mm", "tipo": "FD", "diametro_mm": 200, "precio_m": 128.00},
+    {"label": "PE-100 Ø 90 mm", "tipo": "PE-100", "diametro_mm": 90, "precio_m": 39.00},
+    {"label": "PE-100 Ø 110 mm", "tipo": "PE-100", "diametro_mm": 110, "precio_m": 44.00},
+    {"label": "PE-100 Ø 160 mm", "tipo": "PE-100", "diametro_mm": 160, "precio_m": 61.00},
+    {"label": "PE-100 Ø 200 mm", "tipo": "PE-100", "diametro_mm": 200, "precio_m": 79.00},
 ]
 
-# Partidas/precios visibles en la base CSV
+CATALOGO_SAN = [
+    {"label": "Gres Ø 300 mm", "tipo": "Gres", "diametro_mm": 300, "precio_m": 126.10},
+    {"label": "Gres Ø 400 mm", "tipo": "Gres", "diametro_mm": 400, "precio_m": 214.00},
+    {"label": "Gres Ø 500 mm", "tipo": "Gres", "diametro_mm": 500, "precio_m": 311.38},
+    {"label": "Gres Ø 600 mm", "tipo": "Gres", "diametro_mm": 600, "precio_m": 412.40},
+    {"label": "Gres Ø 800 mm", "tipo": "Gres", "diametro_mm": 800, "precio_m": 1026.63},
+    {"label": "Gres Ø 1000 mm", "tipo": "Gres", "diametro_mm": 1000, "precio_m": 1279.56},
+    {"label": "HA Ø 300 mm", "tipo": "Hormigón", "diametro_mm": 300, "precio_m": 57.105},
+    {"label": "HA Ø 400 mm", "tipo": "Hormigón", "diametro_mm": 400, "precio_m": 57.105},
+    {"label": "HA Ø 500 mm", "tipo": "Hormigón", "diametro_mm": 500, "precio_m": 67.575},
+    {"label": "HA Ø 600 mm", "tipo": "Hormigón", "diametro_mm": 600, "precio_m": 76.650},
+    {"label": "HA Ø 800 mm", "tipo": "Hormigón", "diametro_mm": 800, "precio_m": 134.805},
+    {"label": "HA Ø 1000 mm", "tipo": "Hormigón", "diametro_mm": 1000, "precio_m": 185.595},
+    {"label": "HA Ø 1200 mm", "tipo": "Hormigón", "diametro_mm": 1200, "precio_m": 314.070},
+    {"label": "PVC-U Ø 315 mm", "tipo": "PVC", "diametro_mm": 315, "precio_m": 45.92},
+    {"label": "PVC-U Ø 400 mm", "tipo": "PVC", "diametro_mm": 400, "precio_m": 93.64},
+    {"label": "PVC-U Ø 500 mm", "tipo": "PVC", "diametro_mm": 500, "precio_m": 146.26},
+]
+
 EXCAVACION = {
-    "exc_mec_hasta": {"label": "Excavación mecánica ≤ 2,5 m", "precio": 3.07, "unidad": "m³"},
-    "exc_mec_mas": {"label": "Excavación mecánica > 2,5 m", "precio": 5.00, "unidad": "m³"},
-    "exc_man_hasta": {"label": "Excavación manual ≤ 2,5 m", "precio": 11.17, "unidad": "m³"},
-    "exc_man_mas": {"label": "Excavación manual > 2,5 m", "precio": 13.99, "unidad": "m³"},
-    "ent_hasta": {"label": "Entibación blindada ≤ 2,5 m", "precio": 4.27, "unidad": "m²"},
-    "ent_mas": {"label": "Entibación blindada > 2,5 m", "precio": 22.73, "unidad": "m²"},
-    "carga": {"label": "Carga de tierras", "precio": 0.34, "unidad": "m³"},
-    "transporte": {"label": "Transporte a vertedero", "precio": 5.29, "unidad": "m³"},
-    "canon_tierras": {"label": "Canon vertido tierras", "precio": 1.60, "unidad": "m³"},
-    "canon_mixto": {"label": "Canon vertido mixto", "precio": 13.22, "unidad": "m³"},
-    "arena": {"label": "Suministro de arena", "precio": 22.18, "unidad": "m³"},
-    "relleno": {"label": "Relleno de albero", "precio": 19.39, "unidad": "m³"},
+    "mec_hasta_25": 3.07,
+    "mec_mas_25": 5.00,
+    "carga": 0.34,
+    "transporte": 5.29,
+    "canon_tierras": 1.60,
+    "arena": 22.18,
+    "relleno": 19.39,
 }
 
-SAN_FAMILIAS = {
-    "Gres": [
-        {"label": "Gres Ø 300 mm", "precio": 126.10, "unidad": "m"},
-        {"label": "Gres Ø 400 mm", "precio": 214.00, "unidad": "m"},
-        {"label": "Gres Ø 500 mm", "precio": 311.38, "unidad": "m"},
-        {"label": "Gres Ø 600 mm", "precio": 412.40, "unidad": "m"},
-        {"label": "Gres Ø 800 mm", "precio": 1026.63, "unidad": "m"},
-        {"label": "Gres Ø 1000 mm", "precio": 1279.56, "unidad": "m"},
-    ],
-    "Hormigón": [
-        {"label": "HA Ø 300 mm", "precio": 57.105, "unidad": "m"},
-        {"label": "HA Ø 400 mm", "precio": 57.105, "unidad": "m"},
-        {"label": "HA Ø 500 mm", "precio": 67.575, "unidad": "m"},
-        {"label": "HA Ø 600 mm", "precio": 76.650, "unidad": "m"},
-        {"label": "HA Ø 800 mm", "precio": 134.805, "unidad": "m"},
-        {"label": "HA Ø 1000 mm", "precio": 185.595, "unidad": "m"},
-        {"label": "HA Ø 1200 mm", "precio": 314.070, "unidad": "m"},
-    ],
-    "PVC": [
-        {"label": "PVC-U Ø 315 mm", "precio": 45.92, "unidad": "m"},
-        {"label": "PVC-U Ø 400 mm", "precio": 93.64, "unidad": "m"},
-        {"label": "PVC-U Ø 500 mm", "precio": 146.26, "unidad": "m"},
-    ],
-}
-
-# Reincorporado porque el usuario confirma que sí está en el Excel
-CATALOGO_OVOIDE = [
-    {"label": "Ovoide 1200x800", "precio": 107.43, "unidad": "m"},
-    {"label": "Ovoide 1500x1000", "precio": 150.90, "unidad": "m"},
-    {"label": "Ovoide 1800x1200", "precio": 247.50, "unidad": "m"},
-]
-
-POZOS = [
-    {"label": "Ladrillo P < 2,5 m", "precio": 1043.82, "unidad": "ud"},
-    {"label": "Ladrillo P < 3,5 m", "precio": 1273.56, "unidad": "ud"},
-    {"label": "Ladrillo P < 5 m", "precio": 1714.04, "unidad": "ud"},
-    {"label": "Ladrillo P > 5 m", "precio": 2455.28, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 500", "precio": 1071.83, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 500", "precio": 1291.82, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 500", "precio": 1555.71, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 600", "precio": 1124.58, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 600", "precio": 1344.55, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 600", "precio": 1608.48, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 800", "precio": 1651.37, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 800", "precio": 1406.96, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 800", "precio": 1651.37, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1000", "precio": 2344.91, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1000", "precio": 2564.87, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1000", "precio": 2841.49, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1200", "precio": 2491.87, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1200", "precio": 2701.83, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1200", "precio": 2978.75, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1500", "precio": 3238.86, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1500", "precio": 3463.31, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1500", "precio": 3739.16, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1600", "precio": 3404.77, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1600", "precio": 3629.22, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1600", "precio": 3905.07, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1800", "precio": 3879.69, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1800", "precio": 4104.15, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1800", "precio": 4379.98, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 2000", "precio": 4168.38, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 2000", "precio": 4382.97, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 2000", "precio": 4684.38, "unidad": "ud"},
-    {"label": "Prefabricado P < 2,5 m · Tub < 2500", "precio": 5199.18, "unidad": "ud"},
-    {"label": "Prefabricado P < 3,5 m · Tub < 2500", "precio": 5439.21, "unidad": "ud"},
-    {"label": "Prefabricado P > 3,5 m · Tub < 2500", "precio": 5715.51, "unidad": "ud"},
-    {"label": "Acondicionamiento de pozo", "precio": 222.88, "unidad": "ud"},
-    {"label": "Anulación de pozo", "precio": 545.82, "unidad": "ud"},
-    {"label": "Demolición de pozo", "precio": 44.72, "unidad": "ud"},
-]
-
-IMBORNALES = [
-    {"label": "Rejilla con clapeta", "precio": 547.98, "unidad": "ud"},
-    {"label": "Rejilla sin clapeta", "precio": 547.98, "unidad": "ud"},
-    {"label": "Buzón con clapeta", "precio": 872.03, "unidad": "ud"},
-    {"label": "Buzón sin clapeta", "precio": 802.03, "unidad": "ud"},
-]
-
-MARCOS = [
-    {"label": "Marco superficie hasta 10 m²", "precio": 1683.64, "unidad": "ud"},
-    {"label": "Marco superficie hasta 20 m²", "precio": 3498.89, "unidad": "ud"},
-    {"label": "Marco superficie hasta 30 m²", "precio": 4446.06, "unidad": "ud"},
-    {"label": "Marco superficie hasta 35 m²", "precio": 5127.49, "unidad": "ud"},
-]
-
-DEMOLICION_BORDILLO = [
-    {"label": "Bordillo hidráulico", "precio": 4.44, "unidad": "m"},
-    {"label": "Bordillo granítico", "precio": 5.59, "unidad": "m"},
-]
-DEMOLICION_ACERADO = [
-    {"label": "Losa hidráulica", "precio": 14.70, "unidad": "m²"},
-    {"label": "Losa terrazo", "precio": 14.70, "unidad": "m²"},
-    {"label": "Hormigón", "precio": 14.70, "unidad": "m²"},
-]
-DEMOLICION_CALZADA = [
-    {"label": "Adoquín", "precio": 15.80, "unidad": "m²"},
-    {"label": "Aglomerado", "precio": 14.29, "unidad": "m²"},
-    {"label": "Hormigón", "precio": 17.43, "unidad": "m²"},
-]
-BORDILLOS_REPOSICION = [
-    {"label": "Bordillo de hormigón", "precio": 16.00, "unidad": "m"},
-    {"label": "Bordillo granítico", "precio": 22.90, "unidad": "m"},
-]
 ACERADOS_REPOSICION = [
-    {"label": "Losa hidráulica", "precio": 37.14, "unidad": "m²"},
-    {"label": "Losa terrazo", "precio": 43.20, "unidad": "m²"},
-    {"label": "Hormigón", "precio": 52.79, "unidad": "m²"},
-    {"label": "Granito", "precio": 84.67, "unidad": "m²"},
-]
-REPOSICION_CALZADA = {
-    "dem_arqueta": {"label": "Demolición arqueta de imbornal", "precio": 72.70, "unidad": "ud"},
-    "dem_imb_tub": {"label": "Demolición imbornal y tubería", "precio": 49.17, "unidad": "ud"},
-    "adoquin": {"label": "Reposición adoquín", "precio": 35.23, "unidad": "m²"},
-    "rodadura": {"label": "Capa de rodadura", "precio": 139.64, "unidad": "m³"},
-    "base_pav": {"label": "Base de pavimento", "precio": 117.34, "unidad": "m³"},
-    "hormigon": {"label": "Hormigón", "precio": 117.18, "unidad": "m³"},
-    "base_gran": {"label": "Base granular", "precio": 23.46, "unidad": "m³"},
-}
-
-ACOMETIDAS_ABA = [
-    {"label": "PVC - Adaptación", "precio": 446.64, "unidad": "ud"},
-    {"label": "PVC - Reposición < 6 m", "precio": 885.12, "unidad": "ud"},
-    {"label": "PVC - Reposición > 6 m", "precio": 1278.78, "unidad": "ud"},
-]
-ACOMETIDAS_SAN = [
-    {"label": "GRES - Adaptación", "precio": 485.43, "unidad": "ud"},
-    {"label": "GRES - Reposición < 6 m", "precio": 1231.79, "unidad": "ud"},
-    {"label": "GRES - Reposición > 6 m", "precio": 1759.63, "unidad": "ud"},
+    {"label": "Losa hidráulica", "precio_m2": 37.14},
+    {"label": "Losa terrazo", "precio_m2": 43.20},
+    {"label": "Hormigón", "precio_m2": 52.79},
+    {"label": "Granito", "precio_m2": 84.67},
 ]
 
-MATERIALES_POZO_TAPA = [{"label": "Tapa de pozo de registro", "precio": 160.37, "unidad": "ud"}]
-MATERIALES_POZO_PATE = [{"label": "Pate para pozos", "precio": 1.94, "unidad": "ud"}]
+BORDILLOS_REPOSICION = [
+    {"label": "Bordillo de hormigón", "precio_m": 16.00},
+    {"label": "Bordillo granítico", "precio_m": 22.90},
+]
+
+CALZADAS_REPOSICION = [
+    {"label": "Adoquín", "unidad": "m2", "precio": 35.23},
+    {"label": "Aglomerado", "unidad": "m3", "precio": 139.64},
+    {"label": "Hormigón", "unidad": "m3", "precio": 117.18},
+]
+
+ESPESOR_RELLENO_SAN = 0.40
