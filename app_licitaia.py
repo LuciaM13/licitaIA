@@ -22,59 +22,73 @@ def find_item(items: List[Dict[str, Any]], tipo: str, diametro: int) -> Dict[str
             return item
     return items[0]
 
-st.markdown("""
-<style>
-.main-card{background:linear-gradient(135deg,#153a5b 0%,#1f5f8b 100%); color:white; padding:24px; border-radius:16px; margin-bottom:18px;}
-.soft-box{background:#f6f9fc; border:1px solid #dbe7f3; color:#000; padding:14px 16px; border-radius:12px; margin-bottom:12px;}
-.note-box{background:#eef6ff; border-left:6px solid #1f5f8b; color:#000; padding:14px 16px; border-radius:10px; margin:10px 0 16px 0;}
-.price-chip{background:#ffffff; border:1px solid #dbe7f3; border-radius:999px; padding:6px 10px; display:inline-block; margin-top:6px; color:#153a5b; font-weight:600;}
-</style>
-""", unsafe_allow_html=True)
+st.title("Cálculo de presupuestos")
 
-st.markdown("""
-<div class="main-card">
-  <h2 style="margin-bottom:0.35rem;">Cálculo de presupuestos</h2>
-  <div style="font-size:1.03rem;">
-    Esta versión pide solo los datos mínimos que has indicado:
-    <b>ABA</b>, <b>SAN</b>, <b>pavimentación ABA</b>, <b>pavimentación SAN</b>,
-    <b>nº de acometidas</b> y <b>% de Seguridad / Gestión</b>.
-  </div>
-</div>
-""", unsafe_allow_html=True)
+st.header("1) Abastecimiento")
+aba_longitud_m = st.number_input("Longitud ABA (m)", 0.0, 10000.0, 100.0)
+aba_tipo = st.selectbox("Tipo ABA", sorted({x["tipo"] for x in d.CATALOGO_ABA}))
+aba_diametro = st.selectbox("Diámetro ABA", sorted({x["diametro_mm"] for x in d.CATALOGO_ABA if x["tipo"] == aba_tipo}))
+aba_profundidad_m = st.number_input("Profundidad ABA (m)", 0.0, 10.0, 1.2)
 
-st.markdown("""
-<div class="note-box">
-<b>Qué calcula automáticamente:</b><br>
-- Precio de tubería a partir del tipo y diámetro.<br>
-- Ancho de zanja según diámetro.<br>
-- Excavación, carga, transporte, canon, arena y relleno a partir de longitud + profundidad.<br>
-- En calzada, si eliges aglomerado u hormigón, convierte automáticamente de m² a m³ con un espesor estándar.<br>
-- GG 13%, BI 6% e IVA 21% al final.
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("## 1) Abastecimiento")
-a1, a2, a3, a4 = st.columns(4)
-with a1:
-    aba_longitud_m = st.number_input("ABAS Longitud (m)", min_value=0.0, value=100.0, help="Longitud de la conducción de abastecimiento.")
-with a2:
-    aba_tipo = st.selectbox("ABAS Tipo de tubería", sorted({x["tipo"] for x in d.CATALOGO_ABA}))
-with a3:
-    aba_diametro = st.selectbox("ABAS Diámetro (mm)", sorted({x["diametro_mm"] for x in d.CATALOGO_ABA if x["tipo"] == aba_tipo}))
-with a4:
-    aba_profundidad_m = st.number_input("ABAS Profundidad (m)", min_value=0.0, value=1.20)
 aba_item = find_item(d.CATALOGO_ABA, aba_tipo, aba_diametro)
-st.markdown(f'<div class="price-chip">Tubería ABA seleccionada: {aba_item["label"]} · {aba_item["precio_m"]} €/m</div>', unsafe_allow_html=True)
 
-st.markdown("## 2) Saneamiento")
-s1, s2, s3, s4 = st.columns(4)
-with s1:
-    san_longitud_m = st.number_input("SAN Longitud (m)", min_value=0.0, value=132.0)
-with s2:
-    san_tipo = st.selectbox("SAN Tipo de tubería", sorted({x["tipo"] for x in d.CATALOGO_SAN}))
-with s3:
-    san_diametro = st.selectbox("SAN Diámetro (mm)", sorted({x["diametro_mm"] for x in d.CATALOGO_SAN if x["tipo"] == san_tipo}))
-with s4:
-    san_profundidad_m = st.number_input("SAN Profundidad (m)", min_value=0.0, value=1.60)
+st.header("2) Saneamiento")
+san_longitud_m = st.number_input("Longitud SAN (m)", 0.0, 10000.0, 150.0)
+san_tipo = st.selectbox("Tipo SAN", sorted({x["tipo"] for x in d.CATALOGO_SAN}))
+san_diametro = st.selectbox("Diámetro SAN", sorted({x["diametro_mm"] for x in d.CATALOGO_SAN if x["tipo"] == san_tipo}))
+san_profundidad_m = st.number_input("Profundidad SAN (m)", 0.0, 10.0, 1.5)
+
 san_item = find_item(d.CATALOGO_SAN, san_tipo, san_diametro)
-    st.info("Introduce los datos mínimos y pulsa “Calcular presupuesto”.")
+
+st.header("3) Pavimentación ABA")
+pav_aba_acerado_m2 = st.number_input("m² acerado ABA", 0.0, 10000.0, 200.0)
+pav_aba_acerado_label = st.selectbox("Tipo acerado ABA", [x["label"] for x in d.ACERADOS_REPOSICION])
+pav_aba_bordillo_m = st.number_input("m bordillo ABA", 0.0, 10000.0, 100.0)
+pav_aba_bordillo_label = st.selectbox("Tipo bordillo ABA", [x["label"] for x in d.BORDILLOS_REPOSICION])
+
+pav_aba_acerado_item = next(x for x in d.ACERADOS_REPOSICION if x["label"] == pav_aba_acerado_label)
+pav_aba_bordillo_item = next(x for x in d.BORDILLOS_REPOSICION if x["label"] == pav_aba_bordillo_label)
+
+st.header("4) Pavimentación SAN")
+pav_san_calzada_m2 = st.number_input("m² calzada SAN", 0.0, 10000.0, 300.0)
+pav_san_calzada_label = st.selectbox("Tipo calzada SAN", [x["label"] for x in d.CALZADAS_REPOSICION])
+pav_san_acera_m2 = st.number_input("m² acera SAN", 0.0, 10000.0, 200.0)
+pav_san_acera_label = st.selectbox("Tipo acera SAN", [x["label"] for x in d.ACERADOS_REPOSICION])
+
+pav_san_calzada_item = next(x for x in d.CALZADAS_REPOSICION if x["label"] == pav_san_calzada_label)
+pav_san_acera_item = next(x for x in d.ACERADOS_REPOSICION if x["label"] == pav_san_acera_label)
+
+st.header("5) Acometidas")
+acometidas_aba_n = int(st.number_input("Nº acometidas ABA", 0, 1000, 10))
+acometidas_san_n = int(st.number_input("Nº acometidas SAN", 0, 1000, 10))
+
+st.header("6) Seguridad y gestión")
+pct_seguridad = st.number_input("Seguridad (%)", 0.0, 100.0, 3.0) / 100
+pct_gestion = st.number_input("Gestión (%)", 0.0, 100.0, 4.0) / 100
+
+if st.button("Calcular presupuesto"):
+    p = ParametrosProyecto(
+        aba_item=aba_item,
+        aba_longitud_m=aba_longitud_m,
+        aba_profundidad_m=aba_profundidad_m,
+        san_item=san_item,
+        san_longitud_m=san_longitud_m,
+        san_profundidad_m=san_profundidad_m,
+        pav_aba_acerado_m2=pav_aba_acerado_m2,
+        pav_aba_acerado_item=pav_aba_acerado_item,
+        pav_aba_bordillo_m=pav_aba_bordillo_m,
+        pav_aba_bordillo_item=pav_aba_bordillo_item,
+        pav_san_calzada_m2=pav_san_calzada_m2,
+        pav_san_calzada_item=pav_san_calzada_item,
+        pav_san_acera_m2=pav_san_acera_m2,
+        pav_san_acera_item=pav_san_acera_item,
+        acometidas_aba_n=acometidas_aba_n,
+        acometidas_san_n=acometidas_san_n,
+        pct_seguridad=pct_seguridad,
+        pct_gestion=pct_gestion,
+    )
+    r = calcular_presupuesto(p)
+    st.write("PEM:", euro(r["pem"]))
+    st.write("TOTAL:", euro(r["total"]))
+else:
+    st.info("Introduce los datos mínimos y pulsa 'Calcular presupuesto'.")
