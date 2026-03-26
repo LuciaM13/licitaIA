@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 PCT_GG = 0.13
@@ -34,16 +35,6 @@ CATALOGO_SAN = [
     {"label": "PVC-U Ø 500 mm", "tipo": "PVC", "diametro_mm": 500, "precio_m": 146.26},
 ]
 
-EXCAVACION = {
-    "mec_hasta_25": 3.07,
-    "mec_mas_25": 5.00,
-    "carga": 0.34,
-    "transporte": 5.29,
-    "canon_tierras": 1.60,
-    "arena": 22.18,
-    "relleno": 19.39,
-}
-
 ACERADOS_REPOSICION = [
     {"label": "Losa hidráulica", "precio_m2": 37.14},
     {"label": "Losa terrazo", "precio_m2": 43.20},
@@ -62,4 +53,27 @@ CALZADAS_REPOSICION = [
     {"label": "Hormigón", "unidad": "m3", "precio": 117.18},
 ]
 
+ESPESORES_CALZADA = {
+    "Aglomerado": 0.12,
+    "Hormigón": 0.15,
+}
+
+EXCAVACION = {
+    "mec_hasta_25": 3.07,
+    "mec_mas_25": 5.00,
+    "carga": 0.34,
+    "transporte": 5.29,
+    "canon_tierras": 1.60,
+    "arena": 22.18,
+    "relleno": 19.39,
+}
+
+ANCHO_ZANJA_ABA = {80: 0.60, 90: 0.60, 100: 0.65, 110: 0.65, 150: 0.75, 160: 0.80, 200: 0.90}
+ANCHO_ZANJA_SAN = {300: 0.90, 315: 0.95, 400: 1.00, 500: 1.10, 600: 1.20, 800: 1.40, 1000: 1.60, 1200: 1.80}
+
+ESPESOR_ARENA = 0.10
+ESPESOR_RELLENO_ABA = 0.30
 ESPESOR_RELLENO_SAN = 0.40
+
+PRECIO_ACOMETIDA_ABA = 446.64
+PRECIO_ACOMETIDA_SAN = 485.43
