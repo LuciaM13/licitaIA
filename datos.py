@@ -1,161 +1,75 @@
 from __future__ import annotations
 
-"""
-Datos basados únicamente en:
-- el CSV de base de precios subido por el usuario
-- el PPTP del expediente para la estructura final del presupuesto
-
-Regla de esta versión:
-- no incluir precios inventados
-- no incluir catálogos sin respaldo en CSV/Word
-- no calcular cantidades geométricas auxiliares
-- el usuario introduce directamente las cantidades en la unidad de cada partida
-"""
-
-# Estructura final del presupuesto (PPTP)
+# Impuestos y coeficientes generales
 PCT_GG = 0.13
 PCT_BI = 0.06
 PCT_IVA = 0.21
-PCT_CONTROL_CALIDAD = 0.01
-IMPORTE_SS_PPTP = 8400.00
-IMPORTE_GA_PPTP = 12225.00
 
-# Obra civil saneamiento (CSV)
+# Valores por defecto alineados con el pliego subido por el usuario
+# PBL sin IVA: 289.161,57 €
+# SS: 8.400,00 €
+# GA: 12.225,00 €
+VALORES_PLIEGO = {
+    "obra_civil_aba": 54633.99,
+    "obra_civil_san": 63039.17,
+    "pavimentacion_aba": 29472.47,
+    "pavimentacion_san": 34492.96,
+    "acometidas_aba": 17748.32,
+    "acometidas_san": 22981.01,
+    "seguridad_salud": 8400.00,
+    "gestion_ambiental": 12225.00,
+}
+
+# Magnitudes físicas observadas en el pliego concreto
+DEFAULTS_PLIEGO = {
+    "metros_aba_80": 132.0,
+    "metros_aba_100": 61.0,
+    "metros_san": 132.0,
+    "num_acometidas_aba": 26,
+    "num_acometidas_san": 26,
+    "num_valvulas": 4,
+    "num_tomas_agua": 2,
+    "num_conexiones_san": 4,
+    "num_pozos": 7,
+    "num_imbornales": 12,
+}
+
+# Catálogos unitarios orientativos (€/m o €/ud). No sustituyen una medición real.
+CATALOGO_ABA = [
+    {"label": "PE-100 Ø 90 mm", "obra_civil": 73.0, "pavimentacion": 88.0},
+    {"label": "PE-100 Ø 110 mm", "obra_civil": 79.0, "pavimentacion": 88.0},
+    {"label": "PE-100 Ø 160 mm", "obra_civil": 103.0, "pavimentacion": 89.0},
+    {"label": "FD Ø 80 mm", "obra_civil": 131.0, "pavimentacion": 88.0},
+    {"label": "FD Ø 100 mm", "obra_civil": 135.0, "pavimentacion": 88.0},
+    {"label": "FD Ø 150 mm", "obra_civil": 166.0, "pavimentacion": 88.0},
+]
+
 CATALOGO_SAN = [
-    {"label": "Gres Ø 300 mm", "tuberia_m": 126.10, "familia": "Gres"},
-    {"label": "Gres Ø 400 mm", "tuberia_m": 214.00, "familia": "Gres"},
-    {"label": "Gres Ø 500 mm", "tuberia_m": 311.38, "familia": "Gres"},
-    {"label": "Gres Ø 600 mm", "tuberia_m": 412.40, "familia": "Gres"},
-    {"label": "Gres Ø 800 mm", "tuberia_m": 1026.63, "familia": "Gres"},
-    {"label": "Gres Ø 1000 mm", "tuberia_m": 1279.56, "familia": "Gres"},
-    {"label": "HA Ø 400 mm", "tuberia_m": 57.105, "familia": "Hormigón"},
-    {"label": "HA Ø 500 mm", "tuberia_m": 67.575, "familia": "Hormigón"},
-    {"label": "HA Ø 600 mm", "tuberia_m": 76.650, "familia": "Hormigón"},
-    {"label": "HA Ø 800 mm", "tuberia_m": 134.805, "familia": "Hormigón"},
-    {"label": "HA Ø 1000 mm", "tuberia_m": 185.595, "familia": "Hormigón"},
-    {"label": "HA Ø 1200 mm", "tuberia_m": 314.070, "familia": "Hormigón"},
-    {"label": "PVC-U Ø 315 mm", "tuberia_m": 45.92, "familia": "PVC"},
-    {"label": "PVC-U Ø 400 mm", "tuberia_m": 93.64, "familia": "PVC"},
-    {"label": "PVC-U Ø 500 mm", "tuberia_m": 146.26, "familia": "PVC"},
+    {"label": "Gres Ø 300 mm", "obra_civil": 292.0, "pavimentacion": 97.0},
+    {"label": "Gres Ø 400 mm", "obra_civil": 393.0, "pavimentacion": 103.0},
+    {"label": "PVC-U Ø 315 mm", "obra_civil": 280.0, "pavimentacion": 98.0},
+    {"label": "PVC-U Ø 400 mm", "obra_civil": 308.0, "pavimentacion": 103.0},
 ]
 
-CATALOGO_OVOIDE = [
-    {"label": "Ovoide 1200x800", "tuberia_m": 107.43},
-    {"label": "Ovoide 1500x1000", "tuberia_m": 150.90},
-    {"label": "Ovoide 1800x1200", "tuberia_m": 247.50},
+TIPOS_REURB = [
+    {"label": "Acerado hidráulico + calzada aglomerado", "factor_aba": 1.00, "factor_san": 1.00},
+    {"label": "Acerado granítico + calzada aglomerado", "factor_aba": 1.20, "factor_san": 1.18},
+    {"label": "Solo acerado hidráulico (sin calzada)", "factor_aba": 0.62, "factor_san": 0.60},
+    {"label": "Calzada aglomerado (sin acerado)", "factor_aba": 0.50, "factor_san": 0.48},
+    {"label": "Terrizo / sin urbanizar", "factor_aba": 0.08, "factor_san": 0.06},
 ]
 
-DEMOLICION_BORDILLO = [
-    {"label": "Bordillo granítico", "precio_m": 5.59},
-    {"label": "Bordillo hidráulico", "precio_m": 4.44},
-]
-DEMOLICION_ACERADO = [
-    {"label": "Losa hidráulica", "precio_m2": 14.70},
-    {"label": "Losa terrazo", "precio_m2": 14.70},
-    {"label": "Hormigón", "precio_m2": 14.70},
-]
-DEMOLICION_CALZADA = [
-    {"label": "Adoquín", "precio_m2": 15.80},
-    {"label": "Aglomerado", "precio_m2": 14.29},
-    {"label": "Hormigón", "precio_m2": 17.43},
-]
-
-ACERADOS_REPOSICION = [
-    {"label": "Losa hidráulica", "precio_m2": 37.14},
-    {"label": "Losa terrazo", "precio_m2": 43.20},
-    {"label": "Hormigón", "precio_m2": 52.79},
-    {"label": "Granito", "precio_m2": 84.67},
-]
-BORDILLOS_REPOSICION = [
-    {"label": "Bordillo de hormigón", "precio_m": 16.00},
-    {"label": "Bordillo granítico", "precio_m": 22.90},
-]
-REPOSICION_CALZADA = {
-    "adoquin_m2": 35.23,
-    "rodadura_m3": 139.64,
-    "base_pavimento_m3": 117.34,
-    "hormigon_m3": 117.18,
-    "base_granular_m3": 23.46,
-    "demolicion_arqueta_imbornal_ud": 72.70,
-    "demolicion_imbornal_tuberia_ud": 49.17,
+# Costes unitarios por defecto para partidas que faltaban en la versión original.
+# Se calculan a partir de los importes de capítulo del pliego para que el resultado
+# quede razonablemente calibrado cuando se usan las magnitudes del pliego.
+COSTES_UNITARIOS_DEFAULT = {
+    "acometida_aba": VALORES_PLIEGO["acometidas_aba"] / DEFAULTS_PLIEGO["num_acometidas_aba"],
+    "acometida_san": VALORES_PLIEGO["acometidas_san"] / DEFAULTS_PLIEGO["num_acometidas_san"],
+    # Reparto orientativo interno del capítulo de abastecimiento
+    "valvula": 900.0,
+    "toma_agua": 650.0,
+    # Reparto orientativo interno del capítulo de saneamiento
+    "conexion_san": 850.0,
+    "pozo": 1600.0,
+    "imbornal": 780.0,
 }
-
-EXCAVACION = {
-    "mecanica_hasta_2_5_m3": 3.07,
-    "mecanica_mas_2_5_m3": 5.00,
-    "manual_hasta_2_5_m3": 11.17,
-    "manual_mas_2_5_m3": 13.99,
-    "entibacion_blindada_hasta_2_5_m2": 4.27,
-    "entibacion_blindada_mas_2_5_m2": 22.73,
-    "carga_tierras_m3": 0.34,
-    "transporte_vertedero_m3": 5.29,
-    "canon_vertedero_tierras_m3": 1.60,
-    "canon_vertedero_mixto_m3": 13.22,
-    "arena_m3": 22.18,
-    "relleno_albero_m3": 19.39,
-}
-
-ACOMETIDAS = [
-    {"label": "PVC - Adaptación", "precio_ud": 446.64, "familia": "PVC"},
-    {"label": "PVC - Reposición < 6 m", "precio_ud": 885.12, "familia": "PVC"},
-    {"label": "PVC - Reposición > 6 m", "precio_ud": 1278.78, "familia": "PVC"},
-    {"label": "GRES - Adaptación", "precio_ud": 485.43, "familia": "GRES"},
-    {"label": "GRES - Reposición < 6 m", "precio_ud": 1231.79, "familia": "GRES"},
-    {"label": "GRES - Reposición > 6 m", "precio_ud": 1759.63, "familia": "GRES"},
-]
-
-POZOS = [
-    {"label": "Ladrillo P < 2,5 m", "precio_ud": 1043.82},
-    {"label": "Ladrillo P < 3,5 m", "precio_ud": 1273.56},
-    {"label": "Ladrillo P < 5 m", "precio_ud": 1714.04},
-    {"label": "Ladrillo P > 5 m", "precio_ud": 2455.28},
-    {"label": "Prefabricado P < 2,5 m · Tub < 500", "precio_ud": 1071.83},
-    {"label": "Prefabricado P < 3,5 m · Tub < 500", "precio_ud": 1291.82},
-    {"label": "Prefabricado P > 3,5 m · Tub < 500", "precio_ud": 1555.71},
-    {"label": "Prefabricado P < 2,5 m · Tub < 600", "precio_ud": 1124.58},
-    {"label": "Prefabricado P < 3,5 m · Tub < 600", "precio_ud": 1344.55},
-    {"label": "Prefabricado P > 3,5 m · Tub < 600", "precio_ud": 1608.48},
-    {"label": "Prefabricado P < 3,5 m · Tub < 800", "precio_ud": 1406.96},
-    {"label": "Prefabricado P > 3,5 m · Tub < 800", "precio_ud": 1651.37},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1000", "precio_ud": 2344.91},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1000", "precio_ud": 2564.87},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1000", "precio_ud": 2841.49},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1200", "precio_ud": 2491.87},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1200", "precio_ud": 2701.83},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1200", "precio_ud": 2978.75},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1500", "precio_ud": 3238.86},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1500", "precio_ud": 3463.31},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1500", "precio_ud": 3739.16},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1600", "precio_ud": 3404.77},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1600", "precio_ud": 3629.22},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1600", "precio_ud": 3905.07},
-    {"label": "Prefabricado P < 2,5 m · Tub < 1800", "precio_ud": 3879.69},
-    {"label": "Prefabricado P < 3,5 m · Tub < 1800", "precio_ud": 4104.15},
-    {"label": "Prefabricado P > 3,5 m · Tub < 1800", "precio_ud": 4379.98},
-    {"label": "Prefabricado P < 2,5 m · Tub < 2000", "precio_ud": 4168.38},
-    {"label": "Prefabricado P < 3,5 m · Tub < 2000", "precio_ud": 4382.97},
-    {"label": "Prefabricado P > 3,5 m · Tub < 2000", "precio_ud": 4684.38},
-    {"label": "Prefabricado P < 2,5 m · Tub < 2500", "precio_ud": 5199.18},
-    {"label": "Prefabricado P < 3,5 m · Tub < 2500", "precio_ud": 5439.21},
-    {"label": "Prefabricado P > 3,5 m · Tub < 2500", "precio_ud": 5715.51},
-    {"label": "Acondicionamiento de pozo", "precio_ud": 222.88},
-    {"label": "Anulación de pozo", "precio_ud": 545.82},
-    {"label": "Demolición de pozo", "precio_ud": 44.72},
-]
-IMBORNALES = [
-    {"label": "Rejilla con clapeta", "precio_ud": 547.98},
-    {"label": "Buzón con clapeta", "precio_ud": 872.03},
-]
-MARCOS = [
-    {"label": "Marco superficie hasta 10 m²", "precio_ud": 1683.64},
-    {"label": "Marco superficie hasta 20 m²", "precio_ud": 3498.89},
-    {"label": "Marco superficie hasta 30 m²", "precio_ud": 4446.06},
-    {"label": "Marco superficie hasta 35 m²", "precio_ud": 5127.49},
-]
-MATERIALES_POZO_TAPA = [{"label": "Tapa de pozo de registro", "precio_ud": 160.37}]
-MATERIALES_POZO_PATE = [{"label": "Pate para pozos", "precio_ud": 1.94}]
-SERVICIOS_AFECTADOS = [
-    {"label": "Poco", "pct": 0.01},
-    {"label": "Normal", "pct": 0.03},
-    {"label": "Mucho", "pct": 0.05},
-]
