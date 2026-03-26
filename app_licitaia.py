@@ -56,14 +56,13 @@ st.markdown("""
 <div class="note-box">
 <b>Cómo usarla:</b><br>
 1. Introduce las cantidades directamente en la unidad de la base: m, m², m³ o ud.<br>
-2. En saneamiento, primero eliges la <b>familia</b> y luego el <b>tipo</b> para evitar errores.<br>
-3. Si tu hoja usa <b>ovoides</b>, ya puedes añadirlos otra vez porque están incluidos en esta versión.<br>
-4. La app recompone el presupuesto final por capítulos y deja un texto listo para copiar a Word.
+2. En saneamiento, primero eliges la <b>familia</b> y luego el <b>tipo</b>.<br>
+3. La app recompone el presupuesto final por capítulos y deja un texto listo para copiar a Word.
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("## 1) Capítulo 01 · Obra civil abastecimiento")
-st.markdown('<div class="soft-box">Solo aparecen partidas de la base. No se añaden precios manuales.</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-box">Solo aparecen partidas de la base.</div>', unsafe_allow_html=True)
 c1, c2 = st.columns(2)
 cap01 = {}
 with c1:
@@ -76,7 +75,7 @@ with c2:
         cap01[key] = input_qty(item["label"], item["unidad"], f"c01_{key}", f"Precio base: {item['precio']} €/ {item['unidad']}")
 
 st.markdown("## 2) Capítulo 02 · Obra civil saneamiento")
-st.markdown('<div class="soft-box">Aquí eliges la familia de la tubería SAN y, si aplica, también el tipo de ovoide. Solo se muestran opciones existentes en la base.</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-box">Aquí eliges la familia de la tubería SAN y, si aplica, también el tipo de ovoide. </div>', unsafe_allow_html=True)
 
 left, right = st.columns(2)
 with left:
