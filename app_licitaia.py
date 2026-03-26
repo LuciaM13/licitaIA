@@ -58,6 +58,10 @@ def euro(value: float) -> str:
     return f"{s} €"
 
 
+def format_number(value: float) -> str:
+    return f"{float(value):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def money_to_words_es(value: float) -> str:
     value = round(float(value), 2)
     entero = int(math.floor(value))
@@ -104,14 +108,10 @@ def load_catalog() -> pd.DataFrame:
         )
 
     df = df.copy()
-    df["section"] = df["section"].fillna("").astype(str)
-    df["subsection"] = df["subsection"].fillna("").astype(str)
-    df["name"] = df["name"].fillna("").astype(str)
-    df["unit"] = df["unit"].fillna("").astype(str)
-    df["code"] = df["code"].fillna("").astype(str)
-    df["comments"] = df["comments"].fillna("").astype(str)
-    df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0.0)
+    for col in ["section", "subsection", "name", "unit", "code", "comments"]:
+        df[col] = df[col].fillna("").astype(str)
 
+    df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0.0)
     df["display_name"] = (
         df["code"].where(df["code"].str.strip() != "", "SIN CÓDIGO")
         + " · "
@@ -123,247 +123,429 @@ def load_catalog() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def render_summary_blocks(summary: Dict[str, float]) -> None:
+def inject_styles() -> None:
+    st.markdown(
+        """
+        <style>
+        .block-container {
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
+            max-width: 1200px;
+        }
+
+        .hero-box {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 1.4rem 1.6rem;
+            border-radius: 18px;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .hero-title {
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .hero-subtitle {
+            opacity: 0.92;
+            font-size: 0.97rem;
+            line-height: 1.45;
+        }
+
+        .doc-sheet {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 22px;
+            padding: 2rem 2.2rem;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+            margin-top: 0.8rem;
+        }
+
+        .chapter-card {
+            text-align: center;
+            padding: 1rem 0.8rem 1.15rem 0.8rem;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .chapter-label {
+            font-size: 0.95rem;
+            color: #475569;
+            margin-bottom: 0.15rem;
+            letter-spacing: 0.02em;
+        }
+
+        .chapter-name {
+            font-size: 1.08rem;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+
+        .chapter-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .sum-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.72rem 0;
+            border-bottom: 1px dashed #e5e7eb;
+            align-items: baseline;
+        }
+
+        .sum-row:last-child {
+            border-bottom: none;
+        }
+
+        .sum-label {
+            font-size: 1rem;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .sum-value {
+            font-size: 1.08rem;
+            color: #0f172a;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .grand-total {
+            margin-top: 0.85rem;
+            padding-top: 0.85rem;
+            border-top: 2px solid #cbd5e1;
+        }
+
+        .legal-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem 1.1rem;
+            margin-top: 1.2rem;
+            line-height: 1.55;
+        }
+
+        .mini-help {
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+
+        div[data-testid="stMetric"] {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+        }
+
+        div[data-testid="stMetricValue"] {
+            font-size: 1.45rem;
+        }
+
+        .section-title {
+            margin-top: 0.25rem;
+            margin-bottom: 0.6rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_summary_document(chapters: Dict[str, float], summary: Dict[str, float]) -> None:
+    chapter_html = []
+    for chapter_id, (chapter_name, _) in CHAPTER_DEFAULTS.items():
+        chapter_html.append(
+            f"""
+            <div class="chapter-card">
+                <div class="chapter-label">Capítulo: {chapter_id}</div>
+                <div class="chapter-name">{chapter_name}</div>
+                <div class="chapter-value">{euro(chapters[chapter_id])}</div>
+            </div>
+            """
+        )
+
+    summary_rows = [
+        ("Presupuesto de Ejecución Material", summary["pem"]),
+        ("13 % Gastos Generales", summary["gg"]),
+        ("6 % Beneficio Industrial", summary["bi"]),
+        ("Presupuesto Base de Licitación excluido IVA", summary["pel"]),
+        ("21 % IVA", summary["iva"]),
+    ]
+
+    rows_html = "".join(
+        f"""
+        <div class="sum-row">
+            <div class="sum-label">{label}</div>
+            <div class="sum-value">{euro(value)}</div>
+        </div>
+        """
+        for label, value in summary_rows
+    )
+
+    total_words = money_to_words_es(summary["total"]).upper()
+    st.markdown(
+        f"""
+        <div class="doc-sheet">
+            {''.join(chapter_html)}
+            <div style="height: 1.3rem;"></div>
+            {rows_html}
+            <div class="sum-row grand-total">
+                <div class="sum-label">Presupuesto Base de Licitación incluido IVA</div>
+                <div class="sum-value" style="font-size:1.22rem;">{euro(summary["total"])}</div>
+            </div>
+
+            <div class="legal-box">
+                <strong>ASCIENDE EL PRESUPUESTO BASE DE LICITACIÓN A LA EXPRESADA CANTIDAD DE</strong>
+                {total_words} ({euro(summary["total"])}).
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_metric_strip(summary: Dict[str, float]) -> None:
     col1, col2, col3 = st.columns(3)
     col1.metric("PEM", euro(summary["pem"]))
     col2.metric("Base sin IVA", euro(summary["pel"]))
     col3.metric("Total con IVA", euro(summary["total"]))
 
-    st.markdown("---")
-    st.markdown(f"**Presupuesto de Ejecución Material**  \n{euro(summary['pem'])}")
-    st.markdown(f"**13 % Gastos Generales**  \n{euro(summary['gg'])}")
-    st.markdown(f"**6 % Beneficio Industrial**  \n{euro(summary['bi'])}")
-    st.markdown(f"**Presupuesto Base de Licitación excluido IVA**  \n{euro(summary['pel'])}")
-    st.markdown(f"**21 % IVA**  \n{euro(summary['iva'])}")
-    st.markdown(f"**Presupuesto Base de Licitación incluido IVA**  \n{euro(summary['total'])}")
 
-    texto = money_to_words_es(summary["total"]).upper()
-    st.info(
-        "ASCIENDE EL PRESUPUESTO BASE DE LICITACIÓN A LA EXPRESADA CANTIDAD DE "
-        f"{texto} ({euro(summary['total'])})."
+def main() -> None:
+    st.set_page_config(
+        page_title="LicitAIA · Calculadora de presupuesto",
+        page_icon="💶",
+        layout="wide",
+    )
+    inject_styles()
+
+    st.markdown(
+        """
+        <div class="hero-box">
+            <div class="hero-title">💶 LicitAIA · Calculadora de presupuesto</div>
+            <div class="hero-subtitle">
+                Introduce datos y genera el presupuesto con formato más parecido a un documento de licitación:
+                capítulos, PEM, gastos generales, beneficio industrial, IVA y texto final en letras.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-
-def render_chapter_output(chapters: Dict[str, float]) -> None:
-    for chapter_id, (chapter_name, _) in CHAPTER_DEFAULTS.items():
-        with st.container(border=True):
-            st.markdown(f"**Capítulo: {chapter_id}**")
-            st.markdown(chapter_name)
-            st.markdown(f"### {euro(chapters[chapter_id])}")
-
-
-st.set_page_config(
-    page_title="LicitAIA · Calculadora de presupuesto",
-    page_icon="💶",
-    layout="wide",
-)
-
-st.markdown(
-    """
-    <style>
-    .block-container {padding-top: 2rem; padding-bottom: 2rem;}
-    div[data-testid="stMetricValue"] {font-size: 1.55rem;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.title("💶 LicitAIA · Calculadora de presupuesto")
-st.caption("Aplicación en Streamlit basada únicamente en los datos del CSV y en el resumen de capítulos proporcionado.")
-
-with st.sidebar:
-    st.header("Configuración")
-    mode = st.radio(
-        "Modo de trabajo",
-        ["Resumen por capítulos", "Detalle desde catálogo CSV"],
-    )
-    st.markdown("---")
-    st.write("**Parámetros de cálculo**")
-    st.write(f"- Gastos generales: {int(GG_PCT * 100)} %")
-    st.write(f"- Beneficio industrial: {int(BI_PCT * 100)} %")
-    st.write(f"- IVA: {int(IVA_PCT * 100)} %")
-
-try:
-    catalog = load_catalog()
-except Exception as exc:
-    st.error(f"No se ha podido cargar el catálogo: {exc}")
-    st.stop()
-
-if mode == "Resumen por capítulos":
-    st.subheader("Resumen por capítulos")
-    st.write(
-        "Introduce o revisa los importes de cada capítulo. "
-        "Los capítulos 07 y 08 se pueden activar o desactivar con casilla tipo S/N."
-    )
-
-    chapters: Dict[str, float] = {}
-    left, right = st.columns(2)
-
-    for idx, (chapter_id, (chapter_name, default_value)) in enumerate(CHAPTER_DEFAULTS.items()):
-        container = left if idx % 2 == 0 else right
-        with container:
-            with st.container(border=True):
-                st.markdown(f"**Capítulo {chapter_id}**")
-                st.write(chapter_name)
-
-                if chapter_id in {"07", "08"}:
-                    enabled = st.checkbox(
-                        f"Incluir {chapter_name}",
-                        value=True,
-                        key=f"enabled_{chapter_id}",
-                    )
-                    value = st.number_input(
-                        "Importe (€)",
-                        min_value=0.0,
-                        value=float(default_value),
-                        step=100.0,
-                        disabled=not enabled,
-                        key=f"chapter_{chapter_id}",
-                    )
-                    chapters[chapter_id] = float(value) if enabled else 0.0
-                else:
-                    value = st.number_input(
-                        "Importe (€)",
-                        min_value=0.0,
-                        value=float(default_value),
-                        step=100.0,
-                        key=f"chapter_{chapter_id}",
-                    )
-                    chapters[chapter_id] = float(value)
-
-                st.caption(f"Valor actual: {euro(chapters[chapter_id])}")
-
-    summary = compute_summary(chapters)
-
-    st.subheader("Resultado")
-    render_chapter_output(chapters)
-    render_summary_blocks(summary)
-
-else:
-    st.subheader("Detalle desde catálogo CSV")
-    st.write(
-        "Selecciona partidas del catálogo, filtra por sección y mete cantidades. "
-        "Las partidas tipo S/N se activan con checkbox."
-    )
-
-    filter_col1, filter_col2 = st.columns([1, 2])
-    with filter_col1:
-        selected_sections = st.multiselect(
-            "Filtrar por sección",
-            sorted([s for s in catalog["section"].unique() if s]),
-            default=[],
+    with st.sidebar:
+        st.header("Configuración")
+        mode = st.radio(
+            "Modo de trabajo",
+            ["Resumen por capítulos", "Detalle desde catálogo CSV"],
         )
-    with filter_col2:
-        search_text = st.text_input("Buscar por código o nombre", placeholder="Ej. 1.2.05, bordillo, zanja...")
+        st.markdown("---")
+        st.write("**Parámetros de cálculo**")
+        st.write(f"- Gastos generales: {int(GG_PCT * 100)} %")
+        st.write(f"- Beneficio industrial: {int(BI_PCT * 100)} %")
+        st.write(f"- IVA: {int(IVA_PCT * 100)} %")
+        st.caption("Los porcentajes están fijos para mantener el cálculo igual que en el ejemplo.")
 
-    filtered = catalog.copy()
-    if selected_sections:
-        filtered = filtered[filtered["section"].isin(selected_sections)]
-    if search_text.strip():
-        q = search_text.strip().lower()
-        filtered = filtered[
-            filtered["display_name"].str.lower().str.contains(q)
-            | filtered["comments"].str.lower().str.contains(q)
-        ]
+    try:
+        catalog = load_catalog()
+    except Exception as exc:
+        st.error(f"No se ha podido cargar el catálogo: {exc}")
+        st.stop()
 
-    st.caption(f"Partidas encontradas: {len(filtered)}")
-
-    selected_ids = st.multiselect(
-        "Selecciona partidas",
-        options=list(filtered.index),
-        format_func=lambda idx: filtered.loc[idx, "display_name"],
-        placeholder="Elige una o varias partidas",
-    )
-
-    chapter_totals = {k: 0.0 for k in CHAPTER_DEFAULTS.keys()}
-    detail_rows: List[dict] = []
-
-    for idx in selected_ids:
-        row = filtered.loc[idx]
-        chapter_id = CATALOG_CHAPTER_MAP.get(str(row["section"]), "02")
-
-        with st.container(border=True):
-            st.markdown(f"**{row['display_name']}**")
-            st.caption(f"Sección: {row['section']} · Subsección: {row['subsection']} · Capítulo estimado: {chapter_id}")
-
-            if row["comments"].strip():
-                with st.expander("Ver observaciones"):
-                    st.write(row["comments"])
-
-            apply_row = st.checkbox(
-                "Aplicar esta partida (S/N)",
-                value=True,
-                key=f"apply_{idx}",
-            )
-
-            qty = 0.0
-            if apply_row:
-                default_qty = 1.0 if str(row["unit"]).lower() in {"ud", "%"} else 0.0
-                step = 1.0 if str(row["unit"]).lower() in {"ud", "%"} else 0.5
-                qty = st.number_input(
-                    f"Cantidad [{row['unit']}]",
-                    min_value=0.0,
-                    value=float(default_qty),
-                    step=float(step),
-                    key=f"qty_{idx}",
-                )
-
-            amount = round(float(qty) * float(row["price"]), 2)
-            chapter_totals[chapter_id] += amount
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Precio unitario", euro(row["price"]))
-            c2.metric("Cantidad", f"{qty:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            c3.metric("Importe", euro(amount))
-
-            detail_rows.append(
-                {
-                    "Capítulo": chapter_id,
-                    "Código": row["code"],
-                    "Sección": row["section"],
-                    "Subsección": row["subsection"],
-                    "Partida": row["name"],
-                    "Unidad": row["unit"],
-                    "Precio unitario (€)": round(float(row["price"]), 2),
-                    "Cantidad": round(float(qty), 2),
-                    "Importe (€)": amount,
-                }
-            )
-
-    with st.expander("Añadir importes manuales por capítulos no cubiertos por el CSV"):
-        st.write(
-            "El CSV no contiene todas las partidas necesarias para todos los capítulos. "
-            "Aquí puedes completar importes sin salir de la aplicación."
+    if mode == "Resumen por capítulos":
+        st.markdown('<div class="section-title">Resumen por capítulos</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="mini-help">Puedes revisar los importes manualmente. '
+            'Los capítulos 07 y 08 se pueden activar o desactivar con casilla tipo S/N.</div>',
+            unsafe_allow_html=True,
         )
-        adj_left, adj_right = st.columns(2)
-        for idx, (chapter_id, (chapter_name, _)) in enumerate(CHAPTER_DEFAULTS.items()):
-            target = adj_left if idx % 2 == 0 else adj_right
+
+        chapters: Dict[str, float] = {}
+        left, right = st.columns(2)
+
+        for idx, (chapter_id, (chapter_name, default_value)) in enumerate(CHAPTER_DEFAULTS.items()):
+            target = left if idx % 2 == 0 else right
             with target:
-                supplement = st.number_input(
-                    f"Ajuste manual {chapter_id} · {chapter_name}",
-                    min_value=0.0,
-                    value=0.0,
-                    step=100.0,
-                    key=f"supp_{chapter_id}",
-                )
-                chapter_totals[chapter_id] += float(supplement)
+                with st.container(border=True):
+                    st.markdown(f"**Capítulo {chapter_id}**")
+                    st.write(chapter_name)
 
-    summary = compute_summary(chapter_totals)
+                    if chapter_id in {"07", "08"}:
+                        enabled = st.checkbox(
+                            f"Incluir {chapter_name}",
+                            value=True,
+                            key=f"enabled_{chapter_id}",
+                        )
+                        value = st.number_input(
+                            "Importe (€)",
+                            min_value=0.0,
+                            value=float(default_value),
+                            step=100.0,
+                            disabled=not enabled,
+                            key=f"chapter_{chapter_id}",
+                        )
+                        chapters[chapter_id] = float(value) if enabled else 0.0
+                    else:
+                        value = st.number_input(
+                            "Importe (€)",
+                            min_value=0.0,
+                            value=float(default_value),
+                            step=100.0,
+                            key=f"chapter_{chapter_id}",
+                        )
+                        chapters[chapter_id] = float(value)
 
-    st.subheader("Desglose de partidas")
-    if detail_rows:
-        detail_df = pd.DataFrame(detail_rows)
-        st.dataframe(detail_df, use_container_width=True, hide_index=True)
-        csv_export = detail_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Descargar desglose en CSV",
-            data=csv_export,
-            file_name="desglose_presupuesto.csv",
-            mime="text/csv",
-        )
+                    st.caption(f"Valor actual: {euro(chapters[chapter_id])}")
+
+        summary = compute_summary(chapters)
+
+        st.markdown('<div class="section-title">Vista previa del presupuesto</div>', unsafe_allow_html=True)
+        render_metric_strip(summary)
+        render_summary_document(chapters, summary)
+
     else:
-        st.warning("Todavía no has seleccionado ninguna partida.")
+        st.markdown('<div class="section-title">Detalle desde catálogo CSV</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="mini-help">Selecciona partidas del catálogo, filtra por sección y mete cantidades. '
+            'Las partidas tipo S/N se activan con checkbox.</div>',
+            unsafe_allow_html=True,
+        )
 
-    st.subheader("Resumen final")
-    render_chapter_output(chapter_totals)
-    render_summary_blocks(summary)
+        filter_col1, filter_col2 = st.columns([1, 2])
+        with filter_col1:
+            selected_sections = st.multiselect(
+                "Filtrar por sección",
+                sorted([s for s in catalog["section"].unique() if s]),
+                default=[],
+            )
+        with filter_col2:
+            search_text = st.text_input(
+                "Buscar por código o nombre",
+                placeholder="Ej. 1.2.05, bordillo, zanja...",
+            )
+
+        filtered = catalog.copy()
+        if selected_sections:
+            filtered = filtered[filtered["section"].isin(selected_sections)]
+        if search_text.strip():
+            q = search_text.strip().lower()
+            filtered = filtered[
+                filtered["display_name"].str.lower().str.contains(q, na=False)
+                | filtered["comments"].str.lower().str.contains(q, na=False)
+            ]
+
+        st.caption(f"Partidas encontradas: {len(filtered)}")
+
+        selected_ids = st.multiselect(
+            "Selecciona partidas",
+            options=list(filtered.index),
+            format_func=lambda idx: filtered.loc[idx, "display_name"],
+            placeholder="Elige una o varias partidas",
+        )
+
+        chapter_totals = {k: 0.0 for k in CHAPTER_DEFAULTS.keys()}
+        detail_rows: List[dict] = []
+
+        for idx in selected_ids:
+            row = filtered.loc[idx]
+            chapter_id = CATALOG_CHAPTER_MAP.get(str(row["section"]), "02")
+
+            with st.container(border=True):
+                st.markdown(f"**{row['display_name']}**")
+                st.caption(
+                    f"Sección: {row['section']} · Subsección: {row['subsection']} · "
+                    f"Capítulo estimado: {chapter_id}"
+                )
+
+                if row["comments"].strip():
+                    with st.expander("Ver observaciones"):
+                        st.write(row["comments"])
+
+                apply_row = st.checkbox(
+                    "Aplicar esta partida (S/N)",
+                    value=True,
+                    key=f"apply_{idx}",
+                )
+
+                qty = 0.0
+                if apply_row:
+                    default_qty = 1.0 if str(row["unit"]).lower() in {"ud", "%"} else 0.0
+                    step = 1.0 if str(row["unit"]).lower() in {"ud", "%"} else 0.5
+                    qty = st.number_input(
+                        f"Cantidad [{row['unit']}]",
+                        min_value=0.0,
+                        value=float(default_qty),
+                        step=float(step),
+                        key=f"qty_{idx}",
+                    )
+
+                amount = round(float(qty) * float(row["price"]), 2)
+                chapter_totals[chapter_id] += amount
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Precio unitario", euro(row["price"]))
+                c2.metric("Cantidad", format_number(qty))
+                c3.metric("Importe", euro(amount))
+
+                detail_rows.append(
+                    {
+                        "Capítulo": chapter_id,
+                        "Código": row["code"],
+                        "Sección": row["section"],
+                        "Subsección": row["subsection"],
+                        "Partida": row["name"],
+                        "Unidad": row["unit"],
+                        "Precio unitario (€)": round(float(row["price"]), 2),
+                        "Cantidad": round(float(qty), 2),
+                        "Importe (€)": amount,
+                    }
+                )
+
+        with st.expander("Añadir importes manuales por capítulos no cubiertos por el CSV"):
+            st.write(
+                "El CSV no contiene todas las partidas necesarias para todos los capítulos. "
+                "Aquí puedes completar importes sin salir de la aplicación."
+            )
+            adj_left, adj_right = st.columns(2)
+            for idx, (chapter_id, (chapter_name, _)) in enumerate(CHAPTER_DEFAULTS.items()):
+                target = adj_left if idx % 2 == 0 else adj_right
+                with target:
+                    supplement = st.number_input(
+                        f"Ajuste manual {chapter_id} · {chapter_name}",
+                        min_value=0.0,
+                        value=0.0,
+                        step=100.0,
+                        key=f"supp_{chapter_id}",
+                    )
+                    chapter_totals[chapter_id] += float(supplement)
+
+        summary = compute_summary(chapter_totals)
+
+        st.markdown('<div class="section-title">Desglose de partidas</div>', unsafe_allow_html=True)
+        if detail_rows:
+            detail_df = pd.DataFrame(detail_rows)
+            st.dataframe(detail_df, use_container_width=True, hide_index=True)
+            csv_export = detail_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Descargar desglose en CSV",
+                data=csv_export,
+                file_name="desglose_presupuesto.csv",
+                mime="text/csv",
+            )
+        else:
+            st.warning("Todavía no has seleccionado ninguna partida.")
+
+        st.markdown('<div class="section-title">Vista previa del presupuesto</div>', unsafe_allow_html=True)
+        render_metric_strip(summary)
+        render_summary_document(chapter_totals, summary)
+
+
+if __name__ == "__main__":
+    main()
