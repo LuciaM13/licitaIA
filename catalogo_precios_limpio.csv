@@ -1,0 +1,145 @@
+section,subsection,name,unit,price,code,comments
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición bordillo,Granítico,m,5.59,,1.1.40 | Levantado bordillo granítico sobre hormigón
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición bordillo,Hidráulico,m,4.44,,1.1.45 | Levantado bordillo hidráulico sobre hormigón
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición acerado,Losa Hidráulica,m2,14.7,,1.2.05 | Demolición acerado (solería+solera) | metemos 6/m2 demolición de base
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición acerado,Losa Terrazo,m2,14.7,,1.2.05 | Demolición acerado (solería+solera) | metemos 6/m2 demolición de base
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición acerado,Hormigón,m2,14.7,,1.2.05 | Demolición acerado (solería+solera) | metemos 6/m2 demolición de base
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición calzada,adoquín,m2,15.8,,1.1.15 | Levantado pavimento adoquín sobre hormigón
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición calzada,aglomerado,m2,14.29,,1.1.05 | Demolición pavimento aglomerado y hormigón
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición calzada,hormigón,m2,17.43,,"1.1.10 | Demolición pavimento aglomerado, hormigón y adoquín"
+DEMOLICIONES Y PAVIMENTACIÓN,Demolición calzada,base,m2,0.0,,La nueva base de precios de EMASESA incluye la base en los distintos tipos de calzada
+DEMOLICIONES Y PAVIMENTACIÓN,Pav. Bordillos y corriente,Granítico,m,22.9,,* Valor promedio BP EMASESA
+DEMOLICIONES Y PAVIMENTACIÓN,Pav. Bordillos y corriente,Hormigón,m,16.0,,* Valor promedio BP EMASESA
+DEMOLICIONES Y PAVIMENTACIÓN,Acerados,Losa Hidráulica,m2,37.14,,"4.1.4.060 | 4,2.001 base hormigón en masa + 4.4.1.060 solado baldosa hidráulica taco hexagonal"
+DEMOLICIONES Y PAVIMENTACIÓN,Acerados,Losa Terrazo,m2,43.2,,"4.1.4.075 | 4,2.001 base hormigón en masa + 4.4.1.075 solado 36 tacos"
+DEMOLICIONES Y PAVIMENTACIÓN,Acerados,Hormigón,m2,52.79,,"4.1.4.150 | 4,2.001 base hormigón en masa + 4.4.1.150 solado baldosa hidráulica hormigón imitación granito"
+DEMOLICIONES Y PAVIMENTACIÓN,Acerados,Granito,m2,84.67,,"4.1.4.175 | 4,2.001 base hormigón en masa + 4.4.1.175 solado baldosa granito"
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Adoquín,m2,35.23,,4.1.2. | * Valor promedio BP EMASESA
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Capa de rodadura,m3,139.64,,4.1.1.045 | Hormigón bituminoso AC 16 Surf S
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Capa Base pavimento,m3,117.34,,4.1.1.030 | Hormigón bituminoso AC 22 base B 50/70 G
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Hormigón,m3,117.18,,"4.2.005 | Base hormigón en masa en firmes de calzada | 57,24"
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Base,m3,23.46,,4.2.020 | Base de zahorra
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Demolición de arqueta de imbornal - Demolición de arqueta imbornal,ud,72.7,,1.3.75 | Demolición de arqueta de imbornal
+DEMOLICIONES Y PAVIMENTACIÓN,Reposición calzada,Demolición de imbornal y tubería,ud,49.17,,.3.2.4.3.005 | Demolición de imbornal y tubería
+MOV. TIERRAS,Excavación mecánica,"<2,5m",m3,3.07,,"2.2.3.1.001 | Exc. mec. zanjas zona no urbanizada < 2,50 m"
+MOV. TIERRAS,Excavación mecánica,">2,5m",m3,5.0,,"2.2.3.1.005 | Exc. mec. zanjas zona no urbanizada > 2,50 m"
+MOV. TIERRAS,Excavación manual,"<2,5m",m3,11.17,,"2.2.3.2.001 | Exc.manual zanjas en zona urbanizada < 2,50m"
+MOV. TIERRAS,Excavación manual,">2,5m",m3,13.99,,"2.2.3.2.005 | Exc.manual zanjas en zona urbanizada > 2,50m"
+MOV. TIERRAS,(incl retranqueo y sin entib),Entibación blindada,m2,4.27,,"2.5.001 | Entibación blindada de vaciados, zanjas y pozo"
+MOV. TIERRAS,(incl retranqueo y sin entib),Entibación blindada,m2,22.73,,2.5.065 | Entibación zanja tipo parallel
+MOV. TIERRAS,(incl retranqueo y sin entib),Carga de tierras,m3,0.34,,2.4.005 | Carga mecánica de tierras s/camión o similar
+MOV. TIERRAS,(incl retranqueo y sin entib),Transporte a vertedero,m3,5.29,,2.4.010 | Transporte de tierras a vertedero autorizado
+MOV. TIERRAS,(incl retranqueo y sin entib),Suministro de arena,m3,22.18,,3.1.11.005 | Apoyo y arriñonado de tuberías (material granular)
+MOV. TIERRAS,(incl retranqueo y sin entib),Relleno de albero,m3,19.39,,2.3.1.001 | Relleno de albero en zanja
+OBRA CIVIL,OBRA CIVIL,300,m,300.0,,"57,105"
+OBRA CIVIL,OBRA CIVIL,400,m,400.0,,"57,105 | 3.2.2.2.070 | Tubería HA, DN 400 mm, C 135"
+OBRA CIVIL,OBRA CIVIL,500,m,500.0,,"67,575 | 3.2.2.2.075 | Tubería HA, DN 500 mm, C 135"
+OBRA CIVIL,OBRA CIVIL,600,m,600.0,,"76,65 | 3.2.2.2.080 | Tubería HA, DN 600 mm, C 135"
+OBRA CIVIL,OBRA CIVIL,800,m,800.0,,"134,805 | 3.2.2.2.090 | Tubería HA, DN 800 mm, C 135"
+OBRA CIVIL,OBRA CIVIL,1000,m,1000.0,,"185,595 | 3.2.2.2.110 | Tubería HA, DN 1000 mm, C 135"
+OBRA CIVIL,OBRA CIVIL,1200,m,1200.0,,"314,07 | 3.2.2.2.125 | Tubería HA, DN 1200 mm, C 135"
+OBRA CIVIL,OBRA CIVIL,1500,m,1500.0,,"1274,57 | 3.2.2.2.065 | Tubería HA, DN 1500 mm, C 135 + PE80 | incrementamos un 40% por codos y elem. singulares | 910,41"
+OBRA CIVIL,OBRA CIVIL,1800,m,1800.0,,"1491,13 | 3.2.2.7.035 | Tubería HA, DN 1800 mm, C 135 + PE80 | incrementamos un 40% por codos y elem. singulares | 1065,09"
+OBRA CIVIL,OBRA CIVIL,2000,m,2000.0,,"1751,13 | 3.2.2.7.045 | Tubería HA, DN 2000 mm, C 135 + PE80 | incrementamos un 40% por codos y elem. singulares | 1250,81"
+OBRA CIVIL,OBRA CIVIL,2500,m,2500.0,,"2595,07 | 3.2.2.7.040 | Tubería HA, DN 2500 mm, C 135 + PE80 | incrementamos un 40% por codos y elem. singulares | 1853,62"
+OBRA CIVIL,OBRA CIVIL,3000,m,3000.0,,"3864,38 | 3.2.2.7.050 | Tubería HA, DN 3000 mm, C 135 + PE80 | incrementamos un 40% por codos y elem. singulares | 2760,27"
+OBRA CIVIL,OBRA CIVIL,315,m,315.0,,"45,92 | 3.2.2.5.020 | Tubería PVC-U, DN 315 mm, SN4, sup. lisa | incrementamos un 20% por piezas especiales | 38,27"
+OBRA CIVIL,Suministro y montaje ovoide,1200x800,m,107.43,,"3.2.3.005 | Ovoide HM 800x1200 mm | no actualizado multiplicamos por 1,5"
+OBRA CIVIL,Suministro y montaje ovoide,1500x1000,m,150.9,,"3.2.3.010 | Ovoide HM 1000x1500 mm | no actualizado multiplicamos por 1,6"
+OBRA CIVIL,Suministro y montaje ovoide,1800x1200,m,247.5,,"3.2.3.015 | Ovoide HM 120x1800 mm | no actualizado multiplicamos por 1,7"
+OBRA CIVIL,Suministro y montaje ovoide,Adaptación Imbornal,ud,120.0,,
+OBRA CIVIL,Imbornal nuevo,De rejilla c/clapeta,ud,547.98,,"3.2.4.4.2.015 | Imbornal 60x30cm, Acom. Gres DN 200m, rejilla D-400, clapeta (horm.pref.)"
+OBRA CIVIL,Imbornal nuevo,De rejilla s/clapeta,ud,547.98,,"Imbornal 60x30cm, Acom. Gres DN 200m, rejilla D-400 (horm.pref.)"
+OBRA CIVIL,Imbornal nuevo,Buzón c/clapeta,ud,872.03,,"3.2.4.4.1.040 | Imbornal TIPO II, Acom. PVC PVC 200mm, rejilla D-400, clapeta (lad. macizo)"
+OBRA CIVIL,Imbornal nuevo,Buzón s/clapeta,ud,802.03,,"Imbornal TIPO II, Acom. PVC DN 200mm, rejilla D-400 (lad. macizo)"
+OBRA CIVIL,Montaje MARCOS,Superfie hasta 10 m2,m,1683.64,,Calculado en Menfis | 970
+OBRA CIVIL,Montaje MARCOS,Superfie hasta 20 m2,m,3498.89,,Calculado en Menfis | 2150
+OBRA CIVIL,Montaje MARCOS,Superfie hasta 30 m2,m,4446.06,,Calculado en Menfis | 2750
+OBRA CIVIL,Montaje MARCOS,Superfie hasta 35 m2,m,5127.49,,Calculado en Menfis | 3190
+OBRA CIVIL,Pozos de registro,"Ladrillo - P<2,5m",ud,1043.82,,"3.2.5.1.005 | Pozo registro TIPO I, P<2,50m (fábrica de ladrillo)"
+OBRA CIVIL,Pozos de registro,"P<3,5m",ud,1273.56,,"3.2.5.1.010 | Pozo registro TIPO I, P=2,50/3,50m (fábrica de ladrillo)"
+OBRA CIVIL,Pozos de registro,P<5m,ud,1714.04,,"3.2.5.1.015 | Pozo registro TIPO I, P=3,50/5,00m (fábrica de ladrillo)"
+OBRA CIVIL,Pozos de registro,P>5m,,2455.28,,"3.2.5.1.020 | Pozo registro TIPO I, P=5,00/7,50m (fábrica de ladrillo)"
+OBRA CIVIL,Pozos de registro,"Hormigón prefabricado - P<2,5m; Tub<?500",ud,1071.83,,"3.2.5.2.035 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=500mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?500",ud,1291.82,,"3.2.5.2.040 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=500mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?500",ud,1555.71,,"3.2.5.2.045 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=500mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?600",ud,1124.58,,"3.2.5.2.050 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=600mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?600",ud,1344.55,,"3.2.5.2.055 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=600mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?600",ud,1608.48,,"3.2.5.2.060 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=600mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?800",ud,1651.37,,
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?800",ud,1406.96,,"3.2.5.2.061 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=800mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?800",ud,1651.37,,"3.2.5.2.062 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=800mm (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?1000",ud,2344.91,,"3.2.5.2.085 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=1000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?1000",ud,2564.87,,"3.2.5.2.090 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=1000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?1000",ud,2841.49,,"3.2.5.2.092 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=1000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?1200",ud,2491.87,,"3.2.5.2.100 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=1200mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?1200",ud,2701.83,,"3.2.5.2.105 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=1200mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?1200",ud,2978.75,,"3.2.5.2.110 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=1200mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?1500",ud,3238.86,,"3.2.5.2.115 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=1500mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?1500",ud,3463.31,,"3.2.5.2.120 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=1500mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?1500",ud,3739.16,,"3.2.5.2.125 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=1500mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?1600",ud,3404.77,,"3.2.5.2.130 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=1600mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?1600",ud,3629.22,,"3.2.5.2.135 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=1600mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?1600",ud,3905.07,,"3.2.5.2.140 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=1600mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?1800",ud,3879.69,,"3.2.5.2.145 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=1800mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?1800",ud,4104.15,,"3.2.5.2.150 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=1800mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?1800",ud,4379.98,,"3.2.5.2.155 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=1800mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?2000",ud,4168.38,,"3.2.5.2.160 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=2000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?2000",ud,4382.97,,"3.2.5.2.165 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=2000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?2000",ud,4684.38,,"3.2.5.2.170 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=2000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<2,5m; Tub<?2500",ud,5199.18,,"3.2.5.2.175 | Pozo registro Ø 1,20m, P<2,50m, Tub. Ø=2500mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P<3,5m; Tub<?2500",ud,5439.21,,"3.2.5.2.180 | Pozo registro Ø 1,20m, P=2,50/3,50m, Tub. Ø=2500mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,"P>3,5m; Tub<?2500",ud,5715.51,,"3.2.5.2.185 | Pozo registro Ø 1,20m, P=3,50/5,00m, Tub. Ø=2000mm, base chimenea (horm. pref.)"
+OBRA CIVIL,Pozos de registro,Acondicionamiento pozo,ud,222.88,,3.2.5.6.005 | Acondicionamiento pozo registro existente.
+OBRA CIVIL,Pozos de registro,Anulación pozo,ud,545.82,,3.2.5.6.020 | Anulación de pozo de saneamiento
+OBRA CIVIL,Pozos de registro,Demolición pozos,ud,44.72,,1.3.05 | Demolición pozo de registro existente
+OBRA CIVIL,Acometidas,GRES - Adaptación,ud,485.43,,"3.2.6.3.4.020 | Adapt. acometida gres, DN 250 mm, L<6 m | multiplicamos por 1.5 BP no actualizada"
+OBRA CIVIL,Acometidas,Reposición <6m,ud,1231.79,,"3.2.6.3.3.3.010 | Acom.sto con dem. con repos. de pvto. gres, DN 250 mm, L<6 m (pozo)"
+OBRA CIVIL,Acometidas,Reposición >6m,ud,1759.63,,"3.2.6.3.3.3.015 | Acom.sto con dem. con repos. de pvto. gres, DN 250 mm, L<9 m (pozo)"
+OBRA CIVIL,Acometidas,PVC - Adaptación,ud,446.64,,"3.2.6.2.4.0 | Adapt. acometida PVC-U, DN 250 mm, L<6 m | multiplicamos por 1.5 BP no actualizada"
+OBRA CIVIL,Acometidas,Reposición <6m,ud,885.12,,"3.2.6.2.1.040 | Acom.sto con dem. con repos. de pvto. PVC-U, DN 250 mm, L<6 m"
+OBRA CIVIL,Acometidas,Reposición >6m,ud,1278.78,,"3.2.6.2.1.045 | Acom.sto con dem. con repos. de pvto. PVC-U, DN 250 mm, L>6 m"
+OTROS,OTROS,Canon vertido tierras,m3,1.6,,2.4.075 | Canon vertido tierras
+OTROS,OTROS,Canon vertido mixto,m3,13.22,,2.4.070 | Canon vertido RCD mixto
+OTROS,OTROS,Seguridad y Salud,%,3.0,,% (PEM sin materiales)
+OTROS,Servicios Afectados,Poco,%,1.0,,% (PEM sin materiales)
+OTROS,Servicios Afectados,Normal,%,3.0,,% (PEM sin materiales)
+OTROS,Servicios Afectados,Mucho,%,5.0,,% (PEM sin materiales)
+MATERIALES,MATERIALES,Tapa pozo registro,ud,160.37,,
+MATERIALES,MATERIALES,Pate para pozos,ud,1.94,,
+HORMIGÓN,HORMIGÓN,300,m,300.0,,
+HORMIGÓN,HORMIGÓN,400,m,400.0,,"3.2.2.2.070 | Tubería HA, DN 400 mm, C 135"
+HORMIGÓN,HORMIGÓN,500,m,500.0,,"3.2.2.2.075 | Tubería HA, DN 500 mm, C 135"
+HORMIGÓN,HORMIGÓN,600,m,600.0,,"3.2.2.2.080 | Tubería HA, DN 600 mm, C 135"
+HORMIGÓN,HORMIGÓN,800,m,800.0,,"3.2.2.2.090 | Tubería HA, DN 800 mm, C 135"
+HORMIGÓN,HORMIGÓN,1000,m,1000.0,,"3.2.2.2.110 | Tubería HA, DN 1000 mm, C 135"
+HORMIGÓN,HORMIGÓN,1200,m,1200.0,,"3.2.2.2.125 | Tubería HA, DN 1200 mm, C 135"
+HORMIGÓN,HORMIGÓN,1400,m,1400.0,,"3.2.2.2.135 | Tubería HA, DN 1400 mm, C 90"
+HORMIGÓN,HORMIGÓN,1500,m,1500.0,,"3.2.2.2.150 | Tubería HA, DN 1500 mm, C 90"
+HORMIGÓN,HORMIGÓN,1600,m,1600.0,,"3.2.2.2.165 | Tubería HA, DN 1600 mm, C 90"
+HORMIGÓN,HORMIGÓN,1800,m,1800.0,,"3.2.2.2.180 | Tubería HA, DN 1800 mm, C 90"
+HORMIGÓN,HORMIGÓN,2000,m,2000.0,,"3.2.2.2.195 | Tubería HA, DN 2000 mm, C 90"
+HORMIGÓN,HORMIGÓN,2500,m,2500.0,,"3.2.2.2.210 | Tubería HA, DN 2500 mm, C 90"
+HORMIGÓN,HORMIGÓN,3000,m,3000.0,,
+GRES,GRES,300,m,300.0,,"31 | ud | 38 | ud | 35,75"
+GRES,GRES,400,m,400.0,,"50,5 | ud | 60,5 | ud | 59"
+GRES,GRES,500,m,500.0,,"80,2 | ud | 113 | ud | 115"
+GRES,GRES,600,m,600.0,,107 | ud | 152 | ud | 151
+GRES,GRES,700,m,700.0,,200 | ud | 200 | ud | 199
+GRES,GRES,800,m,800.0,,320 | ud | 245 | ud | 244
+GRES,GRES,900,m,900.0,,432 | ud | 308 | ud | 305
+GRES,GRES,1000,m,1000.0,,561 | ud | 401 | ud | 399
+GRES,GRES,1200,m,1200.0,,"708 | ud | 465,25 | ud | 461,45"
+GRES,GRES,300,ud,300.0,,"19 | ud | 9,1 | ud | 29,95"
+GRES,GRES,400,ud,400.0,,"26 | ud | 13,47 | ud | 34,02"
+GRES,GRES,500,ud,500.0,,"39 | ud | 17,31 | ud | 45,32"
+GRES,GRES,600,ud,600.0,,"60,43 | ud | 24,04 | ud | 61,55"
+GRES,GRES,700,ud,700.0,,"96,23 | ud | 36,06 | *No hay datos | ud | 82,5"
+GRES,GRES,800,ud,800.0,,"149,1 | ud | 54,09 | *No hay datos | ud | 112,47"
+GRES,GRES,900,ud,900.0,,"250 | ud | 81,135 | *No hay datos | ud | 154,57"
+GRES,GRES,1000,ud,1000.0,,"340 | ud | 121,7025 | *No hay datos | ud | 209,28"
+GRES,GRES,1200,ud,1200.0,,"285,73 | ud | 182,55375 | *No hay datos | ud | 312,03"
+PVC,PVC,315,m,315.0,,"T20MA0315 | Tubería PVC-U, DN 315 mm, SN4, sup. lisa"
+PVC,PVC,400,m,400.0,,"T20MA0400 | Tubería PVC-U, DN 400 mm, SN4, sup. lisa"
+PVC,PVC,500,m,500.0,,"T20MA0500 | Tubería PVC-U, DN 500 mm, SN4, sup. Lisa"
+MARCOS HA,MARCOS HA,Suministro marcos,,10.0,,
