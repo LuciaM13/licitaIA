@@ -9,6 +9,8 @@ class ParametrosProyecto:
     cap01: Dict[str, float]
     san_item: Dict[str, Any]
     metros_san: float
+    ovoide_item: Dict[str, Any]
+    metros_ovoide: float
     cap02: Dict[str, float]
     pozo_item: Dict[str, Any]
     uds_pozos: int
@@ -72,6 +74,8 @@ def calcular_presupuesto(p: ParametrosProyecto) -> dict:
     cap2_partidas = {}
     if p.metros_san:
         cap2_partidas[p.san_item["label"]] = _importe(p.metros_san, p.san_item["precio"])
+    if p.metros_ovoide:
+        cap2_partidas[p.ovoide_item["label"]] = _importe(p.metros_ovoide, p.ovoide_item["precio"])
     cap2_partidas.update(_calc_exc(p.cap02))
     if p.uds_pozos:
         cap2_partidas[p.pozo_item["label"]] = _importe(p.uds_pozos, p.pozo_item["precio"])
@@ -132,4 +136,13 @@ def calcular_presupuesto(p: ParametrosProyecto) -> dict:
         f"21 % IVA: {fmt(iva)}",
         f"Presupuesto Base de Licitación incluido IVA: {fmt(total)}",
     ]
-    return {"capitulos": capitulos, "pem": pem, "gg": gg, "bi": bi, "pbl_sin_iva": pbl_sin_iva, "iva": iva, "total": total, "texto_word": "\n".join(lines)}
+    return {
+        "capitulos": capitulos,
+        "pem": pem,
+        "gg": gg,
+        "bi": bi,
+        "pbl_sin_iva": pbl_sin_iva,
+        "iva": iva,
+        "total": total,
+        "texto_word": "\n".join(lines),
+    }

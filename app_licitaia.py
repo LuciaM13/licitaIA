@@ -17,9 +17,6 @@ st.set_page_config(page_title="Cálculo de presupuestos", layout="wide")
 def euro(valor: float) -> str:
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-def indice_seguro(labels: List[str], valor: str, default: int = 0) -> int:
-    return labels.index(valor) if valor in labels else default
-
 def item_por_label(catalogo: List[Dict[str, Any]], label: str) -> Dict[str, Any]:
     for item in catalogo:
         if item["label"] == label:
@@ -27,7 +24,13 @@ def item_por_label(catalogo: List[Dict[str, Any]], label: str) -> Dict[str, Any]
     return catalogo[0]
 
 def input_qty(label: str, unidad: str, key: str, help_text: str = "") -> float:
-    return st.number_input(f"{label} ({unidad})", min_value=0.0, value=float(st.session_state.get(key, 0.0)), key=key, help=help_text)
+    return st.number_input(
+        f"{label} ({unidad})",
+        min_value=0.0,
+        value=float(st.session_state.get(key, 0.0)),
+        key=key,
+        help=help_text,
+    )
 
 st.markdown("""
 <style>
@@ -42,9 +45,9 @@ st.markdown("""
 <div class="main-card">
     <h2 style="margin-bottom:0.35rem;">Cálculo de presupuestos</h2>
     <div style="font-size:1.03rem;">
-        Interfaz simplificada y estricta. Solo usa partidas y precios que aparecen en la base CSV
-        y en la estructura económica del pliego. La app calcula automáticamente <b>cantidad × precio</b>,
-        agrupa por capítulos y genera un bloque final listo para copiar a Word.
+        Esta versión usa las familias y precios del Excel y la estructura económica del pliego.
+        La app calcula automáticamente <b>cantidad × precio</b>, agrupa por capítulos y genera
+        un bloque final listo para copiar a Word.
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -54,15 +57,16 @@ st.markdown("""
 <b>Cómo usarla:</b><br>
 1. Introduce las cantidades directamente en la unidad de la base: m, m², m³ o ud.<br>
 2. En saneamiento, primero eliges la <b>familia</b> y luego el <b>tipo</b> para evitar errores.<br>
-3. La app calcula automáticamente los importes y recompone el resumen económico final.
+3. Si tu hoja usa <b>ovoides</b>, ya puedes añadirlos otra vez porque están incluidos en esta versión.<br>
+4. La app recompone el presupuesto final por capítulos y deja un texto listo para copiar a Word.
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("## 1) Capítulo 01 · Obra civil abastecimiento")
-st.markdown('<div class="soft-box">Solo aparecen partidas de la base. No hay tuberías ABA ni precios manuales porque no tienen precio visible en el CSV usado en esta versión.</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-box">Solo aparecen partidas de la base. No se añaden precios manuales.</div>', unsafe_allow_html=True)
 c1, c2 = st.columns(2)
+cap01 = {}
 with c1:
-    cap01 = {}
     for key in ["exc_mec_hasta", "exc_mec_mas", "exc_man_hasta", "exc_man_mas", "ent_hasta", "ent_mas"]:
         item = d.EXCAVACION[key]
         cap01[key] = input_qty(item["label"], item["unidad"], f"c01_{key}", f"Precio base: {item['precio']} €/ {item['unidad']}")
@@ -72,7 +76,8 @@ with c2:
         cap01[key] = input_qty(item["label"], item["unidad"], f"c01_{key}", f"Precio base: {item['precio']} €/ {item['unidad']}")
 
 st.markdown("## 2) Capítulo 02 · Obra civil saneamiento")
-st.markdown('<div class="soft-box">Aquí eliges la familia de tubería de saneamiento y después solo se muestran las opciones de esa familia. Así se evita elegir materiales que no corresponden.</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-box">Aquí eliges la familia de la tubería SAN y, si aplica, también el tipo de ovoide. Solo se muestran opciones existentes en la base.</div>', unsafe_allow_html=True)
+
 left, right = st.columns(2)
 with left:
     familias = list(d.SAN_FAMILIAS.keys())
@@ -80,8 +85,15 @@ with left:
     san_labels = [x["label"] for x in d.SAN_FAMILIAS[familia_san]]
     tipo_san = st.selectbox("Tipo tubería SAN", san_labels, help="Ahora solo ves opciones de la familia elegida.")
     san_item = item_por_label(d.SAN_FAMILIAS[familia_san], tipo_san)
-    st.markdown(f'<div class="price-chip">Precio base: {san_item["precio"]} €/ {san_item["unidad"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="price-chip">Precio base SAN: {san_item["precio"]} €/ {san_item["unidad"]}</div>', unsafe_allow_html=True)
     metros_san = input_qty("Longitud tubería SAN", san_item["unidad"], "metros_san", "Cantidad directa en la unidad de la base.")
+
+    ovoide_labels = [x["label"] for x in d.CATALOGO_OVOIDE]
+    tipo_ovoide = st.selectbox("Tipo ovoide", ovoide_labels, help="Solo aparecen ovoides incluidos en la base.")
+    ovoide_item = item_por_label(d.CATALOGO_OVOIDE, tipo_ovoide)
+    st.markdown(f'<div class="price-chip">Precio base ovoide: {ovoide_item["precio"]} €/ {ovoide_item["unidad"]}</div>', unsafe_allow_html=True)
+    metros_ovoide = input_qty("Longitud ovoide", ovoide_item["unidad"], "metros_ovoide", "Cantidad directa en la unidad de la base.")
+
     cap02 = {}
     for key in ["exc_mec_hasta", "exc_mec_mas", "exc_man_hasta", "exc_man_mas", "ent_hasta", "ent_mas"]:
         item = d.EXCAVACION[key]
@@ -90,18 +102,22 @@ with right:
     for key in ["carga", "transporte", "canon_tierras", "canon_mixto", "arena", "relleno"]:
         item = d.EXCAVACION[key]
         cap02[key] = input_qty(f"{item['label']} SAN", item["unidad"], f"c02_{key}", f"Precio base: {item['precio']} €/ {item['unidad']}")
+
     pozo_labels = [x["label"] for x in d.POZOS]
     pozo_label = st.selectbox("Tipo de pozo", pozo_labels)
     pozo_item = item_por_label(d.POZOS, pozo_label)
     uds_pozos = int(st.number_input("Nº pozos", min_value=0, value=0))
+
     imbornal_labels = [x["label"] for x in d.IMBORNALES]
     imbornal_label = st.selectbox("Tipo de imbornal", imbornal_labels)
     imbornal_item = item_por_label(d.IMBORNALES, imbornal_label)
     uds_imbornales = int(st.number_input("Nº imbornales", min_value=0, value=0))
+
     marco_labels = [x["label"] for x in d.MARCOS]
     marco_label = st.selectbox("Tipo de marco", marco_labels)
     marco_item = item_por_label(d.MARCOS, marco_label)
     uds_marcos = int(st.number_input("Nº marcos", min_value=0, value=0))
+
     uds_tapas = int(st.number_input("Nº tapas de pozo", min_value=0, value=0, help="Precio base fijo: 160,37 €/ud"))
     uds_pates = int(st.number_input("Nº pates de pozo", min_value=0, value=0, help="Precio base fijo: 1,94 €/ud"))
     uds_dem_pozo = int(st.number_input("Nº demoliciones de pozo", min_value=0, value=0))
@@ -109,18 +125,21 @@ with right:
 
 def pav_block(prefix: str, title: str):
     st.markdown(title)
-    st.markdown('<div class="soft-box">Selecciona el tipo de acabado y mete la cantidad directa en la unidad de la base. Si eliges un tipo, el precio se aplica automáticamente.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="soft-box">Selecciona el tipo de acabado y mete la cantidad directa en la unidad de la base. El precio se aplica automáticamente.</div>', unsafe_allow_html=True)
     a, b = st.columns(2)
     with a:
         dem_bordillo_label = st.selectbox(f"Tipo bordillo demolido {prefix}", [x["label"] for x in d.DEMOLICION_BORDILLO], key=f"{prefix}_db_lbl")
         dem_bordillo_item = item_por_label(d.DEMOLICION_BORDILLO, dem_bordillo_label)
         dem_bordillo_qty = input_qty(f"Demolición bordillo {prefix}", dem_bordillo_item["unidad"], f"{prefix}_db_qty", f"Precio base: {dem_bordillo_item['precio']} €/ {dem_bordillo_item['unidad']}")
+
         dem_acerado_label = st.selectbox(f"Tipo acerado demolido {prefix}", [x["label"] for x in d.DEMOLICION_ACERADO], key=f"{prefix}_da_lbl")
         dem_acerado_item = item_por_label(d.DEMOLICION_ACERADO, dem_acerado_label)
         dem_acerado_qty = input_qty(f"Demolición acerado {prefix}", dem_acerado_item["unidad"], f"{prefix}_da_qty", f"Precio base: {dem_acerado_item['precio']} €/ {dem_acerado_item['unidad']}")
+
         dem_calzada_label = st.selectbox(f"Tipo calzada demolida {prefix}", [x["label"] for x in d.DEMOLICION_CALZADA], key=f"{prefix}_dc_lbl")
         dem_calzada_item = item_por_label(d.DEMOLICION_CALZADA, dem_calzada_label)
         dem_calzada_qty = input_qty(f"Demolición calzada {prefix}", dem_calzada_item["unidad"], f"{prefix}_dc_qty", f"Precio base: {dem_calzada_item['precio']} €/ {dem_calzada_item['unidad']}")
+
         dem_arqueta_qty = st.number_input(f"Demolición arqueta de imbornal {prefix} (ud)", min_value=0, value=0, key=f"{prefix}_dai")
         dem_imb_tub_qty = st.number_input(f"Demolición imbornal y tubería {prefix} (ud)", min_value=0, value=0, key=f"{prefix}_dit")
         canon_mixto_qty = input_qty(f"Canon vertido mixto {prefix}", d.EXCAVACION["canon_mixto"]["unidad"], f"{prefix}_cm", f"Precio base: {d.EXCAVACION['canon_mixto']['precio']} €/ {d.EXCAVACION['canon_mixto']['unidad']}")
@@ -128,14 +147,17 @@ def pav_block(prefix: str, title: str):
         rep_bordillo_label = st.selectbox(f"Tipo bordillo a reponer {prefix}", [x["label"] for x in d.BORDILLOS_REPOSICION], key=f"{prefix}_rb_lbl")
         rep_bordillo_item = item_por_label(d.BORDILLOS_REPOSICION, rep_bordillo_label)
         rep_bordillo_qty = input_qty(f"Reposición bordillo {prefix}", rep_bordillo_item["unidad"], f"{prefix}_rb_qty", f"Precio base: {rep_bordillo_item['precio']} €/ {rep_bordillo_item['unidad']}")
+
         rep_acerado_label = st.selectbox(f"Tipo acerado a reponer {prefix}", [x["label"] for x in d.ACERADOS_REPOSICION], key=f"{prefix}_ra_lbl")
         rep_acerado_item = item_por_label(d.ACERADOS_REPOSICION, rep_acerado_label)
         rep_acerado_qty = input_qty(f"Reposición acerado {prefix}", rep_acerado_item["unidad"], f"{prefix}_ra_qty", f"Precio base: {rep_acerado_item['precio']} €/ {rep_acerado_item['unidad']}")
+
         adoquin_qty = input_qty(f"Reposición adoquín {prefix}", d.REPOSICION_CALZADA["adoquin"]["unidad"], f"{prefix}_ado", f"Precio base: {d.REPOSICION_CALZADA['adoquin']['precio']} €/ {d.REPOSICION_CALZADA['adoquin']['unidad']}")
         rodadura_qty = input_qty(f"Capa de rodadura {prefix}", d.REPOSICION_CALZADA["rodadura"]["unidad"], f"{prefix}_rod", f"Precio base: {d.REPOSICION_CALZADA['rodadura']['precio']} €/ {d.REPOSICION_CALZADA['rodadura']['unidad']}")
         base_pav_qty = input_qty(f"Base de pavimento {prefix}", d.REPOSICION_CALZADA["base_pav"]["unidad"], f"{prefix}_bp", f"Precio base: {d.REPOSICION_CALZADA['base_pav']['precio']} €/ {d.REPOSICION_CALZADA['base_pav']['unidad']}")
         hormigon_qty = input_qty(f"Hormigón {prefix}", d.REPOSICION_CALZADA["hormigon"]["unidad"], f"{prefix}_hor", f"Precio base: {d.REPOSICION_CALZADA['hormigon']['precio']} €/ {d.REPOSICION_CALZADA['hormigon']['unidad']}")
         base_gran_qty = input_qty(f"Base granular {prefix}", d.REPOSICION_CALZADA["base_gran"]["unidad"], f"{prefix}_bg", f"Precio base: {d.REPOSICION_CALZADA['base_gran']['precio']} €/ {d.REPOSICION_CALZADA['base_gran']['unidad']}")
+
     return {
         "dem_bordillo_item": dem_bordillo_item, "dem_bordillo_qty": dem_bordillo_qty,
         "dem_acerado_item": dem_acerado_item, "dem_acerado_qty": dem_acerado_qty,
@@ -156,7 +178,7 @@ cap03 = pav_block("aba", "## 3) Capítulo 03 · Pavimentación abastecimiento")
 cap04 = pav_block("san", "## 4) Capítulo 04 · Pavimentación saneamiento")
 
 st.markdown("## 5) Capítulos 05 y 06 · Acometidas")
-st.markdown('<div class="soft-box">Las acometidas están separadas para que no se mezclen tipos de ABA y SAN. El precio se aplica automáticamente según la opción elegida.</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-box">Las acometidas están separadas para no mezclar ABA y SAN. El precio se aplica automáticamente según el tipo elegido.</div>', unsafe_allow_html=True)
 x, y = st.columns(2)
 with x:
     aba_acom_label = st.selectbox("Tipo acometida ABA", [x["label"] for x in d.ACOMETIDAS_ABA])
@@ -180,6 +202,8 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
         cap01=cap01,
         san_item=san_item,
         metros_san=metros_san,
+        ovoide_item=ovoide_item,
+        metros_ovoide=metros_ovoide,
         cap02=cap02,
         pozo_item=pozo_item,
         uds_pozos=uds_pozos,
@@ -201,6 +225,7 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
         importe_ga=importe_ga,
     )
     r = calcular_presupuesto(p)
+
     st.markdown("## 8) Resumen económico")
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("PEM", euro(r["pem"]))

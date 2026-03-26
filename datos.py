@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-# Estructura económica del pliego
+# Estructura económica del pliego (Word/PPTP)
 PCT_GG = 0.13
 PCT_BI = 0.06
 PCT_IVA = 0.21
@@ -19,7 +19,7 @@ CAPITULOS = [
     "08 GESTIÓN AMBIENTAL",
 ]
 
-# Solo familias/precios visibles en la base
+# Partidas/precios visibles en la base CSV
 EXCAVACION = {
     "exc_mec_hasta": {"label": "Excavación mecánica ≤ 2,5 m", "precio": 3.07, "unidad": "m³"},
     "exc_mec_mas": {"label": "Excavación mecánica > 2,5 m", "precio": 5.00, "unidad": "m³"},
@@ -59,6 +59,13 @@ SAN_FAMILIAS = {
         {"label": "PVC-U Ø 500 mm", "precio": 146.26, "unidad": "m"},
     ],
 }
+
+# Reincorporado porque el usuario confirma que sí está en el Excel
+CATALOGO_OVOIDE = [
+    {"label": "Ovoide 1200x800", "precio": 107.43, "unidad": "m"},
+    {"label": "Ovoide 1500x1000", "precio": 150.90, "unidad": "m"},
+    {"label": "Ovoide 1800x1200", "precio": 247.50, "unidad": "m"},
+]
 
 POZOS = [
     {"label": "Ladrillo P < 2,5 m", "precio": 1043.82, "unidad": "ud"},
