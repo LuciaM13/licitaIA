@@ -1,3 +1,2 @@
-streamlit>=1.35
-pandas>=2.2
-num2words>=0.5.14
+streamlit
+pandas
