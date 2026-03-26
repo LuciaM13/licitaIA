@@ -1,149 +1,108 @@
+
 from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Dict
-
-from datos import PCT_BI, PCT_GG, PCT_IVA
-
+from typing import Dict, Any
+from datos import PCT_GG, PCT_BI, PCT_IVA, EXCAVACION, IMPORTE_GA_DEFAULT, IMPORTE_SS_DEFAULT
 
 @dataclass
 class ParametrosProyecto:
-    # Capítulo 01 · Obra civil ABA (solo familias presentes en la base)
-    exc_mec_aba_hasta: float
-    exc_mec_aba_mas: float
-    exc_man_aba_hasta: float
-    exc_man_aba_mas: float
-    ent_aba_hasta: float
-    ent_aba_mas: float
-    carga_aba: float
-    transporte_aba: float
-    canon_tierras_aba: float
-    arena_aba: float
-    relleno_aba: float
-
-    # Capítulo 02 · Obra civil SAN
-    tipo_san: Dict[str, float]
+    cap01: Dict[str, float]
+    san_item: Dict[str, Any]
     metros_san: float
-    tipo_ovoide: Dict[str, float]
-    metros_ovoide: float
-    exc_mec_san_hasta: float
-    exc_mec_san_mas: float
-    exc_man_san_hasta: float
-    exc_man_san_mas: float
-    ent_san_hasta: float
-    ent_san_mas: float
-    carga_san: float
-    transporte_san: float
-    canon_tierras_san: float
-    canon_mixto_san: float
-    arena_san: float
-    relleno_san: float
-    tipo_pozo: Dict[str, float]
+    cap02: Dict[str, float]
+    pozo_item: Dict[str, Any]
     uds_pozos: int
-    tipo_imbornal: Dict[str, float]
+    imbornal_item: Dict[str, Any]
     uds_imbornales: int
-    tipo_marco: Dict[str, float]
+    marco_item: Dict[str, Any]
     uds_marcos: int
-    tipo_tapa: Dict[str, float]
     uds_tapas: int
-    tipo_pate: Dict[str, float]
     uds_pates: int
     uds_dem_pozo: int
-    tipo_dem_pozo: Dict[str, float]
-
-    # Capítulos 03 y 04 · Pavimentación ABA/SAN
-    pav_aba: Dict[str, float]
-    pav_san: Dict[str, float]
-
-    # Capítulos 05 y 06 · Acometidas
-    tipo_acom_aba: Dict[str, float]
+    dem_pozo_item: Dict[str, Any]
+    cap03: Dict[str, Any]
+    cap04: Dict[str, Any]
+    acom_aba_item: Dict[str, Any]
     uds_acom_aba: int
-    tipo_acom_san: Dict[str, float]
+    acom_san_item: Dict[str, Any]
     uds_acom_san: int
-
-    # Capítulos 07 y 08
     importe_ss: float
     importe_ga: float
 
-
 def _importe(cantidad: float, precio: float) -> float:
-    return max(cantidad, 0.0) * max(precio, 0.0)
+    return max(float(cantidad or 0), 0.0) * max(float(precio or 0), 0.0)
 
+def _calc_exc(cap: Dict[str, float]) -> Dict[str, float]:
+    return {EXCAVACION[k]["label"]: _importe(cap.get(k, 0), EXCAVACION[k]["precio"]) for k in EXCAVACION}
 
-def calcular_capitulo_pav(p: Dict[str, float]) -> Dict[str, float]:
-    partidas = {
-        "Demolición bordillo": _importe(p["dem_bordillo_m"], p["precio_dem_bordillo"]),
-        "Demolición acerado": _importe(p["dem_acerado_m2"], p["precio_dem_acerado"]),
-        "Demolición calzada": _importe(p["dem_calzada_m2"], p["precio_dem_calzada"]),
-        "Demolición arqueta de imbornal": _importe(p["uds_dem_arqueta_imbornal"], p["precio_dem_arqueta_imbornal"]),
-        "Demolición imbornal y tubería": _importe(p["uds_dem_imbornal_tuberia"], p["precio_dem_imbornal_tuberia"]),
-        "Reposición bordillo": _importe(p["rep_bordillo_m"], p["precio_rep_bordillo"]),
-        "Reposición acerado": _importe(p["rep_acerado_m2"], p["precio_rep_acerado"]),
-        "Reposición adoquín": _importe(p["rep_adoquin_m2"], p["precio_rep_adoquin"]),
-        "Capa de rodadura": _importe(p["rep_rodadura_m3"], p["precio_rep_rodadura"]),
-        "Base de pavimento": _importe(p["rep_base_pavimento_m3"], p["precio_rep_base_pavimento"]),
-        "Hormigón": _importe(p["rep_hormigon_m3"], p["precio_rep_hormigon"]),
-        "Base granular": _importe(p["rep_base_granular_m3"], p["precio_rep_base_granular"]),
-        "Canon vertido mixto": _importe(p["canon_mixto_m3"], p["precio_canon_mixto"]),
-    }
-    return {"partidas": partidas, "subtotal": sum(partidas.values())}
-
+def _calc_pav(cap: Dict[str, Any]) -> Dict[str, float]:
+    out = {}
+    if cap["dem_bordillo_qty"]:
+        out[cap["dem_bordillo_item"]["label"]] = _importe(cap["dem_bordillo_qty"], cap["dem_bordillo_item"]["precio"])
+    if cap["dem_acerado_qty"]:
+        out[cap["dem_acerado_item"]["label"]] = _importe(cap["dem_acerado_qty"], cap["dem_acerado_item"]["precio"])
+    if cap["dem_calzada_qty"]:
+        out[cap["dem_calzada_item"]["label"]] = _importe(cap["dem_calzada_qty"], cap["dem_calzada_item"]["precio"])
+    if cap["dem_arqueta_qty"]:
+        out["Demolición arqueta de imbornal"] = _importe(cap["dem_arqueta_qty"], cap["dem_arqueta_precio"])
+    if cap["dem_imb_tub_qty"]:
+        out["Demolición imbornal y tubería"] = _importe(cap["dem_imb_tub_qty"], cap["dem_imb_tub_precio"])
+    if cap["canon_mixto_qty"]:
+        out["Canon vertido mixto"] = _importe(cap["canon_mixto_qty"], cap["canon_mixto_precio"])
+    if cap["rep_bordillo_qty"]:
+        out[cap["rep_bordillo_item"]["label"]] = _importe(cap["rep_bordillo_qty"], cap["rep_bordillo_item"]["precio"])
+    if cap["rep_acerado_qty"]:
+        out[cap["rep_acerado_item"]["label"]] = _importe(cap["rep_acerado_qty"], cap["rep_acerado_item"]["precio"])
+    if cap["adoquin_qty"]:
+        out["Reposición adoquín"] = _importe(cap["adoquin_qty"], cap["adoquin_precio"])
+    if cap["rodadura_qty"]:
+        out["Capa de rodadura"] = _importe(cap["rodadura_qty"], cap["rodadura_precio"])
+    if cap["base_pav_qty"]:
+        out["Base de pavimento"] = _importe(cap["base_pav_qty"], cap["base_pav_precio"])
+    if cap["hormigon_qty"]:
+        out["Hormigón"] = _importe(cap["hormigon_qty"], cap["hormigon_precio"])
+    if cap["base_gran_qty"]:
+        out["Base granular"] = _importe(cap["base_gran_qty"], cap["base_gran_precio"])
+    return out
 
 def calcular_presupuesto(p: ParametrosProyecto) -> dict:
-    cap1_partidas = {
-        "Excavación mecánica ≤ 2,5 m": _importe(p.exc_mec_aba_hasta, 3.07),
-        "Excavación mecánica > 2,5 m": _importe(p.exc_mec_aba_mas, 5.00),
-        "Excavación manual ≤ 2,5 m": _importe(p.exc_man_aba_hasta, 11.17),
-        "Excavación manual > 2,5 m": _importe(p.exc_man_aba_mas, 13.99),
-        "Entibación blindada ≤ 2,5 m": _importe(p.ent_aba_hasta, 4.27),
-        "Entibación blindada > 2,5 m": _importe(p.ent_aba_mas, 22.73),
-        "Carga de tierras": _importe(p.carga_aba, 0.34),
-        "Transporte a vertedero": _importe(p.transporte_aba, 5.29),
-        "Canon vertido tierras": _importe(p.canon_tierras_aba, 1.60),
-        "Suministro de arena": _importe(p.arena_aba, 22.18),
-        "Relleno de albero": _importe(p.relleno_aba, 19.39),
-    }
+    cap1_partidas = _calc_exc(p.cap01)
     cap1 = sum(cap1_partidas.values())
 
-    cap2_partidas = {
-        f"{p.tipo_san['label']}": _importe(p.metros_san, p.tipo_san["precio"]),
-        f"{p.tipo_ovoide['label']}": _importe(p.metros_ovoide, p.tipo_ovoide["precio"]),
-        "Excavación mecánica ≤ 2,5 m": _importe(p.exc_mec_san_hasta, 3.07),
-        "Excavación mecánica > 2,5 m": _importe(p.exc_mec_san_mas, 5.00),
-        "Excavación manual ≤ 2,5 m": _importe(p.exc_man_san_hasta, 11.17),
-        "Excavación manual > 2,5 m": _importe(p.exc_man_san_mas, 13.99),
-        "Entibación blindada ≤ 2,5 m": _importe(p.ent_san_hasta, 4.27),
-        "Entibación blindada > 2,5 m": _importe(p.ent_san_mas, 22.73),
-        "Carga de tierras": _importe(p.carga_san, 0.34),
-        "Transporte a vertedero": _importe(p.transporte_san, 5.29),
-        "Canon vertido tierras": _importe(p.canon_tierras_san, 1.60),
-        "Canon vertido mixto": _importe(p.canon_mixto_san, 13.22),
-        "Suministro de arena": _importe(p.arena_san, 22.18),
-        "Relleno de albero": _importe(p.relleno_san, 19.39),
-        p.tipo_pozo["label"]: _importe(p.uds_pozos, p.tipo_pozo["precio"]),
-        p.tipo_imbornal["label"]: _importe(p.uds_imbornales, p.tipo_imbornal["precio"]),
-        p.tipo_marco["label"]: _importe(p.uds_marcos, p.tipo_marco["precio"]),
-        p.tipo_tapa["label"]: _importe(p.uds_tapas, p.tipo_tapa["precio"]),
-        p.tipo_pate["label"]: _importe(p.uds_pates, p.tipo_pate["precio"]),
-        p.tipo_dem_pozo["label"]: _importe(p.uds_dem_pozo, p.tipo_dem_pozo["precio"]),
-    }
+    cap2_partidas = {}
+    if p.metros_san:
+        cap2_partidas[p.san_item["label"]] = _importe(p.metros_san, p.san_item["precio"])
+    cap2_partidas.update(_calc_exc(p.cap02))
+    if p.uds_pozos:
+        cap2_partidas[p.pozo_item["label"]] = _importe(p.uds_pozos, p.pozo_item["precio"])
+    if p.uds_imbornales:
+        cap2_partidas[p.imbornal_item["label"]] = _importe(p.uds_imbornales, p.imbornal_item["precio"])
+    if p.uds_marcos:
+        cap2_partidas[p.marco_item["label"]] = _importe(p.uds_marcos, p.marco_item["precio"])
+    if p.uds_tapas:
+        cap2_partidas["Tapa de pozo de registro"] = _importe(p.uds_tapas, 160.37)
+    if p.uds_pates:
+        cap2_partidas["Pate para pozos"] = _importe(p.uds_pates, 1.94)
+    if p.uds_dem_pozo:
+        cap2_partidas[p.dem_pozo_item["label"]] = _importe(p.uds_dem_pozo, p.dem_pozo_item["precio"])
     cap2 = sum(cap2_partidas.values())
 
-    pav_aba = calcular_capitulo_pav(p.pav_aba)
-    cap3_partidas = pav_aba["partidas"]
-    cap3 = pav_aba["subtotal"]
+    cap3_partidas = _calc_pav(p.cap03)
+    cap3 = sum(cap3_partidas.values())
+    cap4_partidas = _calc_pav(p.cap04)
+    cap4 = sum(cap4_partidas.values())
 
-    pav_san = calcular_capitulo_pav(p.pav_san)
-    cap4_partidas = pav_san["partidas"]
-    cap4 = pav_san["subtotal"]
-
-    cap5_partidas = {p.tipo_acom_aba["label"]: _importe(p.uds_acom_aba, p.tipo_acom_aba["precio"])}
+    cap5_partidas = {}
+    if p.uds_acom_aba:
+        cap5_partidas[p.acom_aba_item["label"]] = _importe(p.uds_acom_aba, p.acom_aba_item["precio"])
     cap5 = sum(cap5_partidas.values())
-    cap6_partidas = {p.tipo_acom_san["label"]: _importe(p.uds_acom_san, p.tipo_acom_san["precio"])}
+    cap6_partidas = {}
+    if p.uds_acom_san:
+        cap6_partidas[p.acom_san_item["label"]] = _importe(p.uds_acom_san, p.acom_san_item["precio"])
     cap6 = sum(cap6_partidas.values())
 
-    cap7 = max(p.importe_ss, 0.0)
-    cap8 = max(p.importe_ga, 0.0)
+    cap7 = max(float(p.importe_ss or IMPORTE_SS_DEFAULT), 0.0)
+    cap8 = max(float(p.importe_ga or IMPORTE_GA_DEFAULT), 0.0)
 
     pem = cap1 + cap2 + cap3 + cap4 + cap5 + cap6 + cap7 + cap8
     gg = pem * PCT_GG
@@ -163,25 +122,14 @@ def calcular_presupuesto(p: ParametrosProyecto) -> dict:
         "08 GESTIÓN AMBIENTAL": {"subtotal": cap8, "partidas": {"Gestión ambiental": cap8}},
     }
 
-    word_lines = []
-    for nombre, info in capitulos.items():
-        word_lines.append(f"{nombre}: {info['subtotal']:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
-    word_lines += [
-        f"Presupuesto de Ejecución Material: {pem:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."),
-        f"13 % Gastos Generales: {gg:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."),
-        f"6 % Beneficio Industrial: {bi:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."),
-        f"Presupuesto Base de Licitación excluido IVA: {pbl_sin_iva:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."),
-        f"21 % IVA: {iva:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."),
-        f"Presupuesto Base de Licitación incluido IVA: {total:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."),
+    fmt = lambda x: f"{x:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
+    lines = [f"{k}: {fmt(v['subtotal'])}" for k, v in capitulos.items()]
+    lines += [
+        f"Presupuesto de Ejecución Material: {fmt(pem)}",
+        f"13 % Gastos Generales: {fmt(gg)}",
+        f"6 % Beneficio Industrial: {fmt(bi)}",
+        f"Presupuesto Base de Licitación excluido IVA: {fmt(pbl_sin_iva)}",
+        f"21 % IVA: {fmt(iva)}",
+        f"Presupuesto Base de Licitación incluido IVA: {fmt(total)}",
     ]
-
-    return {
-        "capitulos": capitulos,
-        "pem": pem,
-        "gg": gg,
-        "bi": bi,
-        "pbl_sin_iva": pbl_sin_iva,
-        "iva": iva,
-        "total": total,
-        "texto_word": "\n".join(word_lines),
-    }
+    return {"capitulos": capitulos, "pem": pem, "gg": gg, "bi": bi, "pbl_sin_iva": pbl_sin_iva, "iva": iva, "total": total, "texto_word": "\n".join(lines)}
