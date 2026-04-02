@@ -1,3 +1,26 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+venv/
 .env
+
+# IDE
+.vscode/
+.idea/
+
+# Datos fuente (binarios pesados — no subir)
+documentos/
+pliegos/
+data/bc3/
+data/men/
+data/excels/
+data/imagenes/
+
+# Access DB lock files
+*.ldb
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,107 @@
+{
+  "pct_gg": 0.13,
+  "pct_bi": 0.06,
+  "pct_iva": 0.21,
+  "catalogo_aba": [
+    {"label": "FD Ø 80 mm",       "tipo": "FD",     "diametro_mm": 80,   "precio_m": 43.25},
+    {"label": "FD Ø 100 mm",      "tipo": "FD",     "diametro_mm": 100,  "precio_m": 45.53},
+    {"label": "FD Ø 150 mm",      "tipo": "FD",     "diametro_mm": 150,  "precio_m": 62.79},
+    {"label": "FD Ø 200 mm",      "tipo": "FD",     "diametro_mm": 200,  "precio_m": 90.47},
+    {"label": "FD Ø 250 mm",      "tipo": "FD",     "diametro_mm": 250,  "precio_m": 121.84},
+    {"label": "FD Ø 300 mm",      "tipo": "FD",     "diametro_mm": 300,  "precio_m": 153.88},
+    {"label": "FD Ø 350 mm",      "tipo": "FD",     "diametro_mm": 350,  "precio_m": 211.03},
+    {"label": "FD Ø 400 mm",      "tipo": "FD",     "diametro_mm": 400,  "precio_m": 251.54},
+    {"label": "FD Ø 500 mm",      "tipo": "FD",     "diametro_mm": 500,  "precio_m": 299.83},
+    {"label": "FD Ø 600 mm",      "tipo": "FD",     "diametro_mm": 600,  "precio_m": 403.08},
+    {"label": "FD Ø 800 mm",      "tipo": "FD",     "diametro_mm": 800,  "precio_m": 787.20},
+    {"label": "FD Ø 1000 mm",     "tipo": "FD",     "diametro_mm": 1000, "precio_m": 999.22},
+    {"label": "FD Ø 1200 mm",     "tipo": "FD",     "diametro_mm": 1200, "precio_m": 1185.05},
+    {"label": "PE-100 Ø 90 mm",   "tipo": "PE-100", "diametro_mm": 90,   "precio_m": 11.01},
+    {"label": "PE-100 Ø 110 mm",  "tipo": "PE-100", "diametro_mm": 110,  "precio_m": 14.56},
+    {"label": "PE-100 Ø 160 mm",  "tipo": "PE-100", "diametro_mm": 160,  "precio_m": 26.31},
+    {"label": "PE-100 Ø 200 mm",  "tipo": "PE-100", "diametro_mm": 200,  "precio_m": 38.39}
+  ],
+  "catalogo_san": [
+    {"label": "Gres Ø 300 mm",       "tipo": "Gres",     "diametro_mm": 300,  "precio_m": 126.10},
+    {"label": "Gres Ø 400 mm",       "tipo": "Gres",     "diametro_mm": 400,  "precio_m": 214.00},
+    {"label": "Gres Ø 500 mm",       "tipo": "Gres",     "diametro_mm": 500,  "precio_m": 311.38},
+    {"label": "Gres Ø 600 mm",       "tipo": "Gres",     "diametro_mm": 600,  "precio_m": 412.40},
+    {"label": "Gres Ø 800 mm",       "tipo": "Gres",     "diametro_mm": 800,  "precio_m": 1026.63},
+    {"label": "Gres Ø 1000 mm",      "tipo": "Gres",     "diametro_mm": 1000, "precio_m": 1279.56},
+    {"label": "HA Ø 300 mm",         "tipo": "Hormigón", "diametro_mm": 300,  "precio_m": 57.105},
+    {"label": "HA Ø 400 mm",         "tipo": "Hormigón", "diametro_mm": 400,  "precio_m": 57.105},
+    {"label": "HA Ø 500 mm",         "tipo": "Hormigón", "diametro_mm": 500,  "precio_m": 67.575},
+    {"label": "HA Ø 600 mm",         "tipo": "Hormigón", "diametro_mm": 600,  "precio_m": 76.650},
+    {"label": "HA Ø 800 mm",         "tipo": "Hormigón", "diametro_mm": 800,  "precio_m": 134.805},
+    {"label": "HA Ø 1000 mm",        "tipo": "Hormigón", "diametro_mm": 1000, "precio_m": 185.595},
+    {"label": "HA Ø 1200 mm",        "tipo": "Hormigón", "diametro_mm": 1200, "precio_m": 314.070},
+    {"label": "PVC-U Ø 315 mm",      "tipo": "PVC",      "diametro_mm": 315,  "precio_m": 45.92},
+    {"label": "PVC-U Ø 400 mm",      "tipo": "PVC",      "diametro_mm": 400,  "precio_m": 93.64},
+    {"label": "PVC-U Ø 500 mm",      "tipo": "PVC",      "diametro_mm": 500,  "precio_m": 146.26}
+  ],
+  "acerados_aba": [
+    {"label": "Losa hidráulica",            "unidad": "m2", "precio": 40.85},
+    {"label": "Losa terrazo",               "unidad": "m2", "precio": 42.90},
+    {"label": "Hormigón",                   "unidad": "m2", "precio": 52.79},
+    {"label": "Granito",                    "unidad": "m2", "precio": 92.19},
+    {"label": "Baldosa cigarrillo",         "unidad": "m2", "precio": 11.29},
+    {"label": "Baldosa granallada",         "unidad": "m2", "precio": 25.08},
+    {"label": "Baldosa hidráulica 40x40x4", "unidad": "m2", "precio": 12.74},
+    {"label": "Baldosa hexagonal",          "unidad": "m2", "precio": 16.28},
+    {"label": "Baldosa terrazo 40x40",      "unidad": "m2", "precio": 18.23},
+    {"label": "Plaquetas de gres",          "unidad": "m2", "precio": 174.33}
+  ],
+  "acerados_san": [
+    {"label": "Losa hidráulica",            "unidad": "m2", "precio": 37.14},
+    {"label": "Losa terrazo",               "unidad": "m2", "precio": 43.20},
+    {"label": "Hormigón",                   "unidad": "m2", "precio": 52.79},
+    {"label": "Granito",                    "unidad": "m2", "precio": 84.67},
+    {"label": "Baldosa cigarrillo",         "unidad": "m2", "precio": 11.29},
+    {"label": "Baldosa granallada",         "unidad": "m2", "precio": 25.08},
+    {"label": "Baldosa hidráulica 40x40x4", "unidad": "m2", "precio": 12.74},
+    {"label": "Baldosa hexagonal",          "unidad": "m2", "precio": 16.28},
+    {"label": "Baldosa terrazo 40x40",      "unidad": "m2", "precio": 18.23},
+    {"label": "Plaquetas de gres",          "unidad": "m2", "precio": 174.33}
+  ],
+  "bordillos_reposicion": [
+    {"label": "Bordillo de hormigón",   "unidad": "m", "precio": 16.00},
+    {"label": "Bordillo granítico",     "unidad": "m", "precio": 22.90},
+    {"label": "Bordillo bicapa 10x20",  "unidad": "m", "precio": 9.84},
+    {"label": "Bordillo bicapa 17x28",  "unidad": "m", "precio": 16.23}
+  ],
+  "calzadas_reposicion": [
+    {"label": "Adoquín",            "unidad": "m2", "precio": 35.23},
+    {"label": "Aglomerado",         "unidad": "m3", "precio": 139.64},
+    {"label": "Capa base pavimento", "unidad": "m3", "precio": 117.34},
+    {"label": "Hormigón",           "unidad": "m3", "precio": 117.18},
+    {"label": "Base zahorra",       "unidad": "m3", "precio": 23.46}
+  ],
+  "espesores_calzada": {
+    "Aglomerado": 0.12,
+    "Capa base pavimento": 0.15,
+    "Hormigón": 0.15,
+    "Base zahorra": 0.20
+  },
+  "excavacion": {
+    "mec_hasta_25": 2.92,
+    "mec_mas_25": 5.00,
+    "arena": 21.12,
+    "relleno": 18.47,
+    "carga": 0.32,
+    "transporte": 5.04,
+    "canon_tierras": 1.60
+  },
+  "acometidas_aba_tipos": {
+    "Sin demolición (<6m)": 228.72,
+    "Con demolición (<6m)": 418.44,
+    "Con demolición (>6m)": 464.78
+  },
+  "acometidas_san_tipos": {
+    "Adaptación gres": 485.43,
+    "Reposición gres <6m": 1231.79,
+    "Reposición gres >6m": 1759.63,
+    "Adaptación PVC": 446.64,
+    "Reposición PVC <6m": 885.12,
+    "Reposición PVC >6m": 1278.78
+  }
+}
