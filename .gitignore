@@ -24,3 +24,10 @@ data/imagenes/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Codacy AI instructions
+.github/instructions/
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

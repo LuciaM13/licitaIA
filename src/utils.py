@@ -6,16 +6,22 @@ Responsabilidad única: funciones de formateo y búsqueda en catálogos.
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from src.config import ParametrosProyecto
-from src.precios import euro
+
+
+# ─── Formateo ─────────────────────────────────────────────────────────────
+
+
+def euro(valor: float) -> str:
+    """Formatea un numero como moneda espanola (1.234,56 euros)."""
+    return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 # ─── Validación ───────────────────────────────────────────────────────────
 
 
-# Comprueba que los datos del formulario sean coherentes antes de calcular
 def validar_parametros(p: ParametrosProyecto) -> list[str]:
     """Valida parámetros de entrada. Retorna lista de errores (vacía si OK)."""
     errores = []
@@ -25,13 +31,16 @@ def validar_parametros(p: ParametrosProyecto) -> list[str]:
         errores.append("Longitud de abastecimiento debe ser > 0.")
     if p.san_item is not None and p.san_longitud_m <= 0:
         errores.append("Longitud de saneamiento debe ser > 0.")
+    if p.aba_item is not None and p.aba_profundidad_m <= 0:
+        errores.append("Profundidad de abastecimiento debe ser > 0.")
+    if p.san_item is not None and p.san_profundidad_m <= 0:
+        errores.append("Profundidad de saneamiento debe ser > 0.")
     return errores
 
 
 # ─── Búsqueda en catálogos ─────────────────────────────────────────────────
 
 
-# Localiza una tubería en el catálogo filtrando por tipo y diámetro
 def find_item(items: list[dict], tipo: str, diametro: int) -> dict:
     """Busca una tubería por tipo y diámetro en un catálogo."""
     for item in items:
@@ -40,7 +49,6 @@ def find_item(items: list[dict], tipo: str, diametro: int) -> dict:
     raise ValueError(f"No se encontró tubería tipo={tipo}, diámetro={diametro}mm")
 
 
-# Localiza un material (pavimento, acera, etc.) por su nombre visible
 def find_by_label(items: list[dict], label: str) -> dict:
     """Busca un item por su label en un catálogo de materiales."""
     for item in items:
@@ -52,8 +60,7 @@ def find_by_label(items: list[dict], label: str) -> dict:
 # ─── Exportación ───────────────────────────────────────────────────────────
 
 
-# Formatea el resultado del presupuesto como texto plano para pegar en Word
-def generar_texto_word(r: Dict[str, Any]) -> str:
+def generar_texto_word(r: dict[str, Any]) -> str:
     """Genera texto listo para copiar a Word a partir del resultado del cálculo."""
     pcts = r["pcts"]
     lineas = [f"{k}: {euro(v['subtotal'])}" for k, v in r["capitulos"].items()]
