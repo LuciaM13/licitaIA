@@ -12,10 +12,23 @@ venv/
 # Datos fuente (binarios pesados — no subir)
 documentos/
 pliegos/
-data/bc3/
-data/men/
-data/excels/
-data/imagenes/
+data/
+logica/
+
+# Scripts y archivos temporales de análisis
+verify_excel.py
+verification_results.csv
+verification_summary.json
+
+# Prompts internos
+ralph_experta_prompt.md
+ralph_auditoria_prompt.md
+
+# Claude Code config local
+.claude/
+
+# Dependencias (solo código fuente en el repo)
+requirements.txt
 
 # Access DB lock files
 *.ldb

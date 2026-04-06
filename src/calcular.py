@@ -11,7 +11,7 @@ Modelo de zanja alineado con el Excel EMASESA (A-Fundición 150 / S-Gres 300):
 - Relleno derivado: vol_excavación - vol_arriñonado - vol_tubo
 - Transporte = vol_excavación_total
 - Canon = vol_excavación_total × factor_esponjamiento
-- Entibación automática cuando profundidad > umbral (ABA: +0.20, SAN: (P+1)×2×1.1)
+- Entibación automática cuando profundidad > umbral (ABA: +0.20, SAN: +0.15)
 """
 
 from __future__ import annotations
@@ -197,7 +197,8 @@ def capitulo_obra_civil_red(
     # ABA: (P + 0.1×DN/1000 + 0.20) × 2.0 × L  (H77 en A-Fundición 150)
     if entib_aplicada is not None:
         if es_san:
-            sup_entib = (P + 1.0) * 2.0 * 1.1 * L
+            # Excel 'S-Gres 300'!H70: (D19 + 0.1*D2/100 + 0.15) * 2
+            sup_entib = (P + 0.1 * dn_mm / 1000.0 + 0.15) * 2.0 * L
         else:
             sup_entib = (P + 0.1 * dn_mm / 1000.0 + 0.20) * 2.0 * L
         partidas[entib_aplicada["label"]] = _importe(sup_entib, entib_aplicada["precio_m2"])
@@ -363,9 +364,11 @@ def capitulo_demolicion(
         return None
     partidas: dict[str, float] = {}
     if qty1 > 0 and item1 and "label" in item1:
-        partidas[item1["label"]] = _importe(qty1, item1["precio"])
+        factor1 = float(item1.get("factor_ci", 1.0))
+        partidas[item1["label"]] = _importe(qty1, item1["precio"] * factor1)
     if qty2 > 0 and item2 and "label" in item2:
-        partidas[item2["label"]] = _importe(qty2, item2["precio"])
+        factor2 = float(item2.get("factor_ci", 1.0))
+        partidas[item2["label"]] = _importe(qty2, item2["precio"] * factor2)
     if not partidas:
         return None
     return sum(partidas.values()), partidas
@@ -377,6 +380,7 @@ def capitulo_pavimentacion(
     *,
     calzada_conversion: bool = False,
     espesores: dict | None = None,
+    factor_calzada_san: float = 1.0,
 ) -> tuple[float, dict] | None:
     if qty1 <= 0 and qty2 <= 0:
         return None
@@ -384,13 +388,16 @@ def capitulo_pavimentacion(
     if qty1 > 0:
         if not item1 or "label" not in item1:
             raise ValueError("Superficie de pavimentación > 0 pero no se seleccionó material.")
+        factor1 = float(item1.get("factor_ci", 1.0))
         partidas[item1["label"]] = (
-            _importe_calzada_desde_m2(item1, qty1, espesores or {}) if calzada_conversion
-            else _importe(qty1, item1["precio"]))
+            _importe_calzada_desde_m2(item1, qty1, espesores or {}) * factor1 * factor_calzada_san
+            if calzada_conversion
+            else _importe(qty1, item1["precio"] * factor1))
     if qty2 > 0:
         if not item2 or "label" not in item2:
             raise ValueError("Longitud de pavimentación > 0 pero no se seleccionó material.")
-        partidas[item2["label"]] = _importe(qty2, item2["precio"])
+        factor2 = float(item2.get("factor_ci", 1.0))
+        partidas[item2["label"]] = _importe(qty2, item2["precio"] * factor2)
     return sum(partidas.values()), partidas
 
 

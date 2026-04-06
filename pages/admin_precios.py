@@ -187,7 +187,10 @@ _cols_valvuleria = {
 _cols_material = {
     "label": st.column_config.TextColumn("Nombre", required=True),
     "unidad": st.column_config.TextColumn("Unidad", required=True),
-    "precio": st.column_config.NumberColumn("Precio (€)", min_value=0.0, format="%.2f", required=True),
+    "precio": st.column_config.NumberColumn("Precio base (€)", min_value=0.0, format="%.2f", required=True,
+                                            help="Precio sin costes indirectos"),
+    "factor_ci": st.column_config.NumberColumn("Factor CI", min_value=0.01, format="%.2f", required=True,
+                                               help="Coste indirecto. Precio final = Precio base × Factor CI"),
 }
 
 _cols_acometida = {

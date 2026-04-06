@@ -1,30 +1,35 @@
 """
 Ensamblaje del presupuesto y resumen financiero.
 
-Estructura oficial (8 capítulos):
+Estructura oficial (hasta 9 capítulos):
   01  OBRA CIVIL ABASTECIMIENTO   — excavación, tubería, arriñonado, relleno,
                                     carga, transporte, entibación, pozos,
                                     valvulería, desmontaje, pozos existentes,
-                                    conducción provisional, cánones, materiales
+                                    conducción provisional, cánones
   02  OBRA CIVIL SANEAMIENTO      — ídem + imbornales, pozos existentes SAN
   03  PAVIMENTACIÓN ABASTECIMIENTO — demolición + reposición acerado/bordillo + sub-base
   04  PAVIMENTACIÓN SANEAMIENTO   — demolición + reposición calzada/acera + sub-base
   05  ACOMETIDAS ABASTECIMIENTO
   06  ACOMETIDAS SANEAMIENTO
-  07  SEGURIDAD Y SALUD           — % sobre capítulos 01-06
-  08  GESTIÓN AMBIENTAL           — % sobre capítulos 01-06
+  07  SEGURIDAD Y SALUD           — % sobre capítulos 01-06 (sin cánones/desmontaje)
+  08  GESTIÓN AMBIENTAL           — % sobre capítulos 01-06 (sin cánones/desmontaje)
+  09  MATERIALES                  — suministro puro ABA (excluido de GG/BI)
 
-Resumen financiero:
-  PEM        = suma capítulos 01-08
-  GG         = PEM × pct_gg
-  BI         = PEM × pct_bi
-  PBL sin IVA = PEM + GG + BI
-  IVA        = PBL × pct_iva
-  TOTAL      = PBL + IVA
+Resumen financiero (alineado con Excel EMASESA):
+  PEM         = suma capítulos 01-09 (incluye materiales)
+  base GG/BI  = PEM - MATERIALES     (Excel: GG/BI sobre J61, sin e)MATERIALES)
+  GG          = base_GG/BI × pct_gg
+  BI          = base_GG/BI × pct_bi
+  PBL sin IVA = ROUNDUP((PEM + GG + BI) / 10) × 10
+  IVA         = PBL × pct_iva
+  TOTAL       = PBL + IVA
+  Nota: PEM ya contiene materiales, solo se excluyen de la base GG/BI.
+        Resultado = (PEM-mat)×(1+GG+BI) + mat = Excel J61+J62+J63+J64
 """
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from src.config import ParametrosProyecto
@@ -115,12 +120,14 @@ def _materiales_aba(longitud: float, item: dict, precios: dict,
 # RESUMEN FINANCIERO
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _resumen_financiero(capitulos: dict, pcts: dict) -> dict[str, Any]:
-    """GG y BI sobre el PEM completo (todos los capítulos)."""
+def _resumen_financiero(capitulos: dict, pcts: dict,
+                        materiales_excl_ggbi: float = 0.0) -> dict[str, Any]:
+    """GG y BI sobre PEM sin materiales (Excel: J62-J63 sobre J61, sin e)MATERIALES)."""
     pem = sum(c["subtotal"] for c in capitulos.values())
-    gg = pem * pcts["gg"]
-    bi = pem * pcts["bi"]
-    pbl_sin_iva = pem + gg + bi
+    base_gg_bi = pem - materiales_excl_ggbi
+    gg = base_gg_bi * pcts["gg"]
+    bi = base_gg_bi * pcts["bi"]
+    pbl_sin_iva = math.ceil((pem + gg + bi) / 10) * 10  # ROUNDUP a decena (Excel J66)
     iva = pbl_sin_iva * pcts["iva"]
     total = pbl_sin_iva + iva
     return {
@@ -147,6 +154,14 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
     # Usamos dict sin número para acumular; se numeran al final
     _caps: dict[str, dict] = {}
     aux_aba = aux_san = None
+
+    # ── Tracking para alinear con Excel EMASESA ──────────────────────────────
+    # Cánones y desmontaje van en OBRA CIVIL (para display y GG/BI) pero se
+    # excluyen del % de S&S (Excel: S&S = pct × (K12+K22+K38), sin d)OTROS)
+    _excluir_de_base_ss = 0.0
+    # Materiales se muestran en capítulo aparte y se excluyen de GG/BI
+    # (Excel: materiales se suman DESPUÉS de GG/BI, no forman parte de J61)
+    _materiales_total = 0.0
 
     # ── Helpers ────────────────────────────────────────────────────────────────
     def _demo_items(red: str) -> tuple[dict | None, dict | None]:
@@ -183,12 +198,14 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
         )
         _add("OBRA CIVIL ABASTECIMIENTO", (cap_aba, partidas_aba))
 
-        # Cánones (incluidos en obra civil)
+        # Cánones (en obra civil para display/GG/BI, excluidos de base S&S)
         canon_aba = capitulo_canones(
             aux_aba.get("canon_tierras", 0.0),
             aux_aba.get("canon_mixto", 0.0),
         )
         _add("OBRA CIVIL ABASTECIMIENTO", canon_aba)
+        if canon_aba is not None:
+            _excluir_de_base_ss += canon_aba[0]
 
         # Pozos de registro
         _add("OBRA CIVIL ABASTECIMIENTO",
@@ -201,12 +218,14 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
              capitulo_valvuleria(p.aba_longitud_m, p.aba_item["diametro_mm"],
                                   precios, instalacion=p.instalacion_valvuleria))
 
-        # Desmontaje tubería existente
+        # Desmontaje tubería existente (en obra civil, excluido de base S&S)
         if p.desmontaje_tipo != "none":
-            _add("OBRA CIVIL ABASTECIMIENTO",
-                 capitulo_desmontaje_tuberia(
-                     p.aba_longitud_m, int(p.aba_item["diametro_mm"]),
-                     p.desmontaje_tipo, precios))
+            _desmontaje_res = capitulo_desmontaje_tuberia(
+                p.aba_longitud_m, int(p.aba_item["diametro_mm"]),
+                p.desmontaje_tipo, precios)
+            _add("OBRA CIVIL ABASTECIMIENTO", _desmontaje_res)
+            if _desmontaje_res is not None:
+                _excluir_de_base_ss += _desmontaje_res[0]
 
         # Pozos existentes ABA
         if p.pozos_existentes_aba != "none":
@@ -222,12 +241,15 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
                 _add("OBRA CIVIL ABASTECIMIENTO",
                      (importe_cp, {"Conducción provisional PE": importe_cp}))
 
-        # Materiales ABA (suministro puro)
-        _add("OBRA CIVIL ABASTECIMIENTO",
-             _materiales_aba(p.aba_longitud_m, p.aba_item, precios,
-                              diametro_mm=int(p.aba_item["diametro_mm"]),
-                              instalacion=p.instalacion_valvuleria,
-                              profundidad=p.aba_profundidad_m))
+        # Materiales ABA — capítulo separado, excluido de base S&S y GG/BI
+        # (Excel: e)MATERIALES se suma DESPUÉS de GG/BI, no entra en J61)
+        _mat_res = _materiales_aba(p.aba_longitud_m, p.aba_item, precios,
+                                    diametro_mm=int(p.aba_item["diametro_mm"]),
+                                    instalacion=p.instalacion_valvuleria,
+                                    profundidad=p.aba_profundidad_m)
+        if _mat_res is not None:
+            _materiales_total += _mat_res[0]
+            _add("MATERIALES", _mat_res)
 
     # ══════════════════════════════════════════════════════════════════════════
     # CAPÍTULO 02 — OBRA CIVIL SANEAMIENTO
@@ -240,12 +262,14 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
         )
         _add("OBRA CIVIL SANEAMIENTO", (cap_san, partidas_san))
 
-        # Cánones
+        # Cánones (en obra civil para display/GG/BI, excluidos de base S&S)
         canon_san = capitulo_canones(
             aux_san.get("canon_tierras", 0.0),
             aux_san.get("canon_mixto", 0.0),
         )
         _add("OBRA CIVIL SANEAMIENTO", canon_san)
+        if canon_san is not None:
+            _excluir_de_base_ss += canon_san[0]
 
         # Pozos de registro SAN
         _add("OBRA CIVIL SANEAMIENTO",
@@ -322,11 +346,12 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
              capitulo_demolicion(p.pav_san_calzada_m2, item_calzada,
                                   p.pav_san_acera_m2, item_acera))
 
-        # Reposición calzada + acera
+        # Reposición calzada + acera (SAN usa ×1.5 en espesores — Excel: 0.015 vs 0.01)
         _add("PAVIMENTACIÓN SANEAMIENTO",
              capitulo_pavimentacion(p.pav_san_calzada_m2, p.pav_san_calzada_item,
                                      p.pav_san_acera_m2, p.pav_san_acera_item,
-                                     calzada_conversion=True, espesores=espesores))
+                                     calzada_conversion=True, espesores=espesores,
+                                     factor_calzada_san=1.5))
 
         # Sub-base SAN
         if p.subbase_san_espesor_m > 0:
@@ -373,7 +398,10 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
         "PAVIMENTACIÓN ABASTECIMIENTO", "PAVIMENTACIÓN SANEAMIENTO",
         "ACOMETIDAS ABASTECIMIENTO", "ACOMETIDAS SANEAMIENTO",
     }
-    base_ss = sum(c["subtotal"] for nombre, c in _caps.items() if nombre in _base_ss_keys)
+    # Excel: S&S = pct × (K12+K22+K38) — sin cánones ni desmontaje (d)OTROS)
+    base_ss = max(0.0,
+                  sum(c["subtotal"] for nombre, c in _caps.items() if nombre in _base_ss_keys)
+                  - _excluir_de_base_ss)
 
     # ══════════════════════════════════════════════════════════════════════════
     # CAPÍTULO — SEGURIDAD Y SALUD
@@ -381,6 +409,10 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
     if p.pct_seguridad > 0:
         importe_ss = base_ss * p.pct_seguridad
         _add("SEGURIDAD Y SALUD", (importe_ss, {"Seguridad y Salud": importe_ss}))
+
+    if p.pct_servicios_afectados > 0:
+        importe_sa = base_ss * p.pct_servicios_afectados
+        _add("SEGURIDAD Y SALUD", (importe_sa, {"Servicios afectados": importe_sa}))
 
     # ══════════════════════════════════════════════════════════════════════════
     # CAPÍTULO — GESTIÓN AMBIENTAL
@@ -396,7 +428,8 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
     }
 
     # ── Resumen financiero ─────────────────────────────────────────────────────
-    fin = _resumen_financiero(capitulos, pcts)
+    fin = _resumen_financiero(capitulos, pcts,
+                              materiales_excl_ggbi=_materiales_total)
 
     return {
         "capitulos": capitulos,
