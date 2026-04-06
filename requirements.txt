@@ -1,2 +1,4 @@
 streamlit>=1.32
 pandas>=2.0
+clipspy>=1.0.6
+pytest>=8.0

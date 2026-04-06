@@ -33,6 +33,7 @@ import math
 from typing import Any
 
 from src.config import ParametrosProyecto
+from src.motor_experto import resolver_decisiones
 from src.calcular import (
     capitulo_obra_civil_red,
     capitulo_pozos_registro,
@@ -71,23 +72,19 @@ def _merge(*resultados) -> tuple[float, dict] | None:
     return sum(partidas.values()), partidas
 
 
-def _materiales_aba(longitud: float, item: dict, precios: dict,
-                    diametro_mm: int, instalacion: str,
-                    profundidad: float) -> tuple[float, dict] | None:
+def _materiales_aba(longitud: float, item: dict,
+                    decisiones_aba: dict) -> tuple[float, dict] | None:
     """Suministro puro ABA: tubería + valvulería + tapas. Se incluye en OBRA CIVIL ABA."""
     partidas: dict[str, float] = {}
 
+    # 1. Tubería material — usa el item seleccionado directamente
     precio_mat_m = float(item.get("precio_material_m", 0.0) or 0.0)
     factor_piezas = float(item.get("factor_piezas", 1.0))
     if precio_mat_m > 0:
         partidas[item["label"] + " (suministro)"] = longitud * precio_mat_m * factor_piezas
 
-    for v in precios.get("catalogo_valvuleria", []):
-        if not (int(v.get("dn_min", 0)) <= diametro_mm <= int(v.get("dn_max", 9999))):
-            continue
-        inst = v.get("instalacion")
-        if inst is not None and inst != instalacion:
-            continue
+    # 2. Valvulería material — usa los candidatos elegibles ya resueltos por el motor
+    for v in decisiones_aba["valvuleria"]["items"]:
         intervalo = float(v.get("intervalo_m", 0))
         precio_mat = float(v.get("precio_material", 0.0) or 0.0)
         if intervalo <= 0 or precio_mat <= 0:
@@ -95,21 +92,13 @@ def _materiales_aba(longitud: float, item: dict, precios: dict,
         n = longitud / intervalo
         partidas[v["label"] + " (material)"] = n * precio_mat * float(v.get("factor_piezas", 1.0))
 
-    for poz in precios.get("catalogo_pozos", []):
-        if poz.get("red") not in (None, "ABA"):
-            continue
-        prof_max = poz.get("profundidad_max")
-        if prof_max is not None and profundidad >= float(prof_max):
-            continue
-        dn_max = poz.get("dn_max")
-        if dn_max is not None and diametro_mm > int(dn_max):
-            continue
-        precio_tapa_mat = float(poz.get("precio_tapa_material", 0.0) or 0.0)
-        intervalo_poz = float(poz.get("intervalo", 0))
-        if precio_tapa_mat <= 0 or intervalo_poz <= 0:
-            continue
-        partidas["Tapa pozo registro ABA (material)"] = (longitud / intervalo_poz) * precio_tapa_mat
-        break
+    # 3. Tapa pozo registro material — usa el pozo ya seleccionado por el motor
+    pozo_item = decisiones_aba["pozo_registro"]["item"]
+    if pozo_item is not None:
+        precio_tapa_mat = float(pozo_item.get("precio_tapa_material", 0.0) or 0.0)
+        intervalo_poz = float(pozo_item.get("intervalo", 0))
+        if precio_tapa_mat > 0 and intervalo_poz > 0:
+            partidas["Tapa pozo registro ABA (material)"] = (longitud / intervalo_poz) * precio_tapa_mat
 
     if not partidas:
         return None
@@ -190,11 +179,22 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
     # CAPÍTULO 01 — OBRA CIVIL ABASTECIMIENTO
     # ══════════════════════════════════════════════════════════════════════════
     if aba_activa:
+        decisiones_aba = resolver_decisiones(
+            tipo_tuberia=p.aba_item["tipo"],
+            diametro_mm=int(p.aba_item["diametro_mm"]),
+            red="ABA",
+            profundidad=p.aba_profundidad_m,
+            precios=precios,
+            instalacion=p.instalacion_valvuleria,
+            desmontaje_tipo=p.desmontaje_tipo,
+        )
+
         # Excavación, tubería, arriñonado, relleno, carga, transporte, entibación
         cap_aba, partidas_aba, aux_aba = capitulo_obra_civil_red(
             p.aba_longitud_m, p.aba_profundidad_m, p.aba_item, precios,
             pct_manual=p.pct_manual,
             espesor_pavimento_m=p.espesor_pavimento_m,
+            entibacion_item=decisiones_aba["entibacion"]["item"],
         )
         _add("OBRA CIVIL ABASTECIMIENTO", (cap_aba, partidas_aba))
 
@@ -211,18 +211,21 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
         _add("OBRA CIVIL ABASTECIMIENTO",
              capitulo_pozos_registro(p.aba_longitud_m, False, precios,
                                      profundidad=p.aba_profundidad_m,
-                                     diametro_mm=int(p.aba_item["diametro_mm"])))
+                                     diametro_mm=int(p.aba_item["diametro_mm"]),
+                                     pozo_item=decisiones_aba["pozo_registro"]["item"]))
 
         # Valvulería
         _add("OBRA CIVIL ABASTECIMIENTO",
              capitulo_valvuleria(p.aba_longitud_m, p.aba_item["diametro_mm"],
-                                  precios, instalacion=p.instalacion_valvuleria))
+                                  precios, instalacion=p.instalacion_valvuleria,
+                                  valvuleria_items=decisiones_aba["valvuleria"]["items"]))
 
         # Desmontaje tubería existente (en obra civil, excluido de base S&S)
         if p.desmontaje_tipo != "none":
             _desmontaje_res = capitulo_desmontaje_tuberia(
                 p.aba_longitud_m, int(p.aba_item["diametro_mm"]),
-                p.desmontaje_tipo, precios)
+                p.desmontaje_tipo, precios,
+                desmontaje_item=decisiones_aba["desmontaje"]["item"])
             _add("OBRA CIVIL ABASTECIMIENTO", _desmontaje_res)
             if _desmontaje_res is not None:
                 _excluir_de_base_ss += _desmontaje_res[0]
@@ -243,10 +246,7 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
 
         # Materiales ABA — capítulo separado, excluido de base S&S y GG/BI
         # (Excel: e)MATERIALES se suma DESPUÉS de GG/BI, no entra en J61)
-        _mat_res = _materiales_aba(p.aba_longitud_m, p.aba_item, precios,
-                                    diametro_mm=int(p.aba_item["diametro_mm"]),
-                                    instalacion=p.instalacion_valvuleria,
-                                    profundidad=p.aba_profundidad_m)
+        _mat_res = _materiales_aba(p.aba_longitud_m, p.aba_item, decisiones_aba)
         if _mat_res is not None:
             _materiales_total += _mat_res[0]
             _add("MATERIALES", _mat_res)
@@ -255,10 +255,21 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
     # CAPÍTULO 02 — OBRA CIVIL SANEAMIENTO
     # ══════════════════════════════════════════════════════════════════════════
     if san_activa:
+        decisiones_san = resolver_decisiones(
+            tipo_tuberia=p.san_item["tipo"],
+            diametro_mm=int(p.san_item["diametro_mm"]),
+            red="SAN",
+            profundidad=p.san_profundidad_m,
+            precios=precios,
+            instalacion="enterrada",
+            desmontaje_tipo="none",
+        )
+
         cap_san, partidas_san, aux_san = capitulo_obra_civil_red(
             p.san_longitud_m, p.san_profundidad_m, p.san_item, precios,
             es_san=True, pct_manual=p.pct_manual,
             espesor_pavimento_m=p.espesor_pavimento_m,
+            entibacion_item=decisiones_san["entibacion"]["item"],
         )
         _add("OBRA CIVIL SANEAMIENTO", (cap_san, partidas_san))
 
@@ -275,7 +286,8 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
         _add("OBRA CIVIL SANEAMIENTO",
              capitulo_pozos_registro(p.san_longitud_m, True, precios,
                                      profundidad=p.san_profundidad_m,
-                                     diametro_mm=int(p.san_item["diametro_mm"])))
+                                     diametro_mm=int(p.san_item["diametro_mm"]),
+                                     pozo_item=decisiones_san["pozo_registro"]["item"]))
 
         # Imbornales
         if p.imbornales_tipo != "none":

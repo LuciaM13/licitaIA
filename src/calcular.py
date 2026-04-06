@@ -96,6 +96,7 @@ def capitulo_obra_civil_red(
     es_san: bool = False,
     pct_manual: float = 0.30,
     espesor_pavimento_m: float = 0.0,
+    entibacion_item: dict | None = None,
 ):
     """Calcula el capítulo de Obra Civil (excavación, tubería, arriñonado, etc.)
 
@@ -123,25 +124,9 @@ def capitulo_obra_civil_red(
 
     W_fondo = _ancho_fondo(dn_mm, es_san)
 
-    # Determinar si hay entibación (para forma de zanja)
-    # Se consulta el catálogo para saber el umbral aplicable a esta red/profundidad
-    red_proyecto = "SAN" if es_san else "ABA"
-    hay_entibacion_geo = False
-    entibaciones = sorted(
-        precios.get("catalogo_entibacion", []),
-        key=lambda e: float(e.get("umbral_m", 0)),
-        reverse=True,
-    )
-    entib_aplicada = None
-    for entib in entibaciones:
-        umbral = float(entib.get("umbral_m", 1.5))
-        red_entib = entib.get("red")
-        if red_entib is not None and red_entib != red_proyecto:
-            continue
-        if P > umbral:
-            hay_entibacion_geo = True
-            entib_aplicada = entib
-            break
+    # Entibación resuelta por motor_experto.resolver_decisiones()
+    hay_entibacion_geo = entibacion_item is not None
+    entib_aplicada = entibacion_item
 
     W_cima = _ancho_cima(P_exc, hay_entibacion_geo, W_fondo)
     W_media = (W_fondo + W_cima) / 2.0
@@ -260,24 +245,14 @@ def _importe_calzada_desde_m2(item: dict[str, Any], superficie_m2: float,
 def capitulo_pozos_registro(
     longitud: float, es_san: bool, precios: dict,
     *, profundidad: float = 0.0, diametro_mm: int = 0,
+    pozo_item: dict | None = None,
 ) -> tuple[float, dict] | None:
     catalogo = precios.get("catalogo_pozos", [])
     if not catalogo or longitud <= 0:
         return None
-    red_proyecto = "SAN" if es_san else "ABA"
-    candidatos = []
-    for item in catalogo:
-        red_item = item.get("red")
-        if red_item is not None and red_item != red_proyecto:
-            continue
-        prof_max = item.get("profundidad_max")
-        if prof_max is not None and profundidad >= float(prof_max):
-            continue
-        dn_max = item.get("dn_max")
-        if dn_max is not None and diametro_mm > int(dn_max):
-            continue
-        candidatos.append(item)
-    if not candidatos:
+    # Pozo resuelto por motor_experto.resolver_decisiones()
+    mejor = pozo_item
+    if mejor is None:
         if catalogo:
             red_label = "SAN" if es_san else "ABA"
             raise ValueError(
@@ -286,14 +261,6 @@ def capitulo_pozos_registro(
                 "Revisa los rangos en Administración de precios."
             )
         return None
-
-    def _especificidad(item):
-        sin_red = item.get("red") is None
-        p_max = float(item["profundidad_max"]) if item.get("profundidad_max") is not None else 9999
-        d_max = int(item["dn_max"]) if item.get("dn_max") is not None else 99999
-        return (sin_red, p_max, d_max)
-
-    mejor = min(candidatos, key=_especificidad)
     intervalo = float(mejor.get("intervalo", 0))
     if intervalo <= 0:
         return None
@@ -320,21 +287,15 @@ def capitulo_pozos_registro(
 def capitulo_valvuleria(
     longitud: float, diametro_mm: int, precios: dict,
     *, instalacion: str = "enterrada",
+    valvuleria_items: list | None = None,
 ) -> tuple[float, dict] | None:
     catalogo = precios.get("catalogo_valvuleria", [])
     if not catalogo or longitud <= 0:
         return None
+    # Items resueltos por motor_experto.resolver_decisiones()
+    items = valvuleria_items if valvuleria_items is not None else []
     partidas: dict[str, float] = {}
-    for item in catalogo:
-        if "dn_min" not in item or "dn_max" not in item:
-            continue
-        dn_min = int(item["dn_min"])
-        dn_max = int(item["dn_max"])
-        if not (dn_min <= int(diametro_mm) <= dn_max):
-            continue
-        inst = item.get("instalacion")
-        if inst is not None and inst != instalacion:
-            continue
+    for item in items:
         intervalo = float(item.get("intervalo_m", 0))
         if intervalo <= 0:
             continue
@@ -438,7 +399,8 @@ def capitulo_canones(canon_tierras: float, canon_mixto: float) -> tuple[float, d
 
 
 def capitulo_desmontaje_tuberia(
-    longitud: float, diametro_mm: int, tipo: str, precios: dict
+    longitud: float, diametro_mm: int, tipo: str, precios: dict,
+    *, desmontaje_item: dict | None = None,
 ) -> tuple[float, dict] | None:
     """Desmontaje de tubería existente. tipo='normal' o 'fibrocemento'."""
     if tipo == "none" or longitud <= 0:
@@ -446,17 +408,10 @@ def capitulo_desmontaje_tuberia(
     catalogo = precios.get("catalogo_desmontaje", [])
     if not catalogo:
         return None
-    es_fc = (tipo == "fibrocemento")
-    # Filtrar por fibrocemento y diámetro
-    candidatos = [
-        item for item in catalogo
-        if bool(item.get("es_fibrocemento", 0)) == es_fc
-        and (es_fc or diametro_mm <= int(item["dn_max"]))
-    ]
-    if not candidatos:
+    # Item resuelto por motor_experto.resolver_decisiones()
+    mejor = desmontaje_item
+    if mejor is None:
         return None
-    # Elegir el de menor dn_max que aplique (más específico)
-    mejor = min(candidatos, key=lambda x: int(x["dn_max"]))
     importe = _importe(longitud, mejor["precio_m"])
     return importe, {mejor["label"]: importe}
 

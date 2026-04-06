@@ -1,0 +1,224 @@
+{
+  "baseline_1_aba_fd150": {
+    "capitulos": {
+      "01 OBRA CIVIL ABASTECIMIENTO": {
+        "subtotal": 35937.23196631301,
+        "partidas": {
+          "FD Ø 150 mm": 15069.6,
+          "Excavación manual": 760.746168,
+          "Excavación mecánica": 487.144476,
+          "Apoyo y arriñonado": 977.5734123130175,
+          "Relleno de albero": 3453.02191,
+          "Carga de tierras": 76.26528,
+          "Transporte a vertedero": 1201.17816,
+          "Canon vertido tierras": 472.12,
+          "Pozo prefabricado hormigón": 481.18,
+          "Pozo prefabricado hormigón (tapa)": 368.42,
+          "Desagüe DN80 (tubería DN≤300)": 548.35,
+          "Ventosa trifuncional DN≤80-599": 393.1428,
+          "Pozo de desagüe": 1309.63,
+          "Conexión ɸ DN150": 3707.58,
+          "Hidrante": 3100.70856,
+          "Compuerta DN150-199": 544.8456,
+          "Tapa de hidrante": 210.52559999999997,
+          "Desmontaje tubería DN<600mm": 2775.2
+        }
+      },
+      "02 MATERIALES": {
+        "subtotal": 9363.384,
+        "partidas": {
+          "FD Ø 150 mm (suministro)": 5227.2,
+          "Ventosa trifuncional DN≤80-599 (material)": 402.0,
+          "Hidrante (material)": 3255.7439999999997,
+          "Compuerta DN150-199 (material)": 295.2,
+          "Tapa de hidrante (material)": 183.23999999999998
+        }
+      },
+      "03 SEGURIDAD Y SALUD": {
+        "subtotal": 980.6973589893903,
+        "partidas": {
+          "Seguridad y Salud": 980.6973589893903
+        }
+      },
+      "04 GESTIÓN AMBIENTAL": {
+        "subtotal": 326.89911966313014,
+        "partidas": {
+          "Gestión ambiental": 326.89911966313014
+        }
+      }
+    },
+    "pem": 46608.21244496553,
+    "gg": 4841.82769784552,
+    "bi": 2234.689706697932,
+    "pbl_sin_iva": 53690,
+    "iva": 11274.9,
+    "total": 64964.9,
+    "pcts": {
+      "gg": 0.13,
+      "bi": 0.06,
+      "iva": 0.21
+    },
+    "pct_seguridad_info": 3.0,
+    "pct_gestion_info": 1.0,
+    "auxiliares": {
+      "aba": {
+        "ancho_fondo_m": 0.6,
+        "ancho_cima_m": 1.146,
+        "P_exc_m": 1.365,
+        "vol_zanja_m3": 238.329,
+        "vol_tubo_m3": 5.089,
+        "vol_arrinonado_m3": 46.287,
+        "vol_relleno_m3": 186.953,
+        "vol_transporte_m3": 238.329,
+        "vol_canon_m3": 309.828,
+        "pct_manual": 0.3,
+        "canon_tierras": 472.12,
+        "canon_mixto": 0.0
+      },
+      "san": {}
+    }
+  },
+  "baseline_2_san_gres300": {
+    "capitulos": {
+      "01 OBRA CIVIL SANEAMIENTO": {
+        "subtotal": 45820.73227193906,
+        "partidas": {
+          "Gres Ø 300 mm": 18014.4,
+          "Excavación manual": 1941.4382400000002,
+          "Excavación mecánica": 1243.2016800000001,
+          "Apoyo y arriñonado": 3566.573676939052,
+          "Relleno de albero": 7832.7576,
+          "Carga de tierras": 194.6304,
+          "Transporte a vertedero": 3065.4288,
+          "Entibación blindada": 2661.7799999999997,
+          "Canon vertido tierras": 1204.85,
+          "Pozo registro SAN P<2.5m Tub≤500": 5024.203125,
+          "Adaptación imbornal": 1071.46875
+        }
+      },
+      "02 SEGURIDAD Y SALUD": {
+        "subtotal": 1338.4764681581717,
+        "partidas": {
+          "Seguridad y Salud": 1338.4764681581717
+        }
+      },
+      "03 GESTIÓN AMBIENTAL": {
+        "subtotal": 446.1588227193906,
+        "partidas": {
+          "Gestión ambiental": 446.1588227193906
+        }
+      }
+    },
+    "pem": 47605.367562816624,
+    "gg": 6188.697783166162,
+    "bi": 2856.322053768997,
+    "pbl_sin_iva": 56660,
+    "iva": 11898.6,
+    "total": 68558.6,
+    "pcts": {
+      "gg": 0.13,
+      "bi": 0.06,
+      "iva": 0.21
+    },
+    "pct_seguridad_info": 3.0,
+    "pct_gestion_info": 1.0,
+    "auxiliares": {
+      "aba": {},
+      "san": {
+        "ancho_fondo_m": 1.86,
+        "ancho_cima_m": 1.86,
+        "P_exc_m": 2.18,
+        "vol_zanja_m3": 608.22,
+        "vol_tubo_m3": 15.268,
+        "vol_arrinonado_m3": 168.872,
+        "vol_relleno_m3": 424.08,
+        "vol_transporte_m3": 608.22,
+        "vol_canon_m3": 790.686,
+        "pct_manual": 0.3,
+        "canon_tierras": 1204.85,
+        "canon_mixto": 0.0
+      }
+    }
+  },
+  "baseline_3_aba_patologico": {
+    "capitulos": {
+      "01 OBRA CIVIL ABASTECIMIENTO": {
+        "subtotal": 42954.762974726036,
+        "partidas": {
+          "FD Ø 300 mm": 18465.6,
+          "Excavación manual": 1787.2558734000002,
+          "Excavación mecánica": 638.7619367,
+          "Apoyo y arriñonado": 683.891784626035,
+          "Relleno de albero": 4169.048400000001,
+          "Carga de tierras": 85.84960000000001,
+          "Transporte a vertedero": 1352.1312000000003,
+          "Entibación blindada": 3036.2200000000003,
+          "Canon vertido tierras": 531.45,
+          "Canon vertido mixto": 188.86,
+          "Pozo prefabricado hormigón": 240.59,
+          "Pozo prefabricado hormigón (tapa)": 184.21,
+          "Desagüe DN80 (tubería DN≤300)": 274.175,
+          "Ventosa trifuncional DN≤80-599": 196.5714,
+          "Pozo de desagüe": 654.815,
+          "Hidrante": 1550.35428,
+          "Tapa de hidrante": 105.26279999999998,
+          "Conexión ɸ DN300": 1019.23,
+          "Compuerta DN300+": 685.6857,
+          "Desmontaje/demolición fibrocemento": 7104.8
+        }
+      },
+      "02 MATERIALES": {
+        "subtotal": 8173.025999999999,
+        "partidas": {
+          "FD Ø 300 mm (suministro)": 5948.4,
+          "Ventosa trifuncional DN≤80-599 (material)": 201.0,
+          "Hidrante (material)": 1627.8719999999998,
+          "Tapa de hidrante (material)": 91.61999999999999,
+          "Compuerta DN300+ (material)": 304.13399999999996
+        }
+      },
+      "03 SEGURIDAD Y SALUD": {
+        "subtotal": 1756.4826487363018,
+        "partidas": {
+          "Seguridad y Salud": 1756.4826487363018
+        }
+      },
+      "04 GESTIÓN AMBIENTAL": {
+        "subtotal": 702.5930594945207,
+        "partidas": {
+          "Gestión ambiental": 702.5930594945207
+        }
+      }
+    },
+    "pem": 53586.86468295686,
+    "gg": 5903.799028784392,
+    "bi": 2724.8303209774117,
+    "pbl_sin_iva": 62220,
+    "iva": 13066.199999999999,
+    "total": 75286.2,
+    "pcts": {
+      "gg": 0.13,
+      "bi": 0.06,
+      "iva": 0.21
+    },
+    "pct_seguridad_info": 5.0,
+    "pct_gestion_info": 2.0,
+    "auxiliares": {
+      "aba": {
+        "ancho_fondo_m": 0.76,
+        "ancho_cima_m": 0.76,
+        "P_exc_m": 3.53,
+        "vol_zanja_m3": 268.28,
+        "vol_tubo_m3": 10.179,
+        "vol_arrinonado_m3": 32.381,
+        "vol_relleno_m3": 225.72,
+        "vol_transporte_m3": 268.28,
+        "vol_canon_m3": 348.764,
+        "pct_manual": 0.5,
+        "canon_tierras": 531.45,
+        "canon_mixto": 188.86
+      },
+      "san": {}
+    }
+  }
+}

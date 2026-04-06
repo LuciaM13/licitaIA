@@ -9,26 +9,21 @@ venv/
 .vscode/
 .idea/
 
-# Datos fuente (binarios pesados — no subir)
-documentos/
+# Datos de referencia (binarios pesados — no subir)
+data/bc3/
+data/excels/
+data/men/
 pliegos/
-data/
-logica/
-
-# Scripts y archivos temporales de análisis
-verify_excel.py
-verification_results.csv
-verification_summary.json
+documentos/
 
 # Prompts internos
-ralph_experta_prompt.md
-ralph_auditoria_prompt.md
+ralph_*_prompt.md
+
+# pytest
+.pytest_cache/
 
 # Claude Code config local
 .claude/
-
-# Dependencias (solo código fuente en el repo)
-requirements.txt
 
 # Access DB lock files
 *.ldb
@@ -40,7 +35,3 @@ Desktop.ini
 
 # Codacy AI instructions
 .github/instructions/
-
-
-#Ignore vscode AI rules
-.github\instructions\codacy.instructions.md
