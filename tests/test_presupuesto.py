@@ -15,7 +15,7 @@ from src.config import ParametrosProyecto
 from src.presupuesto import calcular_presupuesto
 
 TOLERANCIA = 0.01
-BASELINE_PATH = Path(__file__).resolve().parent.parent / "verify_baseline.json"
+BASELINE_PATH = Path(__file__).resolve().parent / "verify_baseline.json"
 
 
 @pytest.fixture(scope="session")

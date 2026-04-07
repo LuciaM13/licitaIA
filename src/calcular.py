@@ -370,11 +370,6 @@ def capitulo_acometidas(n: int, precio: float, label: str,
     return importe, {label: importe}
 
 
-def capitulo_importe_fijo(importe: float, label: str) -> tuple[float, dict] | None:
-    if importe <= 0:
-        return None
-    return importe, {label: importe}
-
 
 def capitulo_subbase(
     superficie_m2: float, espesor_m: float, item: dict[str, Any] | None,

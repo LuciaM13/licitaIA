@@ -13,7 +13,7 @@ import streamlit as st
 from src.db import init_db
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-_LOGO_PATH = os.path.join(ROOT, "static", "cropped-Logo_2024-300x300.png")
+_LOGO_PATH = os.path.join(ROOT, "data", "static", "cropped-Logo_2024-300x300.png")
 
 init_db()
 

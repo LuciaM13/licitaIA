@@ -32,7 +32,6 @@ from src.desempates import (
 )
 from src.normalizacion import (
     FACTORES_PIEZAS,
-    NULL_SENTINEL,
     normalizar_tipo,
     normalizar_red,
     normalizar_instalacion,

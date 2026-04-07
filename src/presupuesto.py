@@ -53,24 +53,6 @@ def _red_activa(item, longitud: float) -> bool:
     return item is not None and longitud > 0
 
 
-def _merge(*resultados) -> tuple[float, dict] | None:
-    """Fusiona varios resultados (subtotal, partidas) en uno solo.
-    Ignora los None. Devuelve None si todos son None.
-    """
-    partidas: dict[str, float] = {}
-    for res in resultados:
-        if res is None:
-            continue
-        _, p = res
-        for k, v in p.items():
-            if k in partidas:
-                partidas[k] += v
-            else:
-                partidas[k] = v
-    if not partidas:
-        return None
-    return sum(partidas.values()), partidas
-
 
 def _materiales_aba(longitud: float, item: dict,
                     decisiones_aba: dict) -> tuple[float, dict] | None:

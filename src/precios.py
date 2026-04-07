@@ -231,7 +231,3 @@ def guardar_precios(precios: dict) -> None:
         raise ValueError(f"Error de integridad en la base de datos: {e}") from e
     except sqlite3.Error as e:
         raise ValueError(f"Error escribiendo en la base de datos: {e}") from e
-
-
-# Re-export euro desde utils para backward compatibility
-from src.utils import euro  # noqa: F401

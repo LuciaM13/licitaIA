@@ -35,3 +35,7 @@ Desktop.ini
 
 # Codacy AI instructions
 .github/instructions/
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
