@@ -1,3 +1,35 @@
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+
+# ── Entornos virtuales ────────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Variables de entorno / secretos ──────────────────────────────────────────
 .env
+.env.*
+!.env.example
+.streamlit/secrets.toml   # el config.toml de tema sí se versiona
+
+# ── Tests y cobertura ─────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── SQLite (datos de precios) ─────────────────────────────────────────────────
+# data/precios.db se versiona intencionalmente (fuente de verdad de precios EMASESA)
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ── Sistema operativo ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── AI / Codacy ───────────────────────────────────────────────────────────────
+.github/instructions/
