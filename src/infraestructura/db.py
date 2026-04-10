@@ -346,20 +346,20 @@ def cargar_todo(path: str | Path | None = None) -> dict:
             conn.execute("SELECT label, precio, intervalo, red, profundidad_max, dn_max, precio_tapa, precio_tapa_material FROM pozos"))
 
         # Demolición (ABA/SAN)
-        precios.update(_cargar_por_red(conn, "demolicion", "label, unidad, precio, factor_ci",
+        precios.update(_cargar_por_red(conn, "demolicion", "label, unidad, precio",
                                        "demolicion"))
 
         # Acerados
-        precios.update(_cargar_por_red(conn, "acerados", "label, unidad, precio, factor_ci",
+        precios.update(_cargar_por_red(conn, "acerados", "label, unidad, precio",
                                        "acerados"))
 
         # Bordillos
         precios["bordillos_reposicion"] = _rows_to_dicts(
-            conn.execute("SELECT label, unidad, precio, factor_ci FROM bordillos ORDER BY label"))
+            conn.execute("SELECT label, unidad, precio FROM bordillos ORDER BY label"))
 
         # Calzadas
         precios["calzadas_reposicion"] = _rows_to_dicts(
-            conn.execute("SELECT label, unidad, precio, factor_ci FROM calzadas ORDER BY label"))
+            conn.execute("SELECT label, unidad, precio FROM calzadas ORDER BY label"))
 
         # Espesores calzada (dict, no lista) — JOIN para obtener label
         precios["espesores_calzada"] = {
@@ -522,31 +522,27 @@ def guardar_todo(precios: dict, path: str | Path | None = None) -> None:
             for red, clave in [("ABA", "demolicion_aba"), ("SAN", "demolicion_san")]:
                 for item in precios.get(clave, []):
                     conn.execute(
-                        "INSERT INTO demolicion (red, label, unidad, precio, factor_ci) VALUES (?,?,?,?,?)",
-                        (red, item["label"], item["unidad"], float(item["precio"]),
-                         float(item.get("factor_ci", 1.0))))
+                        "INSERT INTO demolicion (red, label, unidad, precio) VALUES (?,?,?,?)",
+                        (red, item["label"], item["unidad"], float(item["precio"])))
 
             # Acerados
             for red, clave in [("ABA", "acerados_aba"), ("SAN", "acerados_san")]:
                 for item in precios[clave]:
                     conn.execute(
-                        "INSERT INTO acerados (red, label, unidad, precio, factor_ci) VALUES (?,?,?,?,?)",
-                        (red, item["label"], item["unidad"], float(item["precio"]),
-                         float(item.get("factor_ci", 1.0))))
+                        "INSERT INTO acerados (red, label, unidad, precio) VALUES (?,?,?,?)",
+                        (red, item["label"], item["unidad"], float(item["precio"])))
 
             # Bordillos
             for item in precios["bordillos_reposicion"]:
                 conn.execute(
-                    "INSERT INTO bordillos (label, unidad, precio, factor_ci) VALUES (?,?,?,?)",
-                    (item["label"], item["unidad"], float(item["precio"]),
-                     float(item.get("factor_ci", 1.0))))
+                    "INSERT INTO bordillos (label, unidad, precio) VALUES (?,?,?)",
+                    (item["label"], item["unidad"], float(item["precio"])))
 
             # Calzadas
             for item in precios["calzadas_reposicion"]:
                 conn.execute(
-                    "INSERT INTO calzadas (label, unidad, precio, factor_ci) VALUES (?,?,?,?)",
-                    (item["label"], item["unidad"], float(item["precio"]),
-                     float(item.get("factor_ci", 1.0))))
+                    "INSERT INTO calzadas (label, unidad, precio) VALUES (?,?,?)",
+                    (item["label"], item["unidad"], float(item["precio"])))
 
             # Espesores calzada — lookup calzada ID por label
             calzada_ids = {

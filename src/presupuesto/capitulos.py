@@ -12,7 +12,6 @@ Este módulo:
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 from src.domain.geometria import calcular_geometria, GeometriaZanja
@@ -241,8 +240,7 @@ def capitulo_demolicion(
     partidas: dict[str, float] = {}
     for qty, item in [(qty1, item1), (qty2, item2)]:
         if qty > 0 and item and "label" in item:
-            factor = float(item.get("factor_ci", 1.0))
-            partidas[item["label"]] = _importe(qty, item["precio"] * factor)
+            partidas[item["label"]] = _importe(qty, item["precio"])
     if not partidas:
         return None
     return sum(partidas.values()), partidas
@@ -269,7 +267,6 @@ def capitulo_pavimentacion(
             continue
         if not item or "label" not in item:
             raise ValueError("Cantidad de pavimentación > 0 pero no se seleccionó material.")
-        factor = float(item.get("factor_ci", 1.0))
         if calzada_conversion and espesores and item.get("unidad", "m2") != "m2":
             # Conversión m² → m³ solo para items con unidad m3 (aglomerado, hormigón, etc.)
             espesor = espesores.get(item["label"])
@@ -278,9 +275,9 @@ def capitulo_pavimentacion(
                     f"No existe espesor definido para '{item['label']}'. "
                     "Añádelo en Administración de precios → Espesores de calzada."
                 )
-            importe = _importe(qty * espesor, item["precio"]) * factor * factor_calzada_san
+            importe = _importe(qty * espesor, item["precio"]) * factor_calzada_san
         else:
-            importe = _importe(qty, item["precio"] * factor) * factor_calzada_san
+            importe = _importe(qty, item["precio"]) * factor_calzada_san
         partidas[item["label"]] = importe
 
     return sum(partidas.values()), partidas

@@ -140,7 +140,7 @@ _CI_CATALOGOS = {
 def _aplicar_ci(precios: dict) -> None:
     """Multiplica todos los precios unitarios por el factor de Costes Indirectos.
 
-    El factor pct_ci se almacena como multiplicador (ej: 1.05 = +5% CI).
+    El factor pct_ci es el margen de seguridad global (ej: 1.05 = +5% sobre todos los precios).
     Si no existe o es 1.0, no hace nada. Modifica el dict in-place.
     factor_piezas NO se escala (es un multiplicador dimensional, no un precio).
     """

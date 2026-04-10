@@ -189,8 +189,6 @@ _cols_material = {
     "unidad": st.column_config.TextColumn("Unidad", required=True),
     "precio": st.column_config.NumberColumn("Precio base (€)", min_value=0.0, format="%.2f", required=True,
                                             help="Precio sin costes indirectos"),
-    "factor_ci": st.column_config.NumberColumn("Factor CI", min_value=0.01, format="%.2f", required=True,
-                                               help="Coste indirecto. Precio final = Precio base × Factor CI"),
 }
 
 _cols_acometida = {
@@ -240,7 +238,7 @@ with st.expander("Financiero y generales — GG, BI, IVA, esponjamiento, % manua
             disabled=_en_confirmacion) / 100, 4)
     with pg3:
         precios["pct_ci"] = round(st.number_input(
-            "Factor CI (Costes Indirectos)",
+            "Margen de seguridad global",
             value=float(precios.get("pct_ci", 1.0)),
             step=0.01, min_value=1.0, max_value=1.20, format="%.2f",
             disabled=_en_confirmacion), 4)

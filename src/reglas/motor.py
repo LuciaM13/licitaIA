@@ -23,7 +23,7 @@ import logging
 
 import clips
 
-from src.reglas.templates import TEMPLATES, RULES, NULL_SENTINEL
+from src.reglas.templates import TEMPLATES, RULES
 from src.reglas.normalizacion import (
     FACTORES_PIEZAS,
     normalizar_tipo,
