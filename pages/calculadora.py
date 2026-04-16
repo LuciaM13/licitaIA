@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
 import streamlit as st
 
 from src.presupuesto.ensamblaje import calcular_presupuesto
 from src.domain.parametros import ParametrosProyecto
 from src.infraestructura.precios import cargar_precios
+from src.infraestructura.db import guardar_presupuesto
 from src.infraestructura.utils import euro, find_by_label, find_item, generar_texto_word, validar_parametros
+from src.reglas.motor import evaluar_alertas
+from src.reglas.normalizacion import regla_pct_manual
+
+logger = logging.getLogger(__name__)
 
 
 # ─── Cargar precios desde JSON ────────────────────────────────────────────────
@@ -144,6 +151,7 @@ def _input_subbase(red: str, subbases: list) -> tuple[float, dict | None]:
     return espesor, item
 
 
+
 # ─── Valores por defecto para secciones no activas ─────────────────────────
 aba_item = None
 aba_longitud_m = 0.0
@@ -152,6 +160,8 @@ pav_aba_acerado_m2 = 0.0
 pav_aba_acerado_item = ACERADOS_ABA[0]
 pav_aba_bordillo_m = 0.0
 pav_aba_bordillo_item = BORDILLOS_REPOSICION[0]
+pav_aba_calzada_m2 = 0.0
+pav_aba_calzada_item = CALZADAS_REPOSICION[0]
 acometidas_aba_n = 0
 
 san_item = None
@@ -166,6 +176,11 @@ subbase_aba_espesor = 0.0
 subbase_aba_item = None
 subbase_san_espesor = 0.0
 subbase_san_item = None
+# Defaults para variables que se definen más abajo en el formulario
+# pero se necesitan aquí para la pre-evaluación inline.
+# Streamlit persiste los valores en session_state tras el primer render.
+instalacion_valvuleria = st.session_state.get("instalacion_valvuleria", "enterrada")
+desmontaje_tipo = st.session_state.get("desmontaje_tipo", "none")
 
 
 # ─── Sección ABA ───────────────────────────────────────────────────────────
@@ -200,12 +215,30 @@ if incluir_aba:
         pav_aba_bordillo_m = st.number_input("Pav ABAS · longitud bordillo (m)", min_value=0.0, value=dui["pav_aba_bordillo_m"], key="pav_aba_bordillo_m")
     with p4:
         pav_aba_bordillo_label = st.selectbox("Pav ABAS · tipo de bordillo", [x["label"] for x in BORDILLOS_REPOSICION], key="pav_aba_bordillo_label")
+    pc1, pc2 = st.columns(2)
+    with pc1:
+        pav_aba_calzada_m2 = st.number_input("Pav ABAS · m² de calzada", min_value=0.0, value=0.0, key="pav_aba_calzada_m2")
+    with pc2:
+        if pav_aba_calzada_m2 > 0:
+            pav_aba_calzada_label = st.selectbox("Pav ABAS · tipo de calzada", [x["label"] for x in CALZADAS_REPOSICION], key="pav_aba_calzada_label")
+        else:
+            pav_aba_calzada_label = CALZADAS_REPOSICION[0]["label"]
     try:
         pav_aba_acerado_item = find_by_label(ACERADOS_ABA, pav_aba_acerado_label)
         pav_aba_bordillo_item = find_by_label(BORDILLOS_REPOSICION, pav_aba_bordillo_label)
+        pav_aba_calzada_item = find_by_label(CALZADAS_REPOSICION, pav_aba_calzada_label)
     except ValueError as e:
         st.error(f"Error en catálogo de materiales: {e}")
         st.stop()
+    espesores = precios["espesores_calzada"]
+    if pav_aba_calzada_m2 > 0 and pav_aba_calzada_item.get("unidad") == "m3":
+        esp = espesores.get(pav_aba_calzada_item["label"])
+        if esp is not None:
+            st.info(f"Calzada {pav_aba_calzada_item['label']}: conversión automática m² → m³ con espesor {esp:.2f} m.")
+        else:
+            st.error(f"No existe espesor definido para '{pav_aba_calzada_item['label']}'. "
+                     "Añádelo en la página de Administración de precios → Espesores de calzada.")
+            st.stop()
     subbase_aba_espesor, subbase_aba_item = _input_subbase(
         "ABA", precios.get("catalogo_subbases", []))
 
@@ -261,7 +294,6 @@ with c2:
 conduccion_provisional_m = 0.0
 espesor_pavimento_m = 0.0
 pct_servicios_afectados = 0.0
-desmontaje_tipo = "none"
 pozos_existentes_aba = "none"
 pozos_existentes_san = "none"
 imbornales_tipo = "none"
@@ -269,12 +301,20 @@ imbornales_nuevo_label = ""
 
 _sec += 1
 st.markdown(f"## {_sec}) Parámetros de obra")
+
+# % excavación manual calculado por regla (profundidad máxima de las redes activas)
+_prof_max = max(
+    aba_profundidad_m if incluir_aba else 0.0,
+    san_profundidad_m if incluir_san else 0.0,
+)
+_pct_manual_auto, _pct_manual_expl = regla_pct_manual(_prof_max) if _prof_max > 0 else (0.30, "Sin profundidad definida → 30%")
+
 o1, o2, o3 = st.columns(3)
 with o1:
     pct_manual_pct = st.number_input(
         "% Excavación manual",
         min_value=0, max_value=100,
-        value=int(precios.get("pct_manual_defecto", 0.30) * 100),
+        value=int(_pct_manual_auto * 100),
         step=5,
         key="pct_manual_pct")
 with o2:
@@ -301,7 +341,7 @@ with o4:
         key="pct_servicios_afectados") / 100.0
 with o5:
     _hay_demolicion = (
-        (incluir_aba and (pav_aba_acerado_m2 > 0 or pav_aba_bordillo_m > 0)) or
+        (incluir_aba and (pav_aba_acerado_m2 > 0 or pav_aba_bordillo_m > 0 or pav_aba_calzada_m2 > 0)) or
         (incluir_san and (pav_san_calzada_m2 > 0 or pav_san_acera_m2 > 0))
     )
     if _hay_demolicion:
@@ -383,9 +423,38 @@ else:
     instalacion_valvuleria = "enterrada"
 
 
-# ─── Calcular ──────────────────────────────────────────────────────────────
+# ─── Validación técnica ───────────────────────────────────────────────────
 
-if st.button("Calcular presupuesto", type="primary", use_container_width=True):
+_sec += 1
+st.markdown(f"## {_sec}) Validación técnica")
+
+_alertas = evaluar_alertas(
+    aba_activa=incluir_aba,
+    san_activa=incluir_san,
+    aba_longitud_m=aba_longitud_m,
+    aba_profundidad_m=aba_profundidad_m,
+    san_profundidad_m=san_profundidad_m,
+    acometidas_aba_n=acometidas_aba_n,
+    desmontaje_tipo=desmontaje_tipo,
+    pct_seguridad=pct_seguridad,
+    pct_gestion=pct_gestion,
+)
+
+if not _alertas:
+    st.success("Sin alertas. El presupuesto está listo para calcular.")
+else:
+    for _alerta in _alertas:
+        if _alerta["nivel"] == "error":
+            st.error(_alerta["msg"])
+        elif _alerta["nivel"] == "warning":
+            st.warning(_alerta["msg"])
+        else:
+            st.info(_alerta["msg"])
+
+
+# ─── Calcular presupuesto ─────────────────────────────────────────────────
+
+if st.button("Calcular presupuesto", type="primary", use_container_width=True, key="btn_calcular"):
     p = ParametrosProyecto(
         aba_item=aba_item,
         aba_longitud_m=aba_longitud_m,
@@ -397,6 +466,8 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
         pav_aba_acerado_item=pav_aba_acerado_item,
         pav_aba_bordillo_m=pav_aba_bordillo_m,
         pav_aba_bordillo_item=pav_aba_bordillo_item,
+        pav_aba_calzada_m2=pav_aba_calzada_m2,
+        pav_aba_calzada_item=pav_aba_calzada_item,
         pav_san_calzada_m2=pav_san_calzada_m2,
         pav_san_calzada_item=pav_san_calzada_item,
         pav_san_acera_m2=pav_san_acera_m2,
@@ -428,12 +499,81 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
 
     try:
         with st.spinner("Calculando presupuesto…"):
-            st.session_state["resultado"] = calcular_presupuesto(p, precios)
+            logger.info("▶ Usuario lanza cálculo de presupuesto")
+            resultado = calcular_presupuesto(p, precios)
+            st.session_state["resultado"] = resultado
+            logger.info("✓ Cálculo completado - TOTAL=%.2f €", resultado["total"])
+
+            # Guardar en historial automáticamente
+            _params_historial = {
+                "modo": modo,
+            }
+            if incluir_aba and aba_item:
+                _params_historial.update({
+                    "aba_tuberia": aba_item.get("label", ""),
+                    "aba_longitud_m": str(aba_longitud_m),
+                    "aba_profundidad_m": str(aba_profundidad_m),
+                    "aba_diametro_mm": str(aba_item.get("diametro_mm", "")),
+                    "instalacion_valvuleria": instalacion_valvuleria,
+                })
+            if incluir_san and san_item:
+                _params_historial.update({
+                    "san_tuberia": san_item.get("label", ""),
+                    "san_longitud_m": str(san_longitud_m),
+                    "san_profundidad_m": str(san_profundidad_m),
+                    "san_diametro_mm": str(san_item.get("diametro_mm", "")),
+                })
+            if incluir_aba:
+                _params_historial.update({
+                    "pav_aba_acerado_m2": str(pav_aba_acerado_m2),
+                    "pav_aba_acerado_label": pav_aba_acerado_item.get("label", ""),
+                    "pav_aba_bordillo_m": str(pav_aba_bordillo_m),
+                    "pav_aba_bordillo_label": pav_aba_bordillo_item.get("label", ""),
+                    "pav_aba_calzada_m2": str(pav_aba_calzada_m2),
+                    "pav_aba_calzada_label": pav_aba_calzada_item.get("label", ""),
+                    "acometidas_aba_n": str(acometidas_aba_n),
+                    "conduccion_provisional_m": str(conduccion_provisional_m),
+                    "pozos_existentes_aba": pozos_existentes_aba,
+                    "subbase_aba_espesor_m": str(subbase_aba_espesor),
+                })
+            if incluir_san:
+                _params_historial.update({
+                    "pav_san_calzada_m2": str(pav_san_calzada_m2),
+                    "pav_san_calzada_label": pav_san_calzada_item.get("label", ""),
+                    "pav_san_acera_m2": str(pav_san_acera_m2),
+                    "pav_san_acera_label": pav_san_acera_item.get("label", ""),
+                    "acometidas_san_n": str(acometidas_san_n),
+                    "pozos_existentes_san": pozos_existentes_san,
+                    "imbornales_tipo": imbornales_tipo,
+                    "imbornales_nuevo_label": imbornales_nuevo_label,
+                    "subbase_san_espesor_m": str(subbase_san_espesor),
+                })
+            _params_historial.update({
+                "pct_manual": str(pct_manual_pct / 100.0),
+                "pct_seguridad": str(pct_seguridad),
+                "pct_gestion": str(pct_gestion),
+                "pct_servicios_afectados": str(pct_servicios_afectados),
+                "espesor_pavimento_m": str(espesor_pavimento_m),
+                "desmontaje_tipo": desmontaje_tipo,
+            })
+
+            # Descripción automática para el guardado
+            _partes = []
+            if incluir_aba and aba_item:
+                _partes.append(f"ABA {aba_item.get('label', '')} {aba_longitud_m}m")
+            if incluir_san and san_item:
+                _partes.append(f"SAN {san_item.get('label', '')} {san_longitud_m}m")
+            st.session_state["_historial_desc"] = " + ".join(_partes) if _partes else modo
+            st.session_state["_historial_params"] = _params_historial
+            st.session_state["_historial_pct_ci"] = float(precios.get("pct_ci", 1.0))
+
     except ValueError as e:
+        logger.error("ValueError en cálculo: %s", e)
         st.session_state.pop("resultado", None)
         st.error(str(e))
         st.stop()
     except Exception as e:
+        logger.exception("Error inesperado en cálculo de presupuesto")
         st.session_state.pop("resultado", None)
         st.error(
             f"Error inesperado: {type(e).__name__}: {e}\n\n"
@@ -444,5 +584,20 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True):
 
 if "resultado" in st.session_state:
     _mostrar_resultados(st.session_state["resultado"])
+
+    # ─── Guardar en historial ───────────────────────────────────────────
+    st.markdown("---")
+    if st.button("Guardar en historial", type="primary", use_container_width=True, key="btn_guardar"):
+        try:
+            guardar_presupuesto(
+                st.session_state["resultado"],
+                st.session_state.get("_historial_params", {}),
+                descripcion=st.session_state.get("_historial_desc", ""),
+                pct_ci=st.session_state.get("_historial_pct_ci", 1.0),
+            )
+            st.success("Presupuesto guardado en el historial.")
+        except Exception as e:
+            logger.error("Error al guardar en historial: %s", e, exc_info=True)
+            st.error(f"Error al guardar: {e}")
 else:
     st.info("Introduce los datos mínimos y pulsa 'Calcular presupuesto'.")

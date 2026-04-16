@@ -1,5 +1,5 @@
 """
-Resumen financiero — fórmulas puras verificadas contra el Excel EMASESA.
+Resumen financiero - fórmulas puras verificadas contra el Excel EMASESA.
 
 Alineado con el cuadro resumen de las hojas de cálculo:
   (1) SUMA (a+b+c+d)  → PEM base
@@ -15,8 +15,11 @@ Este módulo no importa nada externo al dominio.
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -51,12 +54,23 @@ def calcular_resumen(
         pct_iva: Porcentaje de IVA (ej. 0.21 para 21%).
     """
     base_gg_bi = pem - materiales
+    logger.debug("[FIN] PEM=%.2f materiales=%.2f → base_gg_bi=%.2f", pem, materiales, base_gg_bi)
+
     gg = base_gg_bi * pct_gg
     bi = base_gg_bi * pct_bi
-    # ROUNDUP a la decena superior — Excel: ROUNDUP((PEM+GG+BI)/10)*10
-    pbl_sin_iva = math.ceil((pem + gg + bi) / 10) * 10
+    logger.debug("[FIN] GG: base(%.2f) × %.2f%% = %.2f", base_gg_bi, pct_gg * 100, gg)
+    logger.debug("[FIN] BI: base(%.2f) × %.2f%% = %.2f", base_gg_bi, pct_bi * 100, bi)
+
+    # ROUNDUP a la decena superior - Excel: ROUNDUP((PEM+GG+BI)/10)*10
+    pre_roundup = pem + gg + bi
+    pbl_sin_iva = math.ceil(pre_roundup / 10) * 10
+    logger.debug("[FIN] ROUNDUP: (PEM + GG + BI) = %.2f → /10 = %.4f → ceil = %d → ×10 = %.2f",
+                 pre_roundup, pre_roundup / 10, math.ceil(pre_roundup / 10), pbl_sin_iva)
+
     iva = pbl_sin_iva * pct_iva
     total = pbl_sin_iva + iva
+    logger.debug("[FIN] IVA: PBL(%.2f) × %.2f%% = %.2f → TOTAL = %.2f",
+                 pbl_sin_iva, pct_iva * 100, iva, total)
 
     return ResumenFinanciero(
         pem=round(pem, 2),

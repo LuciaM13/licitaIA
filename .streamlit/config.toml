@@ -1,6 +1,8 @@
 [theme]
-primaryColor = "#2196D3"
+primaryColor = "#88B038"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F7FB"
 textColor = "#1B3A4B"
 font = "sans serif"
+# Verde corporativo EMASESA (extraído del logo): #88B038 → primaryColor (botones primarios)
+# Azul anterior: #2196D3 (disponible para uso secundario si se necesita)

@@ -11,11 +11,14 @@ para backward compatibility con calcular.py y presupuesto.py.
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 
 import streamlit as st
 
 from src.infraestructura.db import cargar_todo, guardar_todo
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Validación (intencionalmente redundante con los FK constraints de SQLite)
@@ -34,8 +37,6 @@ _CLAVES_REQUERIDAS = {
     "acerados_aba", "acerados_san",
     "bordillos_reposicion", "calzadas_reposicion",
     "espesores_calzada", "excavacion",
-    # anchos_zanja y espesores_arrinonado ya no son necesarios para el cálculo
-    # (se usan fórmulas del Excel directamente), pero las tablas siguen en la BD.
     "catalogo_entibacion", "catalogo_pozos", "catalogo_valvuleria",
     "demolicion_aba", "demolicion_san",
     "acometidas_aba_tipos", "acometidas_san_tipos",
@@ -112,6 +113,20 @@ def _validar_precios(precios: dict) -> list[str]:
                 f"Espesor definido para '{label_esp}' pero no existe "
                 "esa calzada en 'calzadas_reposicion'."
             )
+
+    # Validación: unidades duplicadas en catálogos de demolición
+    for clave_demo in ("demolicion_aba", "demolicion_san"):
+        demo = precios.get(clave_demo, [])
+        unidades_vistas: set[str] = set()
+        for item in demo:
+            u = item.get("unidad", "")
+            if u in unidades_vistas:
+                errores.append(
+                    f"El catálogo '{clave_demo}' tiene unidad duplicada '{u}'. "
+                    "Cada unidad (m2, m) debe aparecer una sola vez."
+                )
+            unidades_vistas.add(u)
+
     return errores
 
 
@@ -119,114 +134,158 @@ def _validar_precios(precios: dict) -> list[str]:
 # API pública
 # ---------------------------------------------------------------------------
 
-_CI_CATALOGOS = {
-    # (clave_catalogo, campo_precio_a_escalar)
-    # factor_piezas y precio_material NO se escalan con CI — son coeficientes/precios base
-    "catalogo_valvuleria": "precio",
-    "catalogo_pozos": "precio",
-    "acerados_aba": "precio",
-    "acerados_san": "precio",
-    "bordillos_reposicion": "precio",
-    "calzadas_reposicion": "precio",
-    "demolicion_aba": "precio",
-    "demolicion_san": "precio",
-    "catalogo_aba": "precio_m",
-    "catalogo_san": "precio_m",
-    "catalogo_entibacion": "precio_m2",
-    "catalogo_subbases": "precio_m3",
-}
+# ---------------------------------------------------------------------------
+# Registro único de todos los campos que escalan con CI.
+#
+# Cada tupla = (clave_catalogo, campo_precio). Este registro es la ÚNICA
+# fuente de verdad para aplicar y revertir CI - nunca duplicar lógica fuera.
+# factor_piezas y campos dimensionales NO se incluyen (no son precios).
+# ---------------------------------------------------------------------------
+
+_CI_CAMPOS: list[tuple[str, str]] = [
+    # Catálogos principales
+    ("catalogo_valvuleria", "precio"),
+    ("catalogo_valvuleria", "precio_material"),
+    ("catalogo_pozos", "precio"),
+    ("catalogo_pozos", "precio_tapa"),
+    ("catalogo_pozos", "precio_tapa_material"),
+    ("catalogo_pozos", "precio_pate_material"),
+    ("acerados_aba", "precio"),
+    ("acerados_san", "precio"),
+    ("bordillos_reposicion", "precio"),
+    ("calzadas_reposicion", "precio"),
+    ("demolicion_aba", "precio"),
+    ("demolicion_san", "precio"),
+    ("catalogo_aba", "precio_m"),
+    ("catalogo_aba", "precio_material_m"),
+    ("catalogo_san", "precio_m"),
+    ("catalogo_san", "precio_material_m"),
+    ("catalogo_entibacion", "precio_m2"),
+    ("catalogo_subbases", "precio_m3"),
+    ("catalogo_desmontaje", "precio_m"),
+    ("catalogo_imbornales", "precio"),
+    ("catalogo_pozos_existentes", "precio"),
+]
+
+# Claves de tipo dict (no lista de dicts) que escalan con CI
+_CI_DICTS: list[tuple[str, set[str] | None]] = [
+    # (clave_dict, claves_a_excluir | None = escalar todas)
+    ("excavacion", {"umbral_profundidad_m"}),
+    ("acometidas_aba_tipos", None),
+    ("acometidas_san_tipos", None),
+]
+
+# Escalares sueltos que escalan con CI
+_CI_ESCALARES: list[str] = [
+    "conduccion_provisional_precio_m",
+]
+
+
+def _transformar_ci(precios: dict, multiplicar: bool) -> None:
+    """Aplica o revierte el factor CI sobre todos los campos de precio.
+
+    Si ``multiplicar`` es True, multiplica (para cargar). Si es False, divide
+    (para persistir). Usa ``_CI_CAMPOS``, ``_CI_DICTS`` y ``_CI_ESCALARES``
+    como única fuente de verdad - no hay lógica de CI fuera de esta función.
+    """
+    pct_ci = float(precios.get("pct_ci", 1.0))
+    accion = "aplicar" if multiplicar else "revertir"
+    if pct_ci == 1.0:
+        logger.debug("[CI] pct_ci=1.0 → nada que %s", accion)
+        return
+
+    logger.debug("[CI] %s CI factor=%.4f sobre todos los precios", accion.upper(), pct_ci)
+    op = (lambda v: v * pct_ci) if multiplicar else (lambda v: round(v / pct_ci, 6))
+
+    # Catálogos (lista de dicts)
+    for clave, campo in _CI_CAMPOS:
+        for item in precios.get(clave, []):
+            val = item.get(campo)
+            if val:  # None, 0, 0.0 → no escalar
+                item[campo] = op(val)
+
+    # Dicts planos
+    for clave_dict, excluir in _CI_DICTS:
+        d = precios.get(clave_dict, {})
+        excluir = excluir or set()
+        for k in list(d.keys()):
+            if k not in excluir:
+                d[k] = op(d[k])
+
+    # Escalares sueltos
+    for clave_esc in _CI_ESCALARES:
+        if clave_esc in precios:
+            precios[clave_esc] = op(precios[clave_esc])
 
 
 def _aplicar_ci(precios: dict) -> None:
     """Multiplica todos los precios unitarios por el factor de Costes Indirectos.
 
-    El factor pct_ci es el margen de seguridad global (ej: 1.05 = +5% sobre todos los precios).
-    Si no existe o es 1.0, no hace nada. Modifica el dict in-place.
-    factor_piezas NO se escala (es un multiplicador dimensional, no un precio).
+    Modifica el dict in-place. Si pct_ci es 1.0 o no existe, no hace nada.
+    Uso interno - llamar desde calcular_presupuesto() sobre una copia local.
     """
-    pct_ci = float(precios.get("pct_ci", 1.0))
-    if pct_ci == 1.0:
-        return
+    _transformar_ci(precios, multiplicar=True)
 
-    # Catálogos (lista de dicts con campo de precio variable)
-    for clave, campo in _CI_CATALOGOS.items():
-        for item in precios.get(clave, []):
-            if campo in item:
-                item[campo] = item[campo] * pct_ci
 
-    # Desmontaje, imbornales y pozos existentes también escalan con CI
-    for item in precios.get("catalogo_desmontaje", []):
-        if "precio_m" in item:
-            item["precio_m"] = item["precio_m"] * pct_ci
-    for item in precios.get("catalogo_imbornales", []):
-        if "precio" in item:
-            item["precio"] = item["precio"] * pct_ci
-    for item in precios.get("catalogo_pozos_existentes", []):
-        if "precio" in item:
-            item["precio"] = item["precio"] * pct_ci
-
-    # Precios de material también escalan con CI
-    for item in precios.get("catalogo_aba", []):
-        if "precio_material_m" in item and item["precio_material_m"]:
-            item["precio_material_m"] = item["precio_material_m"] * pct_ci
-    for item in precios.get("catalogo_valvuleria", []):
-        if "precio_material" in item and item["precio_material"]:
-            item["precio_material"] = item["precio_material"] * pct_ci
-    for item in precios.get("catalogo_pozos", []):
-        if "precio_tapa" in item and item.get("precio_tapa"):
-            item["precio_tapa"] = item["precio_tapa"] * pct_ci
-        if "precio_tapa_material" in item and item.get("precio_tapa_material"):
-            item["precio_tapa_material"] = item["precio_tapa_material"] * pct_ci
-
-    # Dict excavación (todas las claves excepto umbral)
-    for clave, valor in precios.get("excavacion", {}).items():
-        if clave != "umbral_profundidad_m":
-            precios["excavacion"][clave] = valor * pct_ci
-
-    # Dicts acometidas
-    for clave_acom in ("acometidas_aba_tipos", "acometidas_san_tipos"):
-        for tipo in precios.get(clave_acom, {}):
-            precios[clave_acom][tipo] = precios[clave_acom][tipo] * pct_ci
-
-    # Escalar conducción provisional
-    if "conduccion_provisional_precio_m" in precios:
-        precios["conduccion_provisional_precio_m"] = (
-            precios["conduccion_provisional_precio_m"] * pct_ci)
+# Alias público para uso desde ensamblaje.py
+aplicar_ci = _aplicar_ci
 
 
 @st.cache_data(ttl=60)
 def cargar_precios() -> dict:
-    """Carga precios desde SQLite con cache de 60s.
+    """Carga precios BASE desde SQLite con cache de 60s.
+
+    Devuelve precios SIN CI aplicado. El CI se aplica una única vez en
+    calcular_presupuesto() sobre una copia local, evitando transformaciones
+    en el flujo de carga/guardado y eliminando la posibilidad de deflación
+    o inflación acumulativa por round-trips admin → BD.
 
     La cache se invalida automáticamente tras TTL o manualmente con
     cargar_precios.clear() (llamar tras guardar en admin).
     """
+    logger.info("cargar_precios() - leyendo BD…")
     try:
         precios = cargar_todo()
     except sqlite3.Error as e:
+        logger.error("Error leyendo BD de precios: %s", e)
         raise ValueError(f"Error leyendo la base de datos de precios: {e}")
 
-    _aplicar_ci(precios)
+    # NO se aplica CI aquí - se aplica en calcular_presupuesto()
 
     errores = _validar_precios(precios)
     if errores:
+        logger.error("Validación fallida: %s", errores)
         raise ValueError("BD de precios invalida:\n" + "\n".join(f"- {e}" for e in errores))
 
+    # Log resumen de catálogos cargados
+    for clave in sorted(_CLAVES_REQUERIDAS):
+        val = precios.get(clave)
+        if isinstance(val, list):
+            logger.debug("  %s: %d items", clave, len(val))
+        elif isinstance(val, dict):
+            logger.debug("  %s: %d claves", clave, len(val))
+        else:
+            logger.debug("  %s = %s", clave, val)
+
+    logger.info("cargar_precios() OK - pct_ci=%.4f", float(precios.get("pct_ci", 1.0)))
     return precios
 
 
 def guardar_precios(precios: dict) -> None:
-    """Guarda el dict completo de precios en SQLite con transacción atómica.
+    """Guarda el dict completo de precios BASE en SQLite con transacción atómica.
 
-    El admin trabaja con precios que ya tienen CI aplicado en memoria.
-    Antes de persistir se revierte el factor CI para guardar siempre precios base.
+    Recibe precios BASE (sin CI) y los persiste directamente, sin ninguna
+    transformación CI. La BD siempre almacena precios base; el CI se aplica
+    solo al calcular, nunca al cargar ni al guardar.
     """
+    logger.info("guardar_precios() - validando y persistiendo…")
     errores = _validar_precios(precios)
     if errores:
+        logger.error("Validación pre-guardado fallida: %s", errores)
         raise ValueError("No se puede guardar:\n" + "\n".join(f"- {e}" for e in errores))
-    precios_base = _revertir_ci(precios)
     try:
-        guardar_todo(precios_base)
+        guardar_todo(precios)
+        logger.info("guardar_precios() OK")
     except sqlite3.IntegrityError as e:
         msg = str(e)
         if "UNIQUE" in msg:
@@ -236,61 +295,3 @@ def guardar_precios(precios: dict) -> None:
         raise ValueError(f"Error de integridad en la base de datos: {e}") from e
     except sqlite3.Error as e:
         raise ValueError(f"Error escribiendo en la base de datos: {e}") from e
-
-
-def _revertir_ci(precios: dict) -> dict:
-    """Devuelve una copia del dict con los precios divididos entre pct_ci.
-
-    El admin edita precios con CI ya aplicado. Antes de persistir en BD
-    hay que revertir el factor para guardar siempre precios BASE.
-    """
-    import copy
-    p = copy.deepcopy(precios)
-    pct_ci = float(p.get("pct_ci", 1.0))
-    if pct_ci == 1.0:
-        return p
-
-    for clave, campo in _CI_CATALOGOS.items():
-        for item in p.get(clave, []):
-            if campo in item and item[campo]:
-                item[campo] = round(item[campo] / pct_ci, 6)
-
-    # Campos simples de excavación
-    exc = p.get("excavacion", {})
-    for k in list(exc.keys()):
-        if k != "umbral_profundidad_m":
-            exc[k] = round(exc[k] / pct_ci, 6)
-
-    # Acometidas
-    for clave_acom in ("acometidas_aba_tipos", "acometidas_san_tipos"):
-        d = p.get(clave_acom, {})
-        for tipo in list(d.keys()):
-            d[tipo] = round(d[tipo] / pct_ci, 6)
-
-    # Conducción provisional
-    if "conduccion_provisional_precio_m" in p:
-        p["conduccion_provisional_precio_m"] = round(
-            p["conduccion_provisional_precio_m"] / pct_ci, 6)
-
-    # Campos adicionales que _aplicar_ci escala
-    for cat in ("catalogo_entibacion",):
-        for item in p.get(cat, []):
-            if "precio_m2" in item:
-                item["precio_m2"] = round(item["precio_m2"] / pct_ci, 6)
-
-    for cat in ("catalogo_aba", "catalogo_san"):
-        for item in p.get(cat, []):
-            if "precio_material_m" in item and item["precio_material_m"]:
-                item["precio_material_m"] = round(item["precio_material_m"] / pct_ci, 6)
-
-    for item in p.get("catalogo_valvuleria", []):
-        if "precio_material" in item and item["precio_material"]:
-            item["precio_material"] = round(item["precio_material"] / pct_ci, 6)
-
-    for item in p.get("catalogo_pozos", []):
-        if "precio_tapa" in item and item["precio_tapa"]:
-            item["precio_tapa"] = round(item["precio_tapa"] / pct_ci, 6)
-        if "precio_tapa_material" in item and item["precio_tapa_material"]:
-            item["precio_tapa_material"] = round(item["precio_tapa_material"] / pct_ci, 6)
-
-    return p

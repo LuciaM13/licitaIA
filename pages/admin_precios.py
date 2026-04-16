@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 
 import pandas as pd
 import streamlit as st
@@ -11,6 +12,8 @@ from src.infraestructura.db import cargar_todo
 from src.infraestructura.precios import cargar_precios, guardar_precios
 from src.infraestructura.diff_precios import calcular_diff
 
+logger = logging.getLogger(__name__)
+
 
 st.title("Administración de precios")
 
@@ -18,13 +21,12 @@ st.title("Administración de precios")
 try:
     precios = cargar_todo()
 except (ValueError, Exception) as e:
+    logger.error("Admin: no se pudieron cargar los precios: %s", e, exc_info=True)
     st.error(
         f"No se pudieron cargar los precios: {e}\n\n"
         "Comprueba que la base de datos `precios.db` existe en la carpeta data/."
     )
     st.stop()
-
-_pct_ci = float(precios.get("pct_ci", 1.0))
 
 _errores_guardado: list[str] = []
 _en_confirmacion = st.session_state.get("confirmar_guardado", False)
@@ -54,7 +56,8 @@ def _validar_nan(edited: pd.DataFrame, titulo: str) -> None:
 
 def _editar_catalogo(titulo: str, clave: str, columnas: dict, *,
                      disabled: bool = False,
-                     nullable_cols: set[str] | None = None) -> None:
+                     nullable_cols: set[str] | None = None,
+                     unique_cols: list[str] | None = None) -> None:
     st.subheader(titulo)
     df = pd.DataFrame(precios[clave])
     edited = st.data_editor(
@@ -82,6 +85,17 @@ def _editar_catalogo(titulo: str, clave: str, columnas: dict, *,
                 for col in _INT_COLS:
                     if col in row and row[col] is not None:
                         row[col] = int(row[col])
+            if unique_cols:
+                for col in unique_cols:
+                    seen: set = set()
+                    for row in records:
+                        val = row.get(col)
+                        if val in seen:
+                            _errores_guardado.append(
+                                f"**{titulo}**: valor duplicado en columna '{col}': '{val}'."
+                            )
+                            break
+                        seen.add(val)
             precios[clave] = records
 
 
@@ -168,6 +182,13 @@ _cols_pozos = {
                                                 help="Precio tapa de pozo. Se añade como partida en OBRA CIVIL."),
     "precio_tapa_material": st.column_config.NumberColumn("Tapa material (€/ud)", min_value=0.0, format="%.2f",
                                                          help="Precio suministro tapa (sin montaje). Para sección MATERIALES."),
+    "precio_pate_material": st.column_config.NumberColumn(
+        "Pate material (€/ud)", min_value=0.0, format="%.2f",
+        help=(
+            "Precio suministro de un pate (escalón de pozo) para sección MATERIALES SAN. "
+            "Cantidad por pozo según profundidad: P<2.5m→6, P<3.5m→9, P≥3.5m→12 pates/pozo. "
+            "Precio EMASESA base (sin CI): 1.8476 €/ud."
+        )),
 }
 
 _cols_valvuleria = {
@@ -194,6 +215,9 @@ _cols_material = {
 _cols_acometida = {
     "tipo": st.column_config.TextColumn("Tipo", required=True),
     "precio": st.column_config.NumberColumn("Precio (€)", min_value=0.0, format="%.2f", required=True),
+    "factor_piezas": st.column_config.NumberColumn(
+        "Factor piezas", min_value=1.0, format="%.2f", required=True,
+        help="Multiplicador por piezas especiales asociadas a la acometida. ABA típico=1.20, SAN típico=1.00"),
 }
 
 
@@ -201,11 +225,7 @@ _cols_acometida = {
 # EXPANDER 1: Financiero y generales
 # ═══════════════════════════════════════════════════════════════════════════════
 
-with st.expander("Financiero y generales — GG, BI, IVA, esponjamiento, % manual"):
-    st.caption("Porcentajes aplicados globalmente a todos los presupuestos: "
-               "gastos generales, beneficio industrial, IVA y factor de esponjamiento de tierras.")
-    st.divider()
-
+with st.expander("Financiero y generales - GG, BI, IVA, esponjamiento, % manual"):
     fc1, fc2, fc3 = st.columns(3)
     with fc1:
         precios["pct_gg"] = round(st.number_input(
@@ -254,11 +274,7 @@ with st.expander("Financiero y generales — GG, BI, IVA, esponjamiento, % manua
 # EXPANDER 2: Tuberías
 # ═══════════════════════════════════════════════════════════════════════════════
 
-with st.expander("Tuberías — Catálogos ABA, SAN y valvulería"):
-    st.caption("Precios unitarios de tuberías de abastecimiento (FD, PE-100), "
-               "saneamiento (Gres, HA, PVC) y valvulería asociada a la red de abastecimiento.")
-    st.divider()
-
+with st.expander("Tuberías - Catálogos ABA, SAN y valvulería"):
     _editar_catalogo("Tuberías Abastecimiento (ABA)", "catalogo_aba", _cols_tuberia, disabled=_en_confirmacion)
     _editar_catalogo("Tuberías Saneamiento (SAN)", "catalogo_san", _cols_tuberia, disabled=_en_confirmacion)
     _editar_catalogo("Valvulería ABA", "catalogo_valvuleria", _cols_valvuleria,
@@ -269,16 +285,7 @@ with st.expander("Tuberías — Catálogos ABA, SAN y valvulería"):
 # EXPANDER 3: Zanja y excavación
 # ═══════════════════════════════════════════════════════════════════════════════
 
-with st.expander("Zanja y excavación — Entibación, precios y pozos"):
-    st.caption("Entibación, precios unitarios de excavación, umbral de profundidad y pozos de registro.")
-    st.info(
-        "**Anchos de zanja y espesores de arriñonado** se calculan automáticamente por fórmula "
-        "del Excel EMASESA (ABA: IF(DN<250, 0.60m, 1.2×DN/1000+0.40m) · SAN: 1.2×DN/1000+1.50m), "
-        "garantizando que al añadir cualquier tubería nueva el cálculo sea siempre correcto. "
-        "No es necesario editarlos manualmente."
-    )
-    st.divider()
-
+with st.expander("Zanja y excavación - Entibación, precios y pozos"):
     _editar_catalogo("Entibación", "catalogo_entibacion", _cols_entibacion,
                      disabled=_en_confirmacion, nullable_cols={"red"})
 
@@ -308,12 +315,10 @@ with st.expander("Zanja y excavación — Entibación, precios y pozos"):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("Demolición - Precios de derribo de pavimento existente"):
-    st.caption("Precios unitarios de demolición del pavimento existente antes de abrir la zanja. "
-               "Las cantidades se toman de las superficies/longitudes de pavimentación.")
-    st.divider()
-
-    _editar_catalogo("Demolición Abastecimiento", "demolicion_aba", _cols_material, disabled=_en_confirmacion)
-    _editar_catalogo("Demolición Saneamiento", "demolicion_san", _cols_material, disabled=_en_confirmacion)
+    _editar_catalogo("Demolición Abastecimiento", "demolicion_aba", _cols_material,
+                     disabled=_en_confirmacion, unique_cols=["unidad"])
+    _editar_catalogo("Demolición Saneamiento", "demolicion_san", _cols_material,
+                     disabled=_en_confirmacion, unique_cols=["unidad"])
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -321,10 +326,6 @@ with st.expander("Demolición - Precios de derribo de pavimento existente"):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("Pavimentación - Acerados, bordillos, calzadas y espesores"):
-    st.caption("Materiales y precios para reposición de pavimento tras la obra: "
-               "acerados, bordillos, calzadas y espesores de capas de calzada.")
-    st.divider()
-
     _editar_catalogo("Acerados Abastecimiento", "acerados_aba", _cols_material, disabled=_en_confirmacion)
     _editar_catalogo("Acerados Saneamiento", "acerados_san", _cols_material, disabled=_en_confirmacion)
     _editar_catalogo("Bordillos", "bordillos_reposicion", _cols_material, disabled=_en_confirmacion)
@@ -346,10 +347,61 @@ with st.expander("Pavimentación - Acerados, bordillos, calzadas y espesores"):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _editar_acometidas(red: str, clave_tipos: str, clave_defecto: str) -> None:
-    """Renderiza editor de acometidas + selectbox de tipo por defecto para una red."""
+    """Renderiza editor de acometidas (precio + factor piezas) + selectbox de tipo por defecto."""
     nombre = "Abastecimiento" if red == "ABA" else "Saneamiento"
-    _editar_dict(f"Acometidas {nombre} (€/ud)", clave_tipos, "tipo", "precio",
-                 _cols_acometida, disabled=_en_confirmacion)
+    clave_factores = f"acometidas_{red.lower()}_factores"
+    factor_defecto = 1.2 if red == "ABA" else 1.0
+
+    st.subheader(f"Acometidas {nombre} (€/ud)")
+
+    # Combinar tipos→precio y tipos→factor en un único DataFrame para edición conjunta
+    tipos_dict = precios.get(clave_tipos, {})
+    factores_dict = precios.get(clave_factores, {})
+    filas = [
+        {
+            "tipo": tipo,
+            "precio": precio,
+            "factor_piezas": float(factores_dict.get(tipo, factor_defecto)),
+        }
+        for tipo, precio in tipos_dict.items()
+    ]
+    df = pd.DataFrame(filas) if filas else pd.DataFrame(columns=["tipo", "precio", "factor_piezas"])
+
+    edited = st.data_editor(
+        df,
+        column_config=_cols_acometida,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"editor_{clave_tipos}",
+        disabled=_en_confirmacion,
+    )
+
+    if not _en_confirmacion:
+        tiene_nan = edited.isna().any(axis=1).any()
+        if tiene_nan:
+            _validar_nan(edited, f"Acometidas {nombre}")
+        else:
+            filas_validas = [
+                row for _, row in edited.iterrows()
+                if str(row["tipo"]).strip() != ""
+            ]
+            claves_vistas: set = set()
+            claves_duplicadas: set = set()
+            for row in filas_validas:
+                k = row["tipo"]
+                if k in claves_vistas:
+                    claves_duplicadas.add(k)
+                claves_vistas.add(k)
+            if claves_duplicadas:
+                _errores_guardado.append(
+                    f"**Acometidas {nombre}**: tipos duplicados: "
+                    f"{', '.join(str(k) for k in claves_duplicadas)}."
+                )
+            else:
+                # Separar de vuelta en los dos dicts que usa el resto del sistema
+                precios[clave_tipos] = {row["tipo"]: float(row["precio"]) for row in filas_validas}
+                precios[clave_factores] = {row["tipo"]: float(row["factor_piezas"]) for row in filas_validas}
+
     tipos = list(precios.get(clave_tipos, {}).keys())
     defecto = precios.get(clave_defecto, "")
     precios[clave_defecto] = st.selectbox(
@@ -365,10 +417,7 @@ def _editar_acometidas(red: str, clave_tipos: str, clave_defecto: str) -> None:
                    "Se seleccionará el primero disponible.")
 
 
-with st.expander("Desmontaje e Imbornales — Precios por tipo"):
-    st.caption("Desmontaje de tuberías existentes ABA, imbornales SAN y precios de demolición/anulación de pozos existentes.")
-    st.divider()
-
+with st.expander("Desmontaje e Imbornales - Precios por tipo"):
     _cols_desmontaje = {
         "label": st.column_config.TextColumn("Descripción", required=True),
         "dn_max": st.column_config.NumberColumn("DN máx (mm)", min_value=1, required=True),
@@ -397,10 +446,6 @@ with st.expander("Desmontaje e Imbornales — Precios por tipo"):
 
 
 with st.expander("Acometidas - Tipos y precios ABA/SAN"):
-    st.caption("Tipos de acometida disponibles y sus precios unitarios, "
-               "tanto para abastecimiento como para saneamiento.")
-    st.divider()
-
     _editar_acometidas("ABA", "acometidas_aba_tipos", "acometida_aba_defecto")
     _editar_acometidas("SAN", "acometidas_san_tipos", "acometida_san_defecto")
 
@@ -410,10 +455,6 @@ with st.expander("Acometidas - Tipos y precios ABA/SAN"):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("Valores por defecto - Mediciones e importes iniciales del formulario"):
-    st.caption("Valores que aparecen pre-rellenados en la calculadora de presupuestos. "
-               "Ajústalos a los valores típicos de tu zona de trabajo.")
-    st.divider()
-
     _dui = precios["defaults_ui"]
 
     st.markdown("**Geometría de tramo**")
@@ -480,6 +521,8 @@ if "confirmar_guardado" not in st.session_state:
 
 _bloquear_guardado = bool(_errores_guardado)
 if _errores_guardado:
+    logger.warning("Admin: validación fallida - %d error(es): %s",
+                   len(_errores_guardado), "; ".join(_errores_guardado))
     st.error("No se puede guardar: hay campos vacíos en los editores.\n\n"
              + "\n".join(f"- {e}" for e in _errores_guardado))
 
@@ -495,20 +538,23 @@ else:
         _cambios = calcular_diff(_original, precios)
     except (ValueError, KeyError, OSError) as _diff_err:
         _cambios = None
+        logger.warning("Admin: diff de precios falló: %s", _diff_err)
         st.warning(f"No se pudo calcular el detalle de cambios: {_diff_err}")
 
     if _cambios is None:
-        # Diff falló — permitir guardar sin revisión o volver
+        # Diff falló - permitir guardar sin revisión o volver
         st.info("Puedes guardar sin revisar los cambios o volver para corregir.")
         col_guardar, col_volver = st.columns(2)
         with col_guardar:
             if st.button("Guardar sin revisar", type="primary", use_container_width=True, disabled=_bloquear_guardado):
                 try:
+                    logger.info("Admin: guardando precios (sin revisar)")
                     guardar_precios(precios)
                     cargar_precios.clear()
                     st.success("Precios guardados correctamente.")
                     _reset_confirmacion()
                 except ValueError as e:
+                    logger.error("Admin: error guardando precios: %s", e)
                     st.error(str(e))
         with col_volver:
             if st.button("Volver", use_container_width=True):
@@ -524,7 +570,7 @@ else:
             for c in _cambios:
                 _secciones.setdefault(c["seccion"], []).append(c)
             for sec_nombre, sec_cambios in _secciones.items():
-                st.caption(f"{sec_nombre} — {len(sec_cambios)} cambio(s)")
+                st.caption(f"{sec_nombre} - {len(sec_cambios)} cambio(s)")
                 _df_cambios = pd.DataFrame([
                     {"Campo": c["campo"], "Anterior": c["valor_anterior"],
                      "Nuevo": c["valor_nuevo"]}
@@ -536,11 +582,13 @@ else:
         with col_si:
             if st.button("Sí, guardar", type="primary", use_container_width=True, disabled=_bloquear_guardado):
                 try:
+                    logger.info("Admin: guardando precios (con revisión, %d cambios)", len(_cambios))
                     guardar_precios(precios)
                     cargar_precios.clear()
                     st.success("Precios guardados correctamente.")
                     _reset_confirmacion()
                 except ValueError as e:
+                    logger.error("Admin: error guardando precios: %s", e)
                     st.error(str(e))
         with col_no:
             if st.button("Cancelar", use_container_width=True):

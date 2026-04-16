@@ -1,116 +1,155 @@
 """
-Ensamblaje del presupuesto — orquesta capítulos y resumen financiero.
+Ensamblaje del presupuesto - orquesta capítulos y resumen financiero.
 
-Este es el único módulo que importa tanto de src.reglas como de src.presupuesto.capitulos.
 La UI (pages/) solo llama a calcular_presupuesto() desde aquí.
-
-Estructura de capítulos:
-  01 OBRA CIVIL ABASTECIMIENTO   — excavación, tubería, arriñonado, entibación,
-                                   valvulería, pozos, desmontaje, cánones
-  02 OBRA CIVIL SANEAMIENTO      — idem + imbornales, pozos existentes SAN
-  03 PAVIMENTACIÓN ABASTECIMIENTO — demolición + reposición acerado/bordillo + sub-base
-  04 PAVIMENTACIÓN SANEAMIENTO   — demolición + reposición calzada/acera + sub-base
-  05 ACOMETIDAS ABASTECIMIENTO
-  06 ACOMETIDAS SANEAMIENTO
-  07 SEGURIDAD Y SALUD           — % sobre base de obra (sin cánones/desmontaje)
-  08 GESTIÓN AMBIENTAL           — % sobre base de obra (sin cánones/desmontaje)
-  09 MATERIALES                  — suministro puro ABA (excluido de GG/BI)
+Los bloques de cada capítulo están en bloques.py.
 """
 
 from __future__ import annotations
 
+import copy
+import logging
 from typing import Any
 
 from src.domain.parametros import ParametrosProyecto
 from src.domain.financiero import calcular_resumen
+from src.infraestructura.precios import aplicar_ci
 from src.reglas.motor import resolver_decisiones
-from src.presupuesto.capitulos import (
-    capitulo_obra_civil,
-    capitulo_pozos_registro,
-    capitulo_valvuleria,
-    capitulo_demolicion,
-    capitulo_pavimentacion,
-    capitulo_acometidas,
-    capitulo_subbase,
-    capitulo_desmontaje,
-    capitulo_imbornales,
-    capitulo_pozos_existentes,
-    capitulo_canones,
+from src.presupuesto.bloques import (
+    ensamblar_obra_civil_aba,
+    ensamblar_obra_civil_san,
+    ensamblar_pavimentacion_aba,
+    ensamblar_pavimentacion_san,
+    ensamblar_acometidas,
+    ensamblar_seguridad_gestion,
 )
 
+logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
-# Helpers internos
+# Helpers de resolución CI
 # ---------------------------------------------------------------------------
 
-def _materiales_aba(
-    longitud: float, item: dict, decisiones: dict
-) -> tuple[float, dict] | None:
-    """Suministro de material puro ABA (excluido de base GG/BI)."""
-    partidas: dict[str, float] = {}
-
-    precio_mat_m = float(item.get("precio_material_m", 0.0) or 0.0)
-    factor_piezas = float(item.get("factor_piezas", 1.0))
-    if precio_mat_m > 0:
-        partidas[item["label"] + " (suministro)"] = longitud * precio_mat_m * factor_piezas
-
-    for v in decisiones["valvuleria"]["items"]:
-        intervalo = float(v.get("intervalo_m", 0))
-        precio_mat = float(v.get("precio_material", 0.0) or 0.0)
-        if intervalo <= 0 or precio_mat <= 0:
-            continue
-        n = longitud / intervalo
-        partidas[v["label"] + " (material)"] = n * precio_mat * float(v.get("factor_piezas", 1.0))
-
-    pozo_item = decisiones["pozo_registro"]["item"]
-    if pozo_item is not None:
-        precio_tapa_mat = float(pozo_item.get("precio_tapa_material", 0.0) or 0.0)
-        intervalo_poz = float(pozo_item.get("intervalo", 0))
-        if precio_tapa_mat > 0 and intervalo_poz > 0:
-            partidas["Tapa pozo registro ABA (material)"] = (
-                longitud / intervalo_poz) * precio_tapa_mat
-
-    if not partidas:
+def _resolver_item_ci(label: str, catalogo: list[dict]) -> dict | None:
+    """Re-busca un item por label en el catálogo ya transformado con CI."""
+    if not label or not catalogo:
+        logger.debug("[CI-RESOLVE] label=%r catalogo_len=%d → None (guard)",
+                     label, len(catalogo) if catalogo else 0)
         return None
-    return sum(partidas.values()), partidas
-
-
-def _demo_items(red: str, precios: dict) -> tuple[dict | None, dict | None]:
-    """Extrae items de demolición por unidad (m2 y m) del catálogo."""
-    cat = precios.get(f"demolicion_{red.lower()}", [])
-    by_unit: dict[str, dict] = {}
-    for item in cat:
-        u = item.get("unidad", "")
-        if u in by_unit:
-            raise ValueError(
-                f"El catálogo 'demolicion_{red.lower()}' tiene unidad duplicada '{u}'."
-            )
-        by_unit[u] = item
-    return by_unit.get("m2"), by_unit.get("m")
-
-
-def _acumular(caps: dict, nombre: str, resultado: tuple[float, dict] | None) -> None:
-    if resultado is None:
-        return
-    subtotal, partidas = resultado
-    if nombre in caps:
-        caps[nombre]["partidas"].update(partidas)
-        caps[nombre]["subtotal"] += subtotal
+    item = next((i for i in catalogo if i.get("label") == label), None)
+    if item is None:
+        logger.warning("[CI-RESOLVE] ITEM NO ENCONTRADO: label=%r no está en el catálogo "
+                       "(%d items). El precio NO incluirá CI → posible infravaloración del 5%%.",
+                       label, len(catalogo))
     else:
-        caps[nombre] = {"subtotal": subtotal, "partidas": dict(partidas)}
+        logger.debug("[CI-RESOLVE] '%s' resuelto con CI (precio_m=%.4f)",
+                     label, item.get("precio_m", item.get("precio", 0)))
+    return item
+
+
+def _reresolver_items_ci(
+    p: ParametrosProyecto, precios: dict,
+) -> dict[str, Any]:
+    """Re-resuelve todos los items de ParametrosProyecto con CI aplicado."""
+    def _ci(item: dict | None, catalogo_key: str) -> dict | None:
+        if not item:
+            return None
+        label = item.get("label", "")
+        resolved = _resolver_item_ci(label, precios[catalogo_key])
+        if resolved is None and item:
+            logger.warning("[CI-FALLBACK] %s '%s' no encontrado en catálogo CI → "
+                           "precio SIN CI (infravaloración ~5%%)", catalogo_key, label)
+            return item
+        return resolved
+
+    result = {
+        "aba_item": _ci(p.aba_item, "catalogo_aba"),
+        "san_item": _ci(p.san_item, "catalogo_san"),
+        "pav_aba_acerado_item": _ci(p.pav_aba_acerado_item, "acerados_aba"),
+        "pav_aba_bordillo_item": _ci(p.pav_aba_bordillo_item, "bordillos_reposicion"),
+        "pav_aba_calzada_item": _ci(p.pav_aba_calzada_item, "calzadas_reposicion"),
+        "pav_san_calzada_item": _ci(p.pav_san_calzada_item, "calzadas_reposicion"),
+        "pav_san_acera_item": _ci(p.pav_san_acera_item, "acerados_san"),
+        "subbase_aba_item": _ci(p.subbase_aba_item, "catalogo_subbases"),
+        "subbase_san_item": _ci(p.subbase_san_item, "catalogo_subbases"),
+    }
+    logger.debug("Re-resolución CI → aba_item=%s san_item=%s",
+                 result["aba_item"]["label"] if result["aba_item"] else None,
+                 result["san_item"]["label"] if result["san_item"] else None)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Overrides del usuario sobre decisiones CLIPS
+# ---------------------------------------------------------------------------
+
+def _aplicar_overrides(decisiones: dict, override: dict) -> None:
+    """Reemplaza los ganadores del desempate con las selecciones del usuario.
+
+    El override contiene labels; los items se buscan en el catálogo CI
+    que ya está dentro de decisiones["candidatos"].
+    """
+    cand = decisiones.get("candidatos")
+    if not cand:
+        logger.warning("_aplicar_overrides: no candidatos en decisiones, override ignorado")
+        return
+
+    if "entibacion_label" in override:
+        label = override["entibacion_label"]
+        if label is None:
+            decisiones["entibacion"] = {"necesaria": False, "item": None}
+        else:
+            item = next(
+                (it for it in cand["entibacion"]["catalogo"]
+                 if it.get("label") == label), None)
+            if item:
+                decisiones["entibacion"] = {"necesaria": True, "item": item}
+
+    if "pozo_label" in override:
+        label = override["pozo_label"]
+        item = next(
+            (it for it in cand["pozo_registro"]["catalogo"]
+             if it.get("label") == label), None)
+        decisiones["pozo_registro"]["item"] = item
+
+    if "valvuleria_labels" in override:
+        labels = set(override["valvuleria_labels"])
+        items = [it for it in cand["valvuleria"]["catalogo"]
+                 if it.get("label") in labels]
+        decisiones["valvuleria"]["items"] = items
+
+    if "desmontaje_label" in override:
+        label = override["desmontaje_label"]
+        if label is None:
+            decisiones["desmontaje"]["item"] = None
+        else:
+            item = next(
+                (it for it in cand["desmontaje"]["catalogo"]
+                 if it.get("label") == label), None)
+            decisiones["desmontaje"]["item"] = item
 
 
 # ---------------------------------------------------------------------------
 # API pública
 # ---------------------------------------------------------------------------
 
-def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]:
+def calcular_presupuesto(
+    p: ParametrosProyecto,
+    precios_base: dict,
+    overrides: dict | None = None,
+) -> dict[str, Any]:
     """
     Calcula el presupuesto completo para un proyecto EMASESA.
 
     Args:
         p: Parámetros del proyecto introducidos por el usuario.
-        precios: Dict completo cargado desde SQLite (via infraestructura.precios).
+        precios_base: Dict de precios BASE cargado desde SQLite. El CI se aplica
+            internamente sobre una copia local - el dict original no se muta.
+        overrides: Selecciones manuales del usuario sobre las decisiones del
+            sistema experto. Dict con claves "aba" y/o "san", cada una con
+            labels de los items seleccionados (entibacion_label, pozo_label,
+            valvuleria_labels, desmontaje_label). None = desempate automático.
 
     Returns:
         Dict con:
@@ -118,17 +157,45 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
           - pem, gg, bi, pbl_sin_iva, iva, total: resumen financiero
           - auxiliares: datos geométricos de ABA y SAN (para debug)
     """
+    logger.info("═══ calcular_presupuesto INICIO ═══")
+    logger.info("  ABA: activa=%s tipo=%s DN=%d L=%.2f P=%.2f",
+                p.aba_activa, p.aba_tipo if p.aba_activa else "-",
+                p.aba_diametro_mm if p.aba_activa else 0,
+                p.aba_longitud_m if p.aba_activa else 0,
+                p.aba_profundidad_m if p.aba_activa else 0)
+    logger.info("  SAN: activa=%s tipo=%s DN=%d L=%.2f P=%.2f",
+                p.san_activa, p.san_tipo if p.san_activa else "-",
+                p.san_diametro_mm if p.san_activa else 0,
+                p.san_longitud_m if p.san_activa else 0,
+                p.san_profundidad_m if p.san_activa else 0)
+    logger.info("  pct_manual=%.2f espesor_pav=%.3f pct_seg=%.4f pct_gest=%.4f",
+                p.pct_manual, p.espesor_pavimento_m, p.pct_seguridad, p.pct_gestion)
+
+    # Aplicar CI sobre copia local para no mutar el dict del caller.
+    precios = copy.deepcopy(precios_base)
+    pct_ci = precios.get("pct_ci", 0.0)
+    logger.debug("Aplicando CI=%.4f sobre deepcopy de precios", pct_ci)
+    aplicar_ci(precios)
+
+    # ── Re-resolver items con CI aplicado ───────────────────────────────────
+    items_ci = _reresolver_items_ci(p, precios)
     espesores = precios["espesores_calzada"]
     caps: dict[str, dict] = {}
-    aux_aba = aux_san = None
+    estado: dict[str, Any] = {
+        "excluir_ss": 0.0,
+        "materiales_total": 0.0,
+        "trazabilidad": {},
+        "aux_aba": None,
+        "aux_san": None,
+    }
 
-    # Acumuladores para ajuste de base S&S y materiales
-    _excluir_de_base_ss = 0.0   # Cánones + desmontaje (no entran en base S&S)
-    _materiales_total = 0.0      # Materiales ABA (excluidos de GG/BI)
+    # ── Resolver decisiones CLIPS ──────────────────────────────────────────
+    # CLIPS siempre se ejecuta con precios CI para que los items tengan
+    # los precios correctos. Si hay overrides del usuario, se aplican
+    # después para reemplazar los ganadores del desempate.
+    decisiones_aba = None
+    decisiones_san = None
 
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULO 01 — OBRA CIVIL ABASTECIMIENTO
-    # ═══════════════════════════════════════════════════════════════════════
     if p.aba_activa:
         decisiones_aba = resolver_decisiones(
             tipo_tuberia=p.aba_tipo,
@@ -139,70 +206,10 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
             instalacion=p.instalacion_valvuleria,
             desmontaje_tipo=p.desmontaje_tipo,
         )
+        if overrides and "aba" in overrides:
+            _aplicar_overrides(decisiones_aba, overrides["aba"])
+            logger.info("  [ABA] Overrides del usuario aplicados")
 
-        # Obra civil base (excavación, tubería, arriñonado, relleno, entibación)
-        cap_aba, partidas_aba, aux_aba = capitulo_obra_civil(
-            p.aba_longitud_m, p.aba_profundidad_m, p.aba_item, precios,
-            pct_manual=p.pct_manual,
-            espesor_pavimento_m=p.espesor_pavimento_m,
-            entibacion_item=decisiones_aba["entibacion"]["item"],
-        )
-        _acumular(caps, "OBRA CIVIL ABASTECIMIENTO", (cap_aba, partidas_aba))
-
-        # Cánones (se muestran en obra civil pero se excluyen de base S&S)
-        canon_aba = capitulo_canones(
-            aux_aba.get("canon_tierras", 0.0),
-            aux_aba.get("canon_mixto", 0.0),
-        )
-        _acumular(caps, "OBRA CIVIL ABASTECIMIENTO", canon_aba)
-        if canon_aba:
-            _excluir_de_base_ss += canon_aba[0]
-
-        # Pozos de registro ABA
-        _acumular(caps, "OBRA CIVIL ABASTECIMIENTO",
-                  capitulo_pozos_registro(
-                      p.aba_longitud_m, p.aba_profundidad_m, p.aba_diametro_mm, precios,
-                      pozo_item=decisiones_aba["pozo_registro"]["item"]))
-
-        # Valvulería ABA
-        _acumular(caps, "OBRA CIVIL ABASTECIMIENTO",
-                  capitulo_valvuleria(
-                      p.aba_longitud_m, p.aba_diametro_mm, precios,
-                      instalacion=p.instalacion_valvuleria,
-                      valvuleria_items=decisiones_aba["valvuleria"]["items"]))
-
-        # Desmontaje tubería existente (excluido de base S&S)
-        if p.desmontaje_tipo != "none":
-            _desm = capitulo_desmontaje(
-                p.aba_longitud_m, precios,
-                desmontaje_item=decisiones_aba["desmontaje"]["item"])
-            _acumular(caps, "OBRA CIVIL ABASTECIMIENTO", _desm)
-            if _desm:
-                _excluir_de_base_ss += _desm[0]
-
-        # Pozos existentes ABA
-        if p.pozos_existentes_aba != "none":
-            _acumular(caps, "OBRA CIVIL ABASTECIMIENTO",
-                      capitulo_pozos_existentes(
-                          p.aba_longitud_m, p.pozos_existentes_aba, "ABA", precios))
-
-        # Conducción provisional
-        if p.conduccion_provisional_m > 0:
-            precio_cp = float(precios.get("conduccion_provisional_precio_m", 12.0))
-            importe_cp = p.conduccion_provisional_m * precio_cp
-            if importe_cp > 0:
-                _acumular(caps, "OBRA CIVIL ABASTECIMIENTO",
-                          (importe_cp, {"Conducción provisional PE": importe_cp}))
-
-        # Materiales ABA (excluidos de GG/BI, capítulo aparte)
-        _mat = _materiales_aba(p.aba_longitud_m, p.aba_item, decisiones_aba)
-        if _mat:
-            _materiales_total += _mat[0]
-            _acumular(caps, "MATERIALES", _mat)
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULO 02 — OBRA CIVIL SANEAMIENTO
-    # ═══════════════════════════════════════════════════════════════════════
     if p.san_activa:
         decisiones_san = resolver_decisiones(
             tipo_tuberia=p.san_tipo,
@@ -213,184 +220,43 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
             instalacion="enterrada",
             desmontaje_tipo="none",
         )
+        if overrides and "san" in overrides:
+            _aplicar_overrides(decisiones_san, overrides["san"])
+            logger.info("  [SAN] Overrides del usuario aplicados")
 
-        cap_san, partidas_san, aux_san = capitulo_obra_civil(
-            p.san_longitud_m, p.san_profundidad_m, p.san_item, precios,
-            es_san=True,
-            pct_manual=p.pct_manual,
-            espesor_pavimento_m=p.espesor_pavimento_m,
-            entibacion_item=decisiones_san["entibacion"]["item"],
-        )
-        _acumular(caps, "OBRA CIVIL SANEAMIENTO", (cap_san, partidas_san))
+    # ── Ensamblar capítulos ─────────────────────────────────────────────────
+    ensamblar_obra_civil_aba(p, precios, items_ci["aba_item"], caps, estado, decisiones_aba)
+    ensamblar_obra_civil_san(p, precios, items_ci["san_item"], caps, estado, decisiones_san)
+    ensamblar_pavimentacion_aba(p, precios, items_ci, espesores, caps)
+    ensamblar_pavimentacion_san(p, precios, items_ci, espesores, caps)
+    ensamblar_acometidas(p, precios, caps)
+    ensamblar_seguridad_gestion(p, caps, estado)
 
-        canon_san = capitulo_canones(
-            aux_san.get("canon_tierras", 0.0),
-            aux_san.get("canon_mixto", 0.0),
-        )
-        _acumular(caps, "OBRA CIVIL SANEAMIENTO", canon_san)
-        if canon_san:
-            _excluir_de_base_ss += canon_san[0]
-
-        # Pozos de registro SAN
-        _acumular(caps, "OBRA CIVIL SANEAMIENTO",
-                  capitulo_pozos_registro(
-                      p.san_longitud_m, p.san_profundidad_m, p.san_diametro_mm, precios,
-                      es_san=True,
-                      pozo_item=decisiones_san["pozo_registro"]["item"]))
-
-        # Imbornales
-        if p.imbornales_tipo != "none":
-            _acumular(caps, "OBRA CIVIL SANEAMIENTO",
-                      capitulo_imbornales(
-                          p.san_longitud_m, p.imbornales_tipo,
-                          p.imbornales_nuevo_label, precios))
-
-        # Pozos existentes SAN
-        if p.pozos_existentes_san != "none":
-            _acumular(caps, "OBRA CIVIL SANEAMIENTO",
-                      capitulo_pozos_existentes(
-                          p.san_longitud_m, p.pozos_existentes_san, "SAN", precios))
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULO 03 — PAVIMENTACIÓN ABASTECIMIENTO
-    # ═══════════════════════════════════════════════════════════════════════
-    if p.aba_activa:
-        demo_m2_aba, demo_m_aba = _demo_items("ABA", precios)
-        cat_demo_aba = precios.get("demolicion_aba", [])
-        if cat_demo_aba:
-            if p.pav_aba_acerado_m2 > 0 and demo_m2_aba is None:
-                raise ValueError(
-                    "Hay superficie de acerado ABA a demoler pero demolicion_aba "
-                    "no tiene ningún item con unidad 'm2'."
-                )
-            if p.pav_aba_bordillo_m > 0 and demo_m_aba is None:
-                raise ValueError(
-                    "Hay longitud de bordillo ABA a demoler pero demolicion_aba "
-                    "no tiene ningún item con unidad 'm'."
-                )
-        _acumular(caps, "PAVIMENTACIÓN ABASTECIMIENTO",
-                  capitulo_demolicion(p.pav_aba_acerado_m2, demo_m2_aba,
-                                      p.pav_aba_bordillo_m, demo_m_aba))
-        _acumular(caps, "PAVIMENTACIÓN ABASTECIMIENTO",
-                  capitulo_pavimentacion(p.pav_aba_acerado_m2, p.pav_aba_acerado_item,
-                                         p.pav_aba_bordillo_m, p.pav_aba_bordillo_item))
-        if p.subbase_aba_espesor_m > 0:
-            _acumular(caps, "PAVIMENTACIÓN ABASTECIMIENTO",
-                      capitulo_subbase(p.pav_aba_acerado_m2,
-                                       p.subbase_aba_espesor_m, p.subbase_aba_item))
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULO 04 — PAVIMENTACIÓN SANEAMIENTO
-    # ═══════════════════════════════════════════════════════════════════════
-    if p.san_activa:
-        cat_demo_san = precios.get("demolicion_san", [])
-        item_calzada = next(
-            (i for i in cat_demo_san if "calzada" in i.get("label", "").lower()), None)
-        item_acera = next(
-            (i for i in cat_demo_san
-             if "acerado" in i.get("label", "").lower()
-             or "acera" in i.get("label", "").lower()), None)
-        if cat_demo_san:
-            if p.pav_san_calzada_m2 > 0 and item_calzada is None:
-                raise ValueError(
-                    "Hay superficie de calzada SAN a demoler pero demolicion_san "
-                    "no tiene ningún item con 'calzada' en el label."
-                )
-            if p.pav_san_acera_m2 > 0 and item_acera is None:
-                raise ValueError(
-                    "Hay superficie de acerado SAN a demoler pero demolicion_san "
-                    "no tiene ningún item con 'acerado' o 'acera' en el label."
-                )
-        _acumular(caps, "PAVIMENTACIÓN SANEAMIENTO",
-                  capitulo_demolicion(p.pav_san_calzada_m2, item_calzada,
-                                      p.pav_san_acera_m2, item_acera))
-        _acumular(caps, "PAVIMENTACIÓN SANEAMIENTO",
-                  capitulo_pavimentacion(p.pav_san_calzada_m2, p.pav_san_calzada_item,
-                                         p.pav_san_acera_m2, p.pav_san_acera_item,
-                                         calzada_conversion=True, espesores=espesores,
-                                         factor_calzada_san=1.5))
-        if p.subbase_san_espesor_m > 0:
-            _acumular(caps, "PAVIMENTACIÓN SANEAMIENTO",
-                      capitulo_subbase(p.pav_san_calzada_m2 + p.pav_san_acera_m2,
-                                       p.subbase_san_espesor_m, p.subbase_san_item))
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULO 05 — ACOMETIDAS ABASTECIMIENTO
-    # ═══════════════════════════════════════════════════════════════════════
-    if p.aba_activa:
-        acometidas_aba = precios["acometidas_aba_tipos"]
-        tipo_aba = precios["acometida_aba_defecto"]
-        if tipo_aba not in acometidas_aba:
-            raise ValueError(
-                f"El tipo de acometida ABA por defecto '{tipo_aba}' no existe en el catálogo. "
-                "Actualízalo en Administración de precios."
-            )
-        factor_aba = float(precios.get("acometidas_aba_factores", {}).get(tipo_aba, 1.2))
-        _acumular(caps, "ACOMETIDAS ABASTECIMIENTO",
-                  capitulo_acometidas(p.acometidas_aba_n,
-                                      acometidas_aba[tipo_aba],
-                                      "Acometidas ABA", factor=factor_aba))
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULO 06 — ACOMETIDAS SANEAMIENTO
-    # ═══════════════════════════════════════════════════════════════════════
-    if p.san_activa:
-        acometidas_san = precios["acometidas_san_tipos"]
-        tipo_san = precios["acometida_san_defecto"]
-        if tipo_san not in acometidas_san:
-            raise ValueError(
-                f"El tipo de acometida SAN por defecto '{tipo_san}' no existe en el catálogo. "
-                "Actualízalo en Administración de precios."
-            )
-        _acumular(caps, "ACOMETIDAS SANEAMIENTO",
-                  capitulo_acometidas(p.acometidas_san_n,
-                                      acometidas_san[tipo_san],
-                                      "Acometidas SAN", factor=1.0))
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # CAPÍTULOS 07-08 — SEGURIDAD Y SALUD / GESTIÓN AMBIENTAL
-    # ═══════════════════════════════════════════════════════════════════════
-    _base_ss_keys = {
-        "OBRA CIVIL ABASTECIMIENTO", "OBRA CIVIL SANEAMIENTO",
-        "PAVIMENTACIÓN ABASTECIMIENTO", "PAVIMENTACIÓN SANEAMIENTO",
-        "ACOMETIDAS ABASTECIMIENTO", "ACOMETIDAS SANEAMIENTO",
-    }
-    base_ss = max(
-        0.0,
-        sum(c["subtotal"] for nombre, c in caps.items() if nombre in _base_ss_keys)
-        - _excluir_de_base_ss,
-    )
-
-    if p.pct_seguridad > 0:
-        importe_ss = base_ss * p.pct_seguridad
-        _acumular(caps, "SEGURIDAD Y SALUD",
-                  (importe_ss, {"Seguridad y Salud": importe_ss}))
-
-    if p.pct_servicios_afectados > 0:
-        importe_sa = base_ss * p.pct_servicios_afectados
-        _acumular(caps, "SEGURIDAD Y SALUD",
-                  (importe_sa, {"Servicios afectados": importe_sa}))
-
-    if p.pct_gestion > 0:
-        importe_ga = base_ss * p.pct_gestion
-        _acumular(caps, "GESTIÓN AMBIENTAL",
-                  (importe_ga, {"Gestión ambiental": importe_ga}))
-
-    # ── Numerar capítulos en orden de inserción ──────────────────────────────
+    # ── Numerar capítulos en orden de inserción ─────────────────────────────
     capitulos = {
         f"{i + 1:02d} {nombre}": datos
         for i, (nombre, datos) in enumerate(caps.items())
     }
 
-    # ── Resumen financiero ───────────────────────────────────────────────────
+    # ── Resumen financiero ──────────────────────────────────────────────────
     pem = sum(c["subtotal"] for c in capitulos.values())
+    logger.info("── RESUMEN FINANCIERO ──")
+    logger.info("PEM = %.2f € (materiales excluidos de GG/BI = %.2f €)", pem, estado["materiales_total"])
     fin = calcular_resumen(
         pem=pem,
-        materiales=_materiales_total,
+        materiales=estado["materiales_total"],
         pct_gg=precios["pct_gg"],
         pct_bi=precios["pct_bi"],
         pct_iva=precios["pct_iva"],
     )
+    logger.info("GG=%.2f BI=%.2f PBL_sin_IVA=%.2f IVA=%.2f TOTAL=%.2f €",
+                fin.gg, fin.bi, fin.pbl_sin_iva, fin.iva, fin.total)
+
+    for cap_nombre, cap_datos in capitulos.items():
+        logger.debug("  %s: %.2f € - partidas: %s", cap_nombre, cap_datos["subtotal"],
+                     {k: round(v, 2) for k, v in cap_datos["partidas"].items()})
+
+    logger.info("═══ calcular_presupuesto FIN - TOTAL %.2f € ═══", fin.total)
 
     return {
         "capitulos": capitulos,
@@ -407,5 +273,6 @@ def calcular_presupuesto(p: ParametrosProyecto, precios: dict) -> dict[str, Any]
         },
         "pct_seguridad_info": round(p.pct_seguridad * 100, 2),
         "pct_gestion_info": round(p.pct_gestion * 100, 2),
-        "auxiliares": {"aba": aux_aba or {}, "san": aux_san or {}},
+        "auxiliares": {"aba": estado["aux_aba"] or {}, "san": estado["aux_san"] or {}},
+        "trazabilidad": estado["trazabilidad"],
     }

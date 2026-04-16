@@ -1,3 +1,13 @@
+__pycache__/
+*.pyc
+
+*.db
+!data/precios.db
+
+*.xlsx
+!data/*.xlsx
+
+.github/instructions/codacy.instructions.md
 
 
 #Ignore vscode AI rules

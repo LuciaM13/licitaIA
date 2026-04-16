@@ -21,10 +21,6 @@ _NOMBRES_SECCION = {
     "calzadas_reposicion": "Calzadas",
     "espesores_calzada": "Espesores calzada",
     "excavacion": "Excavación",
-    "anchos_zanja_aba": "Anchos zanja ABA",
-    "anchos_zanja_san": "Anchos zanja SAN",
-    "espesores_arrinonado_aba": "Espesores arriñonado ABA",
-    "espesores_arrinonado_san": "Espesores arriñonado SAN",
     "demolicion_aba": "Demolición ABA",
     "demolicion_san": "Demolición SAN",
     "acometidas_aba_tipos": "Acometidas ABA",
@@ -44,8 +40,8 @@ _NOMBRES_DEFAULTS_UI = {
     "pav_san_calzada_m2": "Calzada SAN (m²)",
     "pav_san_acera_m2": "Acera SAN (m²)",
     "acometidas_n": "Nº acometidas",
-    "importe_seguridad": "Seguridad y Salud (€)",
-    "importe_gestion": "Gestión Ambiental (€)",
+    "pct_seguridad": "Seguridad y Salud (%)",
+    "pct_gestion": "Gestión Ambiental (%)",
 }
 
 _NOMBRES_EXCAVACION = {
@@ -56,7 +52,6 @@ _NOMBRES_EXCAVACION = {
     "arrinonado": "Arriñonado",
     "relleno": "Relleno",
     "carga_mec": "Carga mecánica",
-    "carga_manual": "Carga manual",
     "transporte": "Transporte",
     "canon_tierras": "Canon tierras",
     "umbral_profundidad_m": "Umbral profundidad (m)",
@@ -73,10 +68,6 @@ _CLAVE_NATURAL = {
     "acerados_san": "label",
     "bordillos_reposicion": "label",
     "calzadas_reposicion": "label",
-    "anchos_zanja_aba": "diametro_mm",
-    "anchos_zanja_san": "diametro_mm",
-    "espesores_arrinonado_aba": "diametro_mm",
-    "espesores_arrinonado_san": "diametro_mm",
     "demolicion_aba": "label",
     "demolicion_san": "label",
 }
@@ -120,13 +111,13 @@ def _diff_dict_plano(seccion: str, old_d: dict, new_d: dict,
             cambios.append({
                 "seccion": nombre_seccion, "tipo": "añadido",
                 "campo": nombre_campo,
-                "valor_anterior": "—", "valor_nuevo": new_d[k], "delta_pct": "",
+                "valor_anterior": "-", "valor_nuevo": new_d[k], "delta_pct": "",
             })
         elif k not in new_d:
             cambios.append({
                 "seccion": nombre_seccion, "tipo": "eliminado",
                 "campo": nombre_campo,
-                "valor_anterior": old_d[k], "valor_nuevo": "—", "delta_pct": "",
+                "valor_anterior": old_d[k], "valor_nuevo": "-", "delta_pct": "",
             })
         elif old_d[k] != new_d[k]:
             cambios.append({
@@ -157,7 +148,7 @@ def _diff_lista_dicts(seccion: str, old_list: list, new_list: list) -> list[dict
             cambios.append({
                 "seccion": nombre_seccion, "tipo": "añadido",
                 "campo": "Nuevo elemento",
-                "valor_anterior": "—",
+                "valor_anterior": "-",
                 "valor_nuevo": str(k),
                 "delta_pct": "",
             })
@@ -166,7 +157,7 @@ def _diff_lista_dicts(seccion: str, old_list: list, new_list: list) -> list[dict
                 "seccion": nombre_seccion, "tipo": "eliminado",
                 "campo": "Eliminado",
                 "valor_anterior": str(k),
-                "valor_nuevo": "—",
+                "valor_nuevo": "-",
                 "delta_pct": "",
             })
         elif old_by_key[k] != new_by_key[k]:
@@ -210,7 +201,7 @@ def calcular_diff(original: dict, nuevo: dict) -> list[dict]:
             cambios.append({
                 "seccion": nombre, "tipo": "añadido",
                 "campo": nombre,
-                "valor_anterior": "—",
+                "valor_anterior": "-",
                 "valor_nuevo": f"({type(new_val).__name__})",
                 "delta_pct": "",
             })
@@ -220,7 +211,7 @@ def calcular_diff(original: dict, nuevo: dict) -> list[dict]:
                 "seccion": nombre, "tipo": "eliminado",
                 "campo": nombre,
                 "valor_anterior": f"({type(old_val).__name__})",
-                "valor_nuevo": "—",
+                "valor_nuevo": "-",
                 "delta_pct": "",
             })
             continue

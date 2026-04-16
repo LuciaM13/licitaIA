@@ -28,6 +28,8 @@ class ParametrosProyecto:
     pav_aba_acerado_item: dict[str, Any] = field(default_factory=dict)
     pav_aba_bordillo_m: float = 0.0
     pav_aba_bordillo_item: dict[str, Any] = field(default_factory=dict)
+    pav_aba_calzada_m2: float = 0.0
+    pav_aba_calzada_item: dict[str, Any] = field(default_factory=dict)
 
     # ── PAVIMENTACIÓN SAN ────────────────────────────────────────────────────
     pav_san_calzada_m2: float = 0.0

@@ -1,22 +1,25 @@
-"""Fixtures compartidos para pytest."""
+"""Setup compartido para tests de LicitaIA.
+
+pytest descubre este fichero automáticamente y ejecuta el código de nivel
+de módulo antes de cualquier test. Aquí fijamos el working directory e
+inicializamos la BD.
+
+Ejecutar:  pytest tests/ -v
+Entorno:   conda activate licitaia
+"""
 
 from __future__ import annotations
 
-import pytest
-from pathlib import Path
+import os
+import sys
 
+# Fijar working directory a la raiz del proyecto (necesario para imports relativos)
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(_project_root)
 
-@pytest.fixture(scope="session")
-def precios():
-    """Carga precios desde SQLite con CI aplicado — igual que en producción.
+# Añadir tests/ al path para que helpers.py sea importable
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    usa cargar_precios() (con _aplicar_ci) para que los tests
-    trabajen exactamente con los mismos valores que la app real.
-    """
-    from src.infraestructura.db import DB_PATH
-    from src.infraestructura.precios import cargar_precios
+from src.infraestructura.db import init_db  # noqa: E402
 
-    if not Path(DB_PATH).exists():
-        pytest.skip("data/precios.db no presente (no versionado)")
-
-    return cargar_precios()
+init_db()

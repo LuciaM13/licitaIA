@@ -22,13 +22,17 @@ def desempatar_entibacion(
     candidatos_idx: list[int], catalogo: list[dict]
 ) -> dict | None:
     if not candidatos_idx:
+        logger.debug("[DESEMP-ENTIB] 0 candidatos → None")
         return None
 
     items = [(i, catalogo[i]) for i in candidatos_idx]
+    for i, it in items:
+        logger.debug("[DESEMP-ENTIB]   candidato idx=%d: red=%s umbral=%.2f label=%s",
+                     i, it.get("red"), float(it.get("umbral_m", 0)), it.get("label", "?"))
     items.sort(key=lambda x: (-float(x[1].get("umbral_m", 0)), x[0]))
     idx, item = items[0]
-    logger.debug("Entibación: %d candidatos → seleccionado idx=%d (umbral=%.2f)",
-                 len(candidatos_idx), idx, float(item.get("umbral_m", 0)))
+    logger.debug("[DESEMP-ENTIB] Criterio: mayor umbral_m → seleccionado idx=%d '%s' (umbral=%.2f)",
+                 idx, item.get("label", "?"), float(item.get("umbral_m", 0)))
     return item
 
 
@@ -36,6 +40,7 @@ def desempatar_pozo(
     candidatos_idx: list[int], catalogo: list[dict]
 ) -> dict | None:
     if not candidatos_idx:
+        logger.debug("[DESEMP-POZO] 0 candidatos → None")
         return None
 
     def _especificidad(t):
@@ -46,9 +51,14 @@ def desempatar_pozo(
         return (sin_red, p_max, d_max, i)
 
     items = [(i, catalogo[i]) for i in candidatos_idx]
+    for i, it in items:
+        score = _especificidad((i, it))
+        logger.debug("[DESEMP-POZO]   candidato idx=%d: red=%s p_max=%s dn_max=%s → score=%s label=%s",
+                     i, it.get("red"), it.get("profundidad_max", "∞"),
+                     it.get("dn_max", "∞"), score, it.get("label", "?"))
     idx, item = min(items, key=_especificidad)
-    logger.debug("Pozo: %d candidatos → seleccionado idx=%d (%s)",
-                 len(candidatos_idx), idx, item.get("label", "?"))
+    logger.debug("[DESEMP-POZO] Criterio: (red_definida > menor p_max > menor dn_max) → idx=%d '%s'",
+                 idx, item.get("label", "?"))
     return item
 
 
@@ -56,18 +66,26 @@ def ordenar_valvuleria(
     candidatos_idx: list[int], catalogo: list[dict]
 ) -> list[dict]:
     """Devuelve todos los candidatos en el orden original del catálogo."""
-    return [catalogo[i] for i in sorted(candidatos_idx)]
+    resultado = [catalogo[i] for i in sorted(candidatos_idx)]
+    logger.debug("[DESEMP-VALV] %d candidatos → %d items: %s",
+                 len(candidatos_idx), len(resultado),
+                 [it.get("label", "?") for it in resultado])
+    return resultado
 
 
 def desempatar_desmontaje(
     candidatos_idx: list[int], catalogo: list[dict]
 ) -> dict | None:
     if not candidatos_idx:
+        logger.debug("[DESEMP-DESM] 0 candidatos → None")
         return None
 
     items = [(i, catalogo[i]) for i in candidatos_idx]
+    for i, it in items:
+        logger.debug("[DESEMP-DESM]   candidato idx=%d: es_fibro=%d dn_max=%d label=%s",
+                     i, it.get("es_fibrocemento", 0), int(it["dn_max"]), it.get("label", "?"))
     items.sort(key=lambda x: (int(x[1]["dn_max"]), x[0]))
     idx, item = items[0]
-    logger.debug("Desmontaje: %d candidatos → seleccionado idx=%d (dn_max=%d)",
-                 len(candidatos_idx), idx, int(item["dn_max"]))
+    logger.debug("[DESEMP-DESM] Criterio: menor dn_max → seleccionado idx=%d '%s' (dn_max=%d)",
+                 idx, item.get("label", "?"), int(item["dn_max"]))
     return item

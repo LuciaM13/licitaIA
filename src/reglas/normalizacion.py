@@ -45,3 +45,23 @@ def null_a_sentinel(value: Any) -> str:
     if value is None:
         return NULL_SENTINEL
     return str(value).strip()
+
+
+def regla_pct_manual(profundidad: float) -> tuple[float, str]:
+    """Calcula el % de excavación manual según la profundidad de la zanja.
+
+    Rangos:
+      ≤ 1,00 m → 10%
+      1,00 – 2,00 m → 25%
+      > 2,00 m → 40%
+
+    Returns:
+        (porcentaje 0-1, explicación breve)
+    """
+    p_fmt = f"{profundidad:.2f}".replace(".", ",")
+    if profundidad <= 1.0:
+        return 0.10, f"Prof. {p_fmt} m ≤ 1,00 m → 10%"
+    elif profundidad <= 2.0:
+        return 0.25, f"Prof. {p_fmt} m en rango 1–2 m → 25%"
+    else:
+        return 0.40, f"Prof. {p_fmt} m > 2,00 m → 40%"
