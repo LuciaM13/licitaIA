@@ -6,7 +6,7 @@ import pytest
 
 from streamlit.testing.v1 import AppTest
 from helpers import _resultado_minimal
-from src.infraestructura.db import (
+from src.aplicacion.historial import (
     contar_presupuestos, eliminar_presupuesto, guardar_presupuesto,
 )
 

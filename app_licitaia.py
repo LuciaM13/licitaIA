@@ -13,6 +13,7 @@ import os
 import streamlit as st
 
 from src.infraestructura.db import init_db
+from src.ui.theme import inject_global_styles
 
 # ── Logging global ────────────────────────────────────────────────────────────
 # DEBUG muestra todo el detalle de cálculos, decisiones y valores intermedios.
@@ -31,10 +32,12 @@ _LOGO_PATH = os.path.join(ROOT, "data", "static", "cropped-Logo_2024-300x300.png
 init_db()
 
 st.set_page_config(
-    page_title="Cálculo de presupuestos · EMASESA",
+    page_title="LicitaIA · Presupuestos EMASESA",
     page_icon=_LOGO_PATH,
     layout="wide",
 )
+
+inject_global_styles()
 
 st.logo(_LOGO_PATH, size="large")
 

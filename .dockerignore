@@ -1,0 +1,67 @@
+# Control de versiones
+.git
+.gitignore
+.gitattributes
+
+# Entornos virtuales y cachés de Python
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# IDE / editores
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Tests (no necesarios para la imagen en producción)
+tests
+.coverage
+htmlcov
+
+# Documentación y notas del TFG (no van en la imagen)
+docs
+*.md
+!requirements.txt
+AGENTS.md
+
+# Snapshots y artefactos de herramientas de desarrollo
+.playwright-mcp
+*.yml
+snapshot*.yml
+snap*.yml
+
+# Excel de auditoría / referencia (no necesario en runtime, 180 KB)
+*.xlsx
+*.xls
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+# Tarballs de la propia imagen (evita que un `docker save` previo entre
+# recursivamente en el contexto de build y engorde la imagen 1.2 GB).
+*.tar
+
+# Backups locales de la BD (nunca deben entrar a la imagen)
+data/*.bak*
+data/*.db.bak_*
+
+# Secretos (por seguridad — nunca dentro de la imagen)
+.streamlit/secrets.toml
+.env
+*.env
+
+# Logs
+*.log
+
+# Directorios de build y plans locales
+.claude
+.anthropic

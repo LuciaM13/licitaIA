@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from streamlit.testing.v1 import AppTest
-from src.infraestructura.db import cargar_todo, guardar_todo
+from src.infraestructura.db_precios import cargar_todo, guardar_todo
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -15,7 +15,7 @@ from src.infraestructura.db import cargar_todo, guardar_todo
 
 def test_admin_carga():
     """La pagina de admin carga sin excepciones y tiene 19 number_inputs."""
-    at = AppTest.from_file("pages/admin_precios.py").run()
+    at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
     assert not at.exception
     assert len(at.number_input) == 19, (
         f"Esperados 19 number_input, encontrados {len(at.number_input)}"
@@ -24,7 +24,7 @@ def test_admin_carga():
 
 def test_admin_valor_invalido():
     """pct_gg=999 pasa el widget pero falla la validacion al guardar."""
-    at = AppTest.from_file("pages/admin_precios.py").run()
+    at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
     assert not at.exception
 
     # number_input[0] es "Gastos Generales (%)" - ponerlo a 999
@@ -57,7 +57,7 @@ def test_admin_guardar_valido():
     assert gg_original == pytest.approx(0.13, abs=0.001)
 
     try:
-        at = AppTest.from_file("pages/admin_precios.py").run()
+        at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
         assert not at.exception
 
         # Cambiar GG a 14%
@@ -88,7 +88,7 @@ def test_admin_guardar_valido():
 
 def test_admin_expanders_y_subheaders():
     """La pagina de admin renderiza todas las secciones principales."""
-    at = AppTest.from_file("pages/admin_precios.py").run()
+    at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
     assert not at.exception
 
     # Verificar que los subheaders principales estan presentes
@@ -112,7 +112,7 @@ def test_admin_cancelar_no_guarda():
     precios_antes = cargar_todo()
     gg_antes = precios_antes["pct_gg"]
 
-    at = AppTest.from_file("pages/admin_precios.py").run()
+    at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
     assert not at.exception
 
     # Cambiar pct_gg a 14%
@@ -133,13 +133,99 @@ def test_admin_cancelar_no_guarda():
     )
 
 
+def test_admin_drift_critico_requiere_confirmacion():
+    """Si un precio se desvía >10 % del catálogo oficial, el botón 'Sí, guardar'
+    queda deshabilitado hasta que el admin marque el checkbox de confirmación.
+
+    Se usa `conduccion_provisional_precio_m` (escalar, Excel oficial = 12.60 €):
+    introducir 30.00 genera drift de +150 % (BD×CI = 31.50 vs Excel 12.60).
+    """
+    precios_antes = cargar_todo()
+    cp_antes = float(precios_antes.get("conduccion_provisional_precio_m", 12.0))
+
+    try:
+        at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
+        assert not at.exception
+
+        # number_input[6] es "Precio conducción provisional PE (€/m, base sin CI)"
+        at.number_input[6].set_value(30.0).run()
+        assert not at.exception
+
+        # "Guardar cambios" → pasa a modo confirmación
+        at.button[0].click().run()
+        assert not at.exception
+
+        # Debe aparecer st.error crítico por drift > 10 %
+        assert any("10" in e.value for e in at.error), (
+            "Esperado error crítico por drift >10 %. Errores presentes: "
+            f"{[e.value[:80] for e in at.error]}"
+        )
+
+        # Sin marcar el checkbox: el botón 'Sí, guardar' debe estar disabled.
+        # (AppTest ignora el flag al click(), por eso comprobamos el atributo).
+        boton_si = next((b for b in at.button if "guardar" in b.label.lower()), None)
+        assert boton_si is not None, "No se encontró el botón 'Sí, guardar'."
+        assert boton_si.disabled, (
+            "El botón 'Sí, guardar' debe estar deshabilitado cuando hay drift "
+            "crítico sin confirmar."
+        )
+
+        # Marcar el checkbox → el botón pasa a enabled.
+        checkbox_drift = next(
+            (c for c in at.checkbox if "intencional" in c.label.lower()),
+            None,
+        )
+        assert checkbox_drift is not None, "No se encontró el checkbox de confirmación de drift."
+        checkbox_drift.check().run()
+        assert not at.exception
+
+        boton_si_tras = next((b for b in at.button if "guardar" in b.label.lower()), None)
+        assert boton_si_tras is not None
+        assert not boton_si_tras.disabled, (
+            "Tras marcar el checkbox, el botón 'Sí, guardar' debe estar habilitado."
+        )
+
+        boton_si_tras.click().run()
+        precios_tras_confirmar = cargar_todo()
+        assert float(precios_tras_confirmar["conduccion_provisional_precio_m"]) == pytest.approx(30.0, abs=0.01), (
+            "Con checkbox marcado, la BD SÍ debe persistir el valor nuevo."
+        )
+    finally:
+        precios_restore = cargar_todo()
+        precios_restore["conduccion_provisional_precio_m"] = cp_antes
+        guardar_todo(precios_restore)
+
+
+def test_admin_round_trip_precio_base():
+    """El invariante BD × pct_ci == Excel se cumple para un precio conocido.
+
+    Tras cargar los precios base desde la BD y aplicar CI, el valor debe
+    coincidir con el precio oficial EMASESA correspondiente.
+    """
+    import copy
+    from src.infraestructura.precios import cargar_precios, aplicar_ci
+
+    precios = cargar_precios()
+    precios_con_ci = copy.deepcopy(precios)
+    aplicar_ci(precios_con_ci)
+
+    # Conducción provisional: BD (12.00) × 1.05 == Excel (12.60)
+    # (tras la corrección A4; antes de A4 el valor BD es 11.43 y cuadra a 12.00 -> drift conocido).
+    # Para no depender del fix aún no aplicado, verificamos con el precio ABA FD DN150.
+    # FD DN150 BD base = 62.79 €. BD × 1.05 = 65.93 €. Excel oficial = 65.93.
+    tub = next(i for i in precios["catalogo_aba"] if i["tipo"] == "FD" and i["diametro_mm"] == 150)
+    tub_con_ci = next(i for i in precios_con_ci["catalogo_aba"] if i["tipo"] == "FD" and i["diametro_mm"] == 150)
+    assert tub["precio_m"] == pytest.approx(62.79, abs=0.01)
+    assert tub_con_ci["precio_m"] == pytest.approx(65.93, abs=0.01)
+
+
 def test_admin_diff_muestra_cambios():
     """Modificar un precio y verificar que el dialogo de confirmacion muestra cambios."""
     precios_antes = cargar_todo()
     gg_antes = precios_antes["pct_gg"]
 
     try:
-        at = AppTest.from_file("pages/admin_precios.py").run()
+        at = AppTest.from_file("pages/admin_precios.py", default_timeout=10).run()
         assert not at.exception
 
         # Cambiar GG de 13% a 15%

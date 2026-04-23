@@ -1,4 +1,8 @@
-streamlit>=1.32
-pandas>=2.0
-clipspy>=1.0.6
-pytest>=8.0
+# Dependencias de runtime (lo que necesita la imagen Docker para correr la app).
+# Versiones mínimas auditadas contra los 294 tests del proyecto.
+#
+# Para dependencias de desarrollo (pytest, linters, etc.) ver requirements-dev.txt.
+
+streamlit>=1.38,<2.0    # UI framework. Usa st.navigation (≥1.36), st.logo (≥1.37).
+pandas>=2.0,<3.0        # DataFrames para editor de precios (pages/admin_precios.py).
+clipspy>=1.0.6,<2.0     # Motor CLIPS para alertas técnicas (src/reglas/alertas_clips.py).

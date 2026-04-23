@@ -1,14 +1,75 @@
+# ─── Python ─────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
+# Entornos virtuales
+.venv/
+venv/
+env/
+.python-version
+
+# Cachés de herramientas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Logs genéricos de runtime (Streamlit, scripts, etc.)
+*.log
+
+# ─── Streamlit ──────────────────────────────────────────────────────
+# Secrets (credenciales por entorno) — NUNCA a Git
+.streamlit/secrets.toml
+
+# ─── Datos del proyecto ─────────────────────────────────────────────
+# BDs SQLite: ignoradas por defecto.
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
+# Excepción: se versiona la BD principal porque Streamlit Community
+# Cloud la necesita al arrancar (init_db() solo crea tablas vacías;
+# no carga precios_seed.sql automáticamente).
+# TODO post-docker: mover a "seed-on-boot" e ignorar también precios.db.
 !data/precios.db
+# Backups automáticos del admin: siempre ignorados (red de seguridad
+# por si mañana alguien los mueve fuera de data/).
+data/*.db.bak_*
+*.db.bak_*
 
+# Excels de trabajo (copias locales del Excel oficial EMASESA).
+# Se versionan los que viven dentro de data/ (catálogos oficiales).
 *.xlsx
 !data/*.xlsx
 
+# ─── Artefactos de pruebas manuales ─────────────────────────────────
+smoke-*.png
+.playwright-mcp/
+# Snapshots de Playwright volcados en la raíz con filename explícito.
+snap*.yml
+snapshot*.yml
+dropdown*.yml
+
+# ─── Docker ─────────────────────────────────────────────────────────
+# Imágenes exportadas con `docker save` (pueden pesar >1 GB, nunca al repo).
+*.tar
+
+# ─── IDEs ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── OS ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Agentes / asistentes locales ──────────────────────────────────
+# Configuración local de Claude Code, Codacy, etc.
+.claude/
 .github/instructions/codacy.instructions.md
-
-
-#Ignore vscode AI rules
-.github\instructions\codacy.instructions.md

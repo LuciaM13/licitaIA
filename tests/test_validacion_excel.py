@@ -150,10 +150,10 @@ class TestFinancieroVsExcel:
         """PEC redondeado (ROUNDUP a decena) = 500 € (Excel F66)"""
         assert resumen.pbl_sin_iva == pytest.approx(_PEC_REDONDEADO, abs=0.01)
 
-    def test_pec_sin_redondear(self, resumen):
-        """PEC sin redondear = 494,64 € (Excel F65: PEM + GG + BI = 416.29 + 53.61 + 24.74)"""
-        pec_sin_redondear = _PEM + _GG_ESPERADO + _BI_ESPERADO
-        assert pec_sin_redondear == pytest.approx(494.64, abs=0.01)
+    # Nota: test_pec_sin_redondear eliminado en A1. Era aritmética pura de
+    # constantes del propio test (_PEM + _GG_ESPERADO + _BI_ESPERADO == 494.64)
+    # y no verificaba lógica de calcular_resumen, solo confirmaba la suma
+    # hardcodeada ya cubierta por test_gastos_generales + test_beneficio_industrial.
 
     def test_invariante_total(self, resumen):
         """TOTAL = PBL sin IVA + IVA (invariante siempre válido)"""

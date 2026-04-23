@@ -12,9 +12,11 @@ Cada función recibe cantidades y precios ya resueltos y devuelve
 from __future__ import annotations
 
 import logging
+import math
 from typing import Any
 
 from src.domain.geometria import calcular_geometria, GeometriaZanja
+from src.domain.tipos import ItemCatalogo, Precios
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +26,26 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def _importe(cantidad: float, precio: float) -> float:
-    c = float(cantidad or 0)
-    p = float(precio or 0)
-    if c < 0 or p < 0:
-        logger.warning("_importe: valor negativo silenciado (cantidad=%.4f, precio=%.4f)", c, p)
+    # Fail-fast: un cálculo con datos inválidos no debe producir 0 € silencioso.
+    # Cualquier None/negativo/NaN indica bug aguas arriba (carga de precios o parámetros).
     if cantidad is None or precio is None:
-        logger.warning("_importe: valor None recibido (cantidad=%s, precio=%s)", cantidad, precio)
-    return max(c, 0.0) * max(p, 0.0)
+        raise ValueError(
+            f"_importe: valor None recibido (cantidad={cantidad!r}, precio={precio!r}). "
+            "Esto indica un bug de carga de precios o de parámetros del proyecto."
+        )
+    c = float(cantidad)
+    p = float(precio)
+    if not (math.isfinite(c) and math.isfinite(p)):
+        raise ValueError(
+            f"_importe: valor no finito (cantidad={c}, precio={p}). "
+            "NaN o infinito indican un bug aritmético previo."
+        )
+    if c < 0 or p < 0:
+        raise ValueError(
+            f"_importe: valor negativo no permitido (cantidad={c:.4f}, precio={p:.4f}). "
+            "Los importes deben ser positivos o cero — revisa la BD y los parámetros."
+        )
+    return c * p
 
 
 def _precio_excavacion(profundidad: float, exc: dict, manual: bool) -> float:
@@ -94,13 +109,13 @@ def _calcular_canones(
 def capitulo_obra_civil(
     longitud: float,
     profundidad: float,
-    item: dict,
-    precios: dict,
+    item: ItemCatalogo,
+    precios: Precios,
     *,
     es_san: bool = False,
     pct_manual: float = 0.30,
     espesor_pavimento_m: float = 0.0,
-    entibacion_item: dict | None = None,
+    entibacion_item: ItemCatalogo | None = None,
 ) -> tuple[float, dict, dict]:
     """
     Calcula el capítulo de Obra Civil por metro lineal escalado a la longitud.
@@ -215,10 +230,10 @@ def capitulo_pozos_registro(
     longitud: float,
     profundidad: float,
     diametro_mm: int,
-    precios: dict,
+    precios: Precios,
     *,
     es_san: bool = False,
-    pozo_item: dict | None = None,
+    pozo_item: ItemCatalogo | None = None,
 ) -> tuple[float, dict] | None:
     red_label = "SAN" if es_san else "ABA"
     logger.debug("[POZOS-%s] Entrada: L=%.2f P=%.2f DN=%d pozo_item=%s",
@@ -276,10 +291,10 @@ def capitulo_pozos_registro(
 def capitulo_valvuleria(
     longitud: float,
     diametro_mm: int,
-    precios: dict,
+    precios: Precios,
     *,
     instalacion: str = "enterrada",
-    valvuleria_items: list | None = None,
+    valvuleria_items: list[ItemCatalogo] | None = None,
 ) -> tuple[float, dict] | None:
     logger.debug("[VALV] Entrada: L=%.2f DN=%d inst=%s items=%d",
                  longitud, diametro_mm, instalacion,
@@ -335,7 +350,7 @@ def capitulo_canones(
 # ---------------------------------------------------------------------------
 
 def capitulo_desmontaje(
-    longitud: float, precios: dict, *, desmontaje_item: dict | None = None
+    longitud: float, precios: Precios, *, desmontaje_item: ItemCatalogo | None = None
 ) -> tuple[float, dict] | None:
     if longitud <= 0 or desmontaje_item is None:
         logger.debug("[DESM] Guard: L=%.2f item=%s → None",
@@ -352,7 +367,7 @@ def capitulo_desmontaje(
 # ---------------------------------------------------------------------------
 
 def capitulo_imbornales(
-    longitud: float, tipo: str, label_nuevo: str, precios: dict
+    longitud: float, tipo: str, label_nuevo: str, precios: Precios
 ) -> tuple[float, dict] | None:
     """Fórmula: n_imbornales = 2/32 × L."""
     logger.debug("[IMBORN] Entrada: L=%.2f tipo=%s label_nuevo=%s", longitud, tipo, label_nuevo)
@@ -383,7 +398,7 @@ def capitulo_imbornales(
 # ---------------------------------------------------------------------------
 
 def capitulo_pozos_existentes(
-    longitud: float, accion: str, red: str, precios: dict
+    longitud: float, accion: str, red: str, precios: Precios
 ) -> tuple[float, dict] | None:
     logger.debug("[POZOS-EX] Entrada: L=%.2f accion=%s red=%s", longitud, accion, red)
     if accion == "none" or longitud <= 0:

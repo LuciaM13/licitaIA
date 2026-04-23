@@ -2,6 +2,22 @@
 
 from __future__ import annotations
 
+import math
+
+
+def _vals_iguales(a, b, *, rel_tol: float = 1e-9, abs_tol: float = 1e-6) -> bool:
+    """Igualdad robusta evitando diffs fantasma por precisión float (M1).
+
+    Para floats usa ``math.isclose`` con tolerancias ajustadas a precios en €.
+    Para el resto de tipos, igualdad exacta.
+    """
+    if isinstance(a, float) or isinstance(b, float):
+        try:
+            return math.isclose(float(a), float(b), rel_tol=rel_tol, abs_tol=abs_tol)
+        except (TypeError, ValueError):
+            return a == b
+    return a == b
+
 
 # Mapeo de claves JSON a nombres legibles en español
 _NOMBRES_SECCION = {
@@ -87,7 +103,7 @@ def _delta_pct(old, new) -> str | None:
 
 def _diff_escalares(seccion: str, old_val, new_val) -> list[dict]:
     """Compara dos valores escalares."""
-    if old_val == new_val:
+    if _vals_iguales(old_val, new_val):
         return []
     return [{
         "seccion": _NOMBRES_SECCION.get(seccion, seccion),
@@ -119,7 +135,7 @@ def _diff_dict_plano(seccion: str, old_d: dict, new_d: dict,
                 "campo": nombre_campo,
                 "valor_anterior": old_d[k], "valor_nuevo": "-", "delta_pct": "",
             })
-        elif old_d[k] != new_d[k]:
+        elif not _vals_iguales(old_d[k], new_d[k]):
             cambios.append({
                 "seccion": nombre_seccion, "tipo": "modificado",
                 "campo": nombre_campo,
@@ -160,15 +176,15 @@ def _diff_lista_dicts(seccion: str, old_list: list, new_list: list) -> list[dict
                 "valor_nuevo": "-",
                 "delta_pct": "",
             })
-        elif old_by_key[k] != new_by_key[k]:
-            # Encontrar qué campos cambiaron
+        else:
+            # Comparar campo a campo con tolerancia float (M1).
             old_row, new_row = old_by_key[k], new_by_key[k]
             for field in sorted(set(old_row) | set(new_row)):
                 if field == key_field:
                     continue
                 ov = old_row.get(field)
                 nv = new_row.get(field)
-                if ov != nv:
+                if not _vals_iguales(ov, nv):
                     cambios.append({
                         "seccion": nombre_seccion, "tipo": "modificado",
                         "campo": f"{k} → {field}",

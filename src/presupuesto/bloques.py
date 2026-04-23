@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 from src.domain.parametros import ParametrosProyecto
+from src.domain.tipos import ItemCatalogo, Precios
 from src.presupuesto.capitulos_obra_civil import (
     capitulo_obra_civil,
     capitulo_pozos_registro,
@@ -32,7 +33,7 @@ from src.presupuesto.capitulos_superficie import (
 from src.presupuesto.materiales import (
     materiales_aba as _materiales_aba,
     materiales_san as _materiales_san,
-    demo_items as _demo_items,
+    buscar_demolicion_requerida as _buscar_demolicion_requerida,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,8 +60,8 @@ def _acumular(caps: dict, nombre: str, resultado: tuple[float, dict] | None) -> 
 
 def ensamblar_obra_civil_aba(
     p: ParametrosProyecto,
-    precios: dict,
-    _aba_item: dict | None,
+    precios: Precios,
+    _aba_item: ItemCatalogo | None,
     caps: dict,
     estado: dict,
     decisiones_aba: dict,
@@ -155,8 +156,8 @@ def ensamblar_obra_civil_aba(
 
 def ensamblar_obra_civil_san(
     p: ParametrosProyecto,
-    precios: dict,
-    _san_item: dict | None,
+    precios: Precios,
+    _san_item: ItemCatalogo | None,
     caps: dict,
     estado: dict,
     decisiones_san: dict,
@@ -228,7 +229,7 @@ def ensamblar_obra_civil_san(
 
 def ensamblar_pavimentacion_aba(
     p: ParametrosProyecto,
-    precios: dict,
+    precios: Precios,
     items_ci: dict,
     espesores: dict,
     caps: dict,
@@ -238,33 +239,33 @@ def ensamblar_pavimentacion_aba(
         return
 
     logger.info("── CAP 03: PAVIMENTACIÓN ABA ──")
-    logger.debug("[PAV-ABA] acerado_m2=%.2f bordillo_m=%.2f subbase_esp=%.3f",
-                 p.pav_aba_acerado_m2, p.pav_aba_bordillo_m, p.subbase_aba_espesor_m)
-    demo_m2_aba, demo_m_aba = _demo_items("ABA", precios)
+    logger.debug("[PAV-ABA] acerado_m2=%.2f bordillo_m=%.2f subbase_esp=%.3f mat(bord=%s acer=%s calz=%s)",
+                 p.pav_aba_acerado_m2, p.pav_aba_bordillo_m, p.subbase_aba_espesor_m,
+                 p.material_demo_bordillo_aba, p.material_demo_acerado_aba,
+                 p.material_demo_calzada_aba)
     cat_demo_aba = precios.get("demolicion_aba", [])
-    if cat_demo_aba:
-        if p.pav_aba_acerado_m2 > 0 and demo_m2_aba is None:
-            raise ValueError(
-                "Hay superficie de acerado ABA a demoler pero demolicion_aba "
-                "no tiene ningún item con unidad 'm2'."
-            )
-        if p.pav_aba_bordillo_m > 0 and demo_m_aba is None:
-            raise ValueError(
-                "Hay longitud de bordillo ABA a demoler pero demolicion_aba "
-                "no tiene ningún item con unidad 'm'."
-            )
+
+    # Lookups por (tipo, unidad, material) — sin factor parche. El precio
+    # de cada fila coincide con Excel oficial (invariante verificada en
+    # test_bd_invariante_ci.py).
+    item_acerado_aba = _buscar_demolicion_requerida(
+        cat_demo_aba, "acerado", "m2", p.material_demo_acerado_aba,
+        "ABA", p.pav_aba_acerado_m2)
+    item_bordillo_aba = _buscar_demolicion_requerida(
+        cat_demo_aba, "bordillo", "m", p.material_demo_bordillo_aba,
+        "ABA", p.pav_aba_bordillo_m)
     _acumular(caps, "PAVIMENTACIÓN ABASTECIMIENTO",
-              capitulo_demolicion(p.pav_aba_acerado_m2, demo_m2_aba,
-                                  p.pav_aba_bordillo_m, demo_m_aba,
-                                  factor_item1=1.2))   # Excel J7: precio×1.2
+              capitulo_demolicion(p.pav_aba_acerado_m2, item_acerado_aba,
+                                  p.pav_aba_bordillo_m, item_bordillo_aba))
     _acumular(caps, "PAVIMENTACIÓN ABASTECIMIENTO",
               capitulo_pavimentacion(p.pav_aba_acerado_m2, items_ci["pav_aba_acerado_item"],
                                      p.pav_aba_bordillo_m, items_ci["pav_aba_bordillo_item"],
                                      factor_item1=1.0))
     # Calzada ABA (demolición + reposición)
     if p.pav_aba_calzada_m2 > 0:
-        demo_calzada_aba = next(
-            (i for i in cat_demo_aba if "calzada" in i.get("label", "").lower()), None)
+        demo_calzada_aba = _buscar_demolicion_requerida(
+            cat_demo_aba, "calzada", "m2", p.material_demo_calzada_aba,
+            "ABA", p.pav_aba_calzada_m2)
         _acumular(caps, "PAVIMENTACIÓN ABASTECIMIENTO",
                   capitulo_demolicion(p.pav_aba_calzada_m2, demo_calzada_aba,
                                       0, None))
@@ -284,7 +285,7 @@ def ensamblar_pavimentacion_aba(
 
 def ensamblar_pavimentacion_san(
     p: ParametrosProyecto,
-    precios: dict,
+    precios: Precios,
     items_ci: dict,
     espesores: dict,
     caps: dict,
@@ -294,26 +295,16 @@ def ensamblar_pavimentacion_san(
         return
 
     logger.info("── CAP 04: PAVIMENTACIÓN SAN ──")
-    logger.debug("[PAV-SAN] calzada_m2=%.2f acera_m2=%.2f subbase_esp=%.3f",
-                 p.pav_san_calzada_m2, p.pav_san_acera_m2, p.subbase_san_espesor_m)
+    logger.debug("[PAV-SAN] calzada_m2=%.2f acera_m2=%.2f subbase_esp=%.3f mat(acer=%s calz=%s)",
+                 p.pav_san_calzada_m2, p.pav_san_acera_m2, p.subbase_san_espesor_m,
+                 p.material_demo_acerado_san, p.material_demo_calzada_san)
     cat_demo_san = precios.get("demolicion_san", [])
-    item_calzada = next(
-        (i for i in cat_demo_san if "calzada" in i.get("label", "").lower()), None)
-    item_acera = next(
-        (i for i in cat_demo_san
-         if "acerado" in i.get("label", "").lower()
-         or "acera" in i.get("label", "").lower()), None)
-    if cat_demo_san:
-        if p.pav_san_calzada_m2 > 0 and item_calzada is None:
-            raise ValueError(
-                "Hay superficie de calzada SAN a demoler pero demolicion_san "
-                "no tiene ningún item con 'calzada' en el label."
-            )
-        if p.pav_san_acera_m2 > 0 and item_acera is None:
-            raise ValueError(
-                "Hay superficie de acerado SAN a demoler pero demolicion_san "
-                "no tiene ningún item con 'acerado' o 'acera' en el label."
-            )
+    item_calzada = _buscar_demolicion_requerida(
+        cat_demo_san, "calzada", "m2", p.material_demo_calzada_san,
+        "SAN", p.pav_san_calzada_m2)
+    item_acera = _buscar_demolicion_requerida(
+        cat_demo_san, "acerado", "m2", p.material_demo_acerado_san,
+        "SAN", p.pav_san_acera_m2)
     _acumular(caps, "PAVIMENTACIÓN SANEAMIENTO",
               capitulo_demolicion(p.pav_san_calzada_m2, item_calzada,
                                   p.pav_san_acera_m2, item_acera))
@@ -333,7 +324,7 @@ def ensamblar_pavimentacion_san(
 
 def ensamblar_acometidas(
     p: ParametrosProyecto,
-    precios: dict,
+    precios: Precios,
     caps: dict,
 ) -> None:
     """Capítulos 05-06 - Acometidas ABA y SAN."""

@@ -121,23 +121,61 @@ def materiales_san(
     return total, partidas
 
 
-def demo_items(red: str, precios: dict) -> tuple[dict | None, dict | None]:
-    """Extrae items de demolición por unidad (m2 y m) del catálogo."""
-    clave = f"demolicion_{red.lower()}"
-    cat = precios.get(clave, [])
-    logger.debug("[DEMO-ITEMS] Catálogo '%s': %d items", clave, len(cat))
-    by_unit: dict[str, dict] = {}
+def buscar_demolicion(
+    cat: list[dict], tipo: str, unidad: str, material: str,
+) -> dict | None:
+    """Busca fila de demolición por (tipo, unidad, material) exactos.
+
+    - ``tipo``: 'bordillo' | 'acerado' | 'acera' | 'calzada'. Se compara
+      contra el `label` en minúsculas (ej. "Demolición acerado losa hidráulica").
+    - ``unidad``: 'm' | 'm2' (debe coincidir exacto con la columna).
+    - ``material``: debe coincidir exacto con la columna `material` de BD
+      (ej. 'granitico', 'losa_hidraulica', 'adoquin').
+
+    Fail-loud: devuelve None si no hay match. El caller DEBE tratar None
+    como error de configuración UI↔BD (no como fallback silencioso).
+    Post-M15 el fallback a 'generico' es incorrecto porque los valores
+    'generico' de calzada/bordillo son proxies no presentes en el Excel
+    oficial y su uso genera drift vs EMASESA.
+    """
     for item in cat:
-        u = item.get("unidad", "")
-        if u in by_unit:
-            logger.error("[DEMO-ITEMS] Unidad duplicada '%s' en catálogo '%s'", u, clave)
-            raise ValueError(
-                f"El catálogo 'demolicion_{red.lower()}' tiene unidad duplicada '{u}'."
-            )
-        by_unit[u] = item
-    item_m2 = by_unit.get("m2")
-    item_m = by_unit.get("m")
-    logger.debug("[DEMO-ITEMS] Resultado: m2=%s m=%s",
-                 item_m2["label"] if item_m2 else None,
-                 item_m["label"] if item_m else None)
-    return item_m2, item_m
+        if (item.get("unidad") == unidad
+                and item.get("material") == material
+                and tipo in item.get("label", "").lower()):
+            return item
+    return None
+
+
+def buscar_demolicion_requerida(
+    cat: list[dict], tipo: str, unidad: str, material: str,
+    red: str, cantidad: float,
+) -> dict | None:
+    # Vive aquí, junto a `buscar_demolicion`, porque ambas operan sobre el
+    # catálogo de demolición. Las utilidades aritméticas generales no van aquí.
+    if not cat or cantidad <= 0:
+        return None
+    item = buscar_demolicion(cat, tipo, unidad, material)
+    if item is None:
+        raise ValueError(
+            f"No existe precio de demolición {tipo} {red} para material "
+            f"'{material}'. Catálogo incompleto."
+        )
+    return item
+
+
+def materiales_demo_disponibles(
+    cat: list[dict], tipo: str, unidad: str,
+) -> list[str]:
+    """Lista materiales disponibles para (tipo, unidad) en el catálogo.
+
+    Usada por la UI para poblar dinámicamente los selectboxes. El orden
+    refleja el del catálogo BD (que sigue el orden del Excel).
+    """
+    materiales: list[str] = []
+    for item in cat:
+        if (item.get("unidad") == unidad
+                and tipo in item.get("label", "").lower()):
+            m = item.get("material")
+            if m and m not in materiales:
+                materiales.append(m)
+    return materiales

@@ -1,8 +1,9 @@
 [theme]
-primaryColor = "#88B038"
+primaryColor = "#97D700"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F7FB"
-textColor = "#1B3A4B"
-font = "sans serif"
-# Verde corporativo EMASESA (extraído del logo): #88B038 → primaryColor (botones primarios)
-# Azul anterior: #2196D3 (disponible para uso secundario si se necesita)
+secondaryBackgroundColor = "#F2F4F7"
+textColor = "#1A1A1A"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
+# EMASESA brand: verde #97D700 (Pantone 375 C, primary CTA) + cian #00A9E0 (Pantone 2995 C, accent).
+# Texto en botones se fuerza a #1A1A1A vía CSS (src/ui/theme.py) para cumplir WCAG AAA (9.97:1) —
+# blanco sobre #97D700 daría 1.74:1 y FALLA WCAG.

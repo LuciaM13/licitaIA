@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from helpers import _app_calculadora, _calcular_aba, _calcular_san
-from src.infraestructura.db import (
+from src.aplicacion.historial import (
     contar_presupuestos, eliminar_presupuesto, listar_presupuestos,
 )
 

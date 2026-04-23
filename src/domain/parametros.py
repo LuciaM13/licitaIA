@@ -37,6 +37,16 @@ class ParametrosProyecto:
     pav_san_acera_m2: float = 0.0
     pav_san_acera_item: dict[str, Any] = field(default_factory=dict)
 
+    # ── MATERIALES A DEMOLER ─────────────────────────────────────────────────
+    # Defaults alineados con Excel oficial: nunca "generico" salvo excepción
+    # documentada. Valores posibles definidos por la BD (tabla demolicion,
+    # columna material). La UI lista solo los materiales presentes en catálogo.
+    material_demo_bordillo_aba: str = "granitico"
+    material_demo_acerado_aba: str = "losa_hidraulica"
+    material_demo_calzada_aba: str = "aglomerado"
+    material_demo_acerado_san: str = "losa_hidraulica"
+    material_demo_calzada_san: str = "aglomerado"
+
     # ── ACOMETIDAS ───────────────────────────────────────────────────────────
     acometidas_aba_n: int = 0
     acometidas_san_n: int = 0
@@ -52,7 +62,9 @@ class ParametrosProyecto:
     pct_gestion: float = 0.0
 
     # ── SERVICIOS AFECTADOS ──────────────────────────────────────────────────
-    pct_servicios_afectados: float = 0.0  # % sobre PEM
+    # % sobre base_ss (misma base que S&S y Gestión Ambiental):
+    # PEM menos cánones, desmontaje y materiales de suministro.
+    pct_servicios_afectados: float = 0.0
 
     # ── SUB-BASE DE PAVIMENTACIÓN ────────────────────────────────────────────
     subbase_aba_item: dict[str, Any] | None = None

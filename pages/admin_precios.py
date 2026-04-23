@@ -8,9 +8,12 @@ import logging
 import pandas as pd
 import streamlit as st
 
-from src.infraestructura.db import cargar_todo
-from src.infraestructura.precios import cargar_precios, guardar_precios
+from src.infraestructura.db_precios import cargar_todo
+from src.aplicacion.editar_catalogo import ejecutar_guardado
+from src.ui.precios_cache import cargar_precios
+from src.ui.session import claves as sk
 from src.infraestructura.diff_precios import calcular_diff
+from src.infraestructura.validacion_oficial import detectar_drifts
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +32,23 @@ except (ValueError, Exception) as e:
     st.stop()
 
 _errores_guardado: list[str] = []
-_en_confirmacion = st.session_state.get("confirmar_guardado", False)
+_en_confirmacion = st.session_state.get(sk.CONFIRMAR_GUARDADO, False)
 
-if "precios_originales" not in st.session_state or not _en_confirmacion:
-    st.session_state["precios_originales"] = copy.deepcopy(precios)
+if sk.PRECIOS_ORIGINALES not in st.session_state or not _en_confirmacion:
+    st.session_state[sk.PRECIOS_ORIGINALES] = copy.deepcopy(precios)
 
 if _en_confirmacion:
-    precios = st.session_state.get("precios_pendientes", precios)
+    precios = st.session_state.get(sk.PRECIOS_PENDIENTES, precios)
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
 
 def _reset_confirmacion() -> None:
     """Limpia el estado de confirmación de guardado y fuerza rerun."""
-    st.session_state["confirmar_guardado"] = False
-    st.session_state.pop("precios_pendientes", None)
-    st.session_state.pop("precios_originales", None)
+    st.session_state[sk.CONFIRMAR_GUARDADO] = False
+    st.session_state.pop(sk.PRECIOS_PENDIENTES, None)
+    st.session_state.pop(sk.PRECIOS_ORIGINALES, None)
+    st.session_state.pop(sk.CONFIRMAR_DRIFT_CRITICO, None)
     st.rerun()
 
 
@@ -142,12 +146,12 @@ _cols_tuberia = {
     "label": st.column_config.TextColumn("Nombre", required=True),
     "tipo": st.column_config.TextColumn("Tipo", required=True),
     "diametro_mm": st.column_config.NumberColumn("Diámetro (mm)", min_value=1, required=True),
-    "precio_m": st.column_config.NumberColumn("S.yMontaje (€/m)", min_value=0.0, format="%.2f", required=True,
-                                              help="Precio de suministro y montaje (sin factor piezas ni CI)"),
+    "precio_m": st.column_config.NumberColumn("S.yMontaje base (€/m, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                              help="Precio base de suministro y montaje (sin factor piezas ni CI). Equivale al precio oficial Excel ÷ 1.05."),
     "factor_piezas": st.column_config.NumberColumn("Factor piezas", min_value=1.0, format="%.2f", required=True,
                                                    help="FD=1.20 · PE=1.20 · Gres=1.35 · PVC=1.20 · HA=1.00 · HA+PE80=1.40"),
-    "precio_material_m": st.column_config.NumberColumn("Material (€/m)", min_value=0.0, format="%.2f", required=True,
-                                                       help="Precio suministro puro del material (sin montaje). Solo ABA. GG/BI no aplican sobre este importe."),
+    "precio_material_m": st.column_config.NumberColumn("Material base (€/m, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                                       help="Precio base de suministro del material (sin montaje ni CI). Solo ABA. GG/BI no aplican sobre este importe."),
 }
 
 _cols_ancho = {
@@ -162,7 +166,8 @@ _cols_arrinonado = {
 
 _cols_entibacion = {
     "label": st.column_config.TextColumn("Tipo", required=True),
-    "precio_m2": st.column_config.NumberColumn("Precio (€/m²)", min_value=0.0, format="%.2f", required=True),
+    "precio_m2": st.column_config.NumberColumn("Precio base (€/m², sin CI)", min_value=0.0, format="%.2f", required=True,
+                                               help="Precio base (Excel ÷ 1.05). El CI se aplica al calcular presupuesto."),
     "umbral_m": st.column_config.NumberColumn("Umbral prof. (m)", min_value=0.0, format="%.2f", required=True),
     "red": st.column_config.SelectboxColumn("Red", options=["ABA", "SAN"], required=False,
                                             help="Dejar vacío para ambas redes"),
@@ -170,7 +175,8 @@ _cols_entibacion = {
 
 _cols_pozos = {
     "label": st.column_config.TextColumn("Tipo", required=True),
-    "precio": st.column_config.NumberColumn("Precio (€/ud)", min_value=0.0, format="%.2f", required=True),
+    "precio": st.column_config.NumberColumn("Precio base (€/ud, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                            help="Precio base (Excel ÷ 1.05)."),
     "intervalo": st.column_config.NumberColumn("Intervalo (m)", min_value=1, required=True),
     "red": st.column_config.SelectboxColumn("Red", options=["ABA", "SAN"], required=False,
                                             help="Dejar vacío para ambas redes"),
@@ -196,25 +202,26 @@ _cols_valvuleria = {
     "tipo": st.column_config.TextColumn("Tipo", required=True),
     "dn_min": st.column_config.NumberColumn("DN mín (mm)", min_value=1, required=True),
     "dn_max": st.column_config.NumberColumn("DN máx (mm)", min_value=1, required=True),
-    "precio": st.column_config.NumberColumn("Montaje (€/ud)", min_value=0.0, format="%.2f", required=True,
-                                           help="Precio de instalación/montaje (sin factor piezas ni CI)"),
+    "precio": st.column_config.NumberColumn("Montaje base (€/ud, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                           help="Precio base de instalación/montaje (sin factor piezas ni CI). Excel ÷ 1.05."),
     "intervalo_m": st.column_config.NumberColumn("Intervalo (m)", min_value=1, required=True),
     "factor_piezas": st.column_config.NumberColumn("Factor piezas", min_value=1.0, format="%.2f", required=True,
                                                    help="Multiplicador por piezas especiales. Default ABA=1.20"),
-    "precio_material": st.column_config.NumberColumn("Material (€/ud)", min_value=0.0, format="%.2f", required=True,
-                                                    help="Precio suministro puro del material. GG/BI no aplican sobre este importe."),
+    "precio_material": st.column_config.NumberColumn("Material base (€/ud, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                                    help="Precio base de suministro del material (sin CI). GG/BI no aplican sobre este importe."),
 }
 
 _cols_material = {
     "label": st.column_config.TextColumn("Nombre", required=True),
     "unidad": st.column_config.TextColumn("Unidad", required=True),
-    "precio": st.column_config.NumberColumn("Precio base (€)", min_value=0.0, format="%.2f", required=True,
-                                            help="Precio sin costes indirectos"),
+    "precio": st.column_config.NumberColumn("Precio base (€, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                            help="Precio sin costes indirectos. Equivale a Excel EMASESA ÷ 1.05."),
 }
 
 _cols_acometida = {
     "tipo": st.column_config.TextColumn("Tipo", required=True),
-    "precio": st.column_config.NumberColumn("Precio (€)", min_value=0.0, format="%.2f", required=True),
+    "precio": st.column_config.NumberColumn("Precio base (€, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                            help="Precio base (Excel ÷ 1.05)."),
     "factor_piezas": st.column_config.NumberColumn(
         "Factor piezas", min_value=1.0, format="%.2f", required=True,
         help="Multiplicador por piezas especiales asociadas a la acometida. ABA típico=1.20, SAN típico=1.00"),
@@ -264,9 +271,10 @@ with st.expander("Financiero y generales - GG, BI, IVA, esponjamiento, % manual"
             disabled=_en_confirmacion), 4)
 
     precios["conduccion_provisional_precio_m"] = round(st.number_input(
-        "Precio conducción provisional PE (€/m)",
+        "Precio conducción provisional PE (€/m, base sin CI)",
         value=float(precios.get("conduccion_provisional_precio_m", 12.0)),
         step=0.5, min_value=0.0, format="%.2f",
+        help="Precio base (Excel ÷ 1.05). El Excel oficial es 12.60 €/m, por lo que aquí deberías introducir 12.00.",
         disabled=_en_confirmacion), 2)
 
 
@@ -315,10 +323,13 @@ with st.expander("Zanja y excavación - Entibación, precios y pozos"):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("Demolición - Precios de derribo de pavimento existente"):
+    # Clave semántica: (unidad, material) — no se puede expresar como simple
+    # unique_cols por columna. La validación se delega a _validar_precios en
+    # src/infraestructura/precios.py (rechaza (unidad, material) duplicados).
     _editar_catalogo("Demolición Abastecimiento", "demolicion_aba", _cols_material,
-                     disabled=_en_confirmacion, unique_cols=["unidad"])
+                     disabled=_en_confirmacion)
     _editar_catalogo("Demolición Saneamiento", "demolicion_san", _cols_material,
-                     disabled=_en_confirmacion, unique_cols=["unidad"])
+                     disabled=_en_confirmacion)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -338,7 +349,8 @@ with st.expander("Pavimentación - Acerados, bordillos, calzadas y espesores"):
 
     _editar_catalogo("Sub-bases pavimentación", "catalogo_subbases", {
         "label": st.column_config.TextColumn("Material", required=True),
-        "precio_m3": st.column_config.NumberColumn("Precio (€/m³)", min_value=0.0, format="%.2f", required=True),
+        "precio_m3": st.column_config.NumberColumn("Precio base (€/m³, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                                   help="Precio base (Excel ÷ 1.05)."),
     }, disabled=_en_confirmacion)
 
 
@@ -421,7 +433,8 @@ with st.expander("Desmontaje e Imbornales - Precios por tipo"):
     _cols_desmontaje = {
         "label": st.column_config.TextColumn("Descripción", required=True),
         "dn_max": st.column_config.NumberColumn("DN máx (mm)", min_value=1, required=True),
-        "precio_m": st.column_config.NumberColumn("Precio (€/m)", min_value=0.0, format="%.2f", required=True),
+        "precio_m": st.column_config.NumberColumn("Precio base (€/m, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                                   help="Precio base (Excel ÷ 1.05)."),
         "es_fibrocemento": st.column_config.CheckboxColumn("Fibrocemento"),
     }
     if precios.get("catalogo_desmontaje") is not None:
@@ -429,7 +442,8 @@ with st.expander("Desmontaje e Imbornales - Precios por tipo"):
 
     _cols_imbornales = {
         "label": st.column_config.TextColumn("Descripción", required=True),
-        "precio": st.column_config.NumberColumn("Precio (€/ud)", min_value=0.0, format="%.2f", required=True),
+        "precio": st.column_config.NumberColumn("Precio base (€/ud, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                                help="Precio base (Excel ÷ 1.05)."),
         "tipo": st.column_config.SelectboxColumn("Tipo", options=["adaptacion", "nuevo"], required=True),
     }
     if precios.get("catalogo_imbornales") is not None:
@@ -438,7 +452,8 @@ with st.expander("Desmontaje e Imbornales - Precios por tipo"):
     _cols_pozex = {
         "red": st.column_config.SelectboxColumn("Red", options=["ABA", "SAN"], required=True),
         "accion": st.column_config.SelectboxColumn("Acción", options=["demolicion", "anulacion"], required=True),
-        "precio": st.column_config.NumberColumn("Precio (€/ud)", min_value=0.0, format="%.2f", required=True),
+        "precio": st.column_config.NumberColumn("Precio base (€/ud, sin CI)", min_value=0.0, format="%.2f", required=True,
+                                                help="Precio base (Excel ÷ 1.05)."),
         "intervalo_m": st.column_config.NumberColumn("Intervalo (m)", min_value=1, required=True),
     }
     if precios.get("catalogo_pozos_existentes") is not None:
@@ -516,8 +531,8 @@ with st.expander("Valores por defecto - Mediciones e importes iniciales del form
 
 st.divider()
 
-if "confirmar_guardado" not in st.session_state:
-    st.session_state["confirmar_guardado"] = False
+if sk.CONFIRMAR_GUARDADO not in st.session_state:
+    st.session_state[sk.CONFIRMAR_GUARDADO] = False
 
 _bloquear_guardado = bool(_errores_guardado)
 if _errores_guardado:
@@ -526,15 +541,15 @@ if _errores_guardado:
     st.error("No se puede guardar: hay campos vacíos en los editores.\n\n"
              + "\n".join(f"- {e}" for e in _errores_guardado))
 
-if not st.session_state["confirmar_guardado"]:
+if not st.session_state[sk.CONFIRMAR_GUARDADO]:
     if st.button("Guardar cambios", type="primary", use_container_width=True, disabled=_bloquear_guardado):
-        st.session_state["confirmar_guardado"] = True
-        st.session_state["precios_pendientes"] = copy.deepcopy(precios)
+        st.session_state[sk.CONFIRMAR_GUARDADO] = True
+        st.session_state[sk.PRECIOS_PENDIENTES] = copy.deepcopy(precios)
         st.rerun()
 else:
     # Calcular diff entre snapshot original y los cambios pendientes
     try:
-        _original = st.session_state["precios_originales"]
+        _original = st.session_state[sk.PRECIOS_ORIGINALES]
         _cambios = calcular_diff(_original, precios)
     except (ValueError, KeyError, OSError) as _diff_err:
         _cambios = None
@@ -549,7 +564,7 @@ else:
             if st.button("Guardar sin revisar", type="primary", use_container_width=True, disabled=_bloquear_guardado):
                 try:
                     logger.info("Admin: guardando precios (sin revisar)")
-                    guardar_precios(precios)
+                    ejecutar_guardado(precios)
                     cargar_precios.clear()
                     st.success("Precios guardados correctamente.")
                     _reset_confirmacion()
@@ -578,12 +593,71 @@ else:
                 ])
                 st.dataframe(_df_cambios, use_container_width=True, hide_index=True)
 
+        # Validación vs catálogo oficial EMASESA.
+        # Lógica canónica: bd × pct_ci ≈ precio_oficial.
+        #  - Drift > 5 %: warning (expander). El admin puede revisar.
+        #  - Drift > 10 % (crítico): error + checkbox obligatorio antes de permitir guardar.
+        _drifts_oficiales = detectar_drifts(precios)
+        _drifts_criticos = [d for d in _drifts_oficiales if abs(d["drift_pct"]) > 10.0]
+        _drift_critico_confirmado = bool(st.session_state.get(sk.CONFIRMAR_DRIFT_CRITICO, False))
+        _gate_drift_critico = bool(_drifts_criticos) and not _drift_critico_confirmado
+
+        if _drifts_criticos:
+            st.error(
+                f"{len(_drifts_criticos)} precio(s) se desvían **más del 10 %** del "
+                "catálogo oficial EMASESA. Revisa antes de guardar: un drift así "
+                "suele ser un error de introducción de datos (p. ej. haber metido "
+                "el precio oficial Excel sin dividir por 1.05)."
+            )
+            _df_criticos = pd.DataFrame([
+                {
+                    "Categoría": d["categoria"],
+                    "Concepto": d["concepto"],
+                    "BD (base)": d["bd_precio"],
+                    "BD × CI": d["precio_con_ci"],
+                    "Excel oficial": d["precio_oficial"],
+                    "Drift %": d["drift_pct"],
+                }
+                for d in _drifts_criticos
+            ])
+            st.dataframe(_df_criticos, use_container_width=True, hide_index=True)
+            st.checkbox(
+                "Confirmo que esta desviación es intencional y no un error de introducción de datos",
+                key="confirmar_drift_critico",
+            )
+
+        _drifts_warning = [d for d in _drifts_oficiales if abs(d["drift_pct"]) <= 10.0]
+        if _drifts_warning:
+            with st.expander(
+                f"Aviso: {len(_drifts_warning)} precio(s) se desvían entre 5-10 % "
+                f"del catálogo oficial EMASESA",
+                expanded=False,
+            ):
+                st.warning(
+                    "Los siguientes precios, tras aplicar el CI, difieren entre el "
+                    "5 % y el 10 % respecto al Excel oficial EMASESA. Es aceptable "
+                    "si el ajuste es intencional, pero conviene revisar."
+                )
+                _df_drifts = pd.DataFrame([
+                    {
+                        "Categoría": d["categoria"],
+                        "Concepto": d["concepto"],
+                        "BD (base)": d["bd_precio"],
+                        "BD × CI": d["precio_con_ci"],
+                        "Excel oficial": d["precio_oficial"],
+                        "Drift %": d["drift_pct"],
+                    }
+                    for d in _drifts_warning
+                ])
+                st.dataframe(_df_drifts, use_container_width=True, hide_index=True)
+
         col_si, col_no = st.columns(2)
         with col_si:
-            if st.button("Sí, guardar", type="primary", use_container_width=True, disabled=_bloquear_guardado):
+            if st.button("Sí, guardar", type="primary", use_container_width=True,
+                         disabled=_bloquear_guardado or _gate_drift_critico):
                 try:
                     logger.info("Admin: guardando precios (con revisión, %d cambios)", len(_cambios))
-                    guardar_precios(precios)
+                    ejecutar_guardado(precios)
                     cargar_precios.clear()
                     st.success("Precios guardados correctamente.")
                     _reset_confirmacion()

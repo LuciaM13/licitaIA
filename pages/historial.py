@@ -9,13 +9,14 @@ import streamlit as st
 
 logger = logging.getLogger(__name__)
 
-from src.infraestructura.db import (
+from src.aplicacion.historial import (
     listar_presupuestos,
     obtener_presupuesto,
     eliminar_presupuesto,
     contar_presupuestos,
 )
 from src.infraestructura.utils import euro
+from src.ui.session import claves as sk
 
 _ETIQUETAS_TRAZ = ["Entibación", "Pozo de registro", "Valvulería", "Desmontaje"]
 
@@ -49,15 +50,15 @@ st.metric("Presupuestos guardados", total)
 # ─── Listado ─────────────────────────────────────────────────────────────────
 
 PAGE_SIZE = 20
-if "hist_page" not in st.session_state:
-    st.session_state["hist_page"] = 0
+if sk.HIST_PAGE not in st.session_state:
+    st.session_state[sk.HIST_PAGE] = 0
 
-offset = st.session_state["hist_page"] * PAGE_SIZE
+offset = st.session_state[sk.HIST_PAGE] * PAGE_SIZE
 lista = listar_presupuestos(limit=PAGE_SIZE, offset=offset)
 
 # Guard: si offset desborda (paginación manual o estado obsoleto), retroceder a página 0
 if not lista and offset > 0:
-    st.session_state["hist_page"] = 0
+    st.session_state[sk.HIST_PAGE] = 0
     st.rerun()
 
 df = pd.DataFrame(lista)
@@ -72,19 +73,19 @@ if not df.empty:
 st.dataframe(df, use_container_width=True, hide_index=True)
 
 # Paginación
-pagina_actual = st.session_state["hist_page"] + 1
+pagina_actual = st.session_state[sk.HIST_PAGE] + 1
 total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
 col_prev, col_info, col_next = st.columns([1, 2, 1])
 with col_prev:
-    if st.button("← Anterior", disabled=st.session_state["hist_page"] == 0):
-        st.session_state["hist_page"] -= 1
+    if st.button("← Anterior", disabled=st.session_state[sk.HIST_PAGE] == 0):
+        st.session_state[sk.HIST_PAGE] -= 1
         st.rerun()
 with col_info:
     st.markdown(f"Página **{pagina_actual}** de **{total_paginas}**")
 with col_next:
     if st.button("Siguiente →", disabled=offset + PAGE_SIZE >= total):
-        st.session_state["hist_page"] += 1
+        st.session_state[sk.HIST_PAGE] += 1
         st.rerun()
 
 # ─── Detalle de un presupuesto ───────────────────────────────────────────────
@@ -154,11 +155,11 @@ presupuesto_id = st.selectbox(
 
 if st.button("Ver detalle", type="primary"):
     logger.info("Consultando detalle del presupuesto #%s", presupuesto_id)
-    st.session_state["ver_detalle_id"] = presupuesto_id
+    st.session_state[sk.VER_DETALLE_ID] = presupuesto_id
 
 # Mostrar detalle solo si el usuario ha pulsado el botón
 # (o si ya había uno cargado previamente en session_state)
-_detalle_id = st.session_state.get("ver_detalle_id")
+_detalle_id = st.session_state.get(sk.VER_DETALLE_ID)
 if _detalle_id is not None:
     detalle = obtener_presupuesto(_detalle_id)
     if detalle is None:

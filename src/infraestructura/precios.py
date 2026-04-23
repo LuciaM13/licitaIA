@@ -1,12 +1,18 @@
 """Carga, persistencia y formateo de precios.
 
-Interfaz pública:
+Interfaz pública (capa de infraestructura pura, sin dependencias de UI):
     cargar_precios() -> dict
     guardar_precios(dict) -> None
-    euro(float) -> str
+    aplicar_ci(dict) -> None
 
-Internamente usa SQLite (src/db.py). La interfaz dict se mantiene
-para backward compatibility con calcular.py y presupuesto.py.
+Internamente usa SQLite (src/infraestructura/db.py). La interfaz dict se
+mantiene para backward compatibility con el resto del proyecto.
+
+Nota arquitectónica
+-------------------
+Este módulo NO depende de Streamlit. El caché UI (``@st.cache_data``) vive en
+``src/ui/precios_cache.py``. Eso permite ejecutar ``cargar_precios()`` desde un
+script CLI, un notebook o un test unitario sin levantar Streamlit.
 """
 
 from __future__ import annotations
@@ -14,9 +20,8 @@ from __future__ import annotations
 import logging
 import sqlite3
 
-import streamlit as st
-
-from src.infraestructura.db import cargar_todo, guardar_todo
+from src.domain.constantes import PCT_CI_DEFAULT
+from src.infraestructura.db_precios import cargar_todo, guardar_todo
 
 logger = logging.getLogger(__name__)
 
@@ -114,18 +119,23 @@ def _validar_precios(precios: dict) -> list[str]:
                 "esa calzada en 'calzadas_reposicion'."
             )
 
-    # Validación: unidades duplicadas en catálogos de demolición
+    # Validación: (unidad, material) duplicado en catálogos de demolición.
+    # Desde F3 (demolición con variantes por material) múltiples filas pueden
+    # compartir unidad si tienen material distinto. La clave semántica es
+    # (unidad, material). Si una fila no define material, se trata como 'generico'.
     for clave_demo in ("demolicion_aba", "demolicion_san"):
         demo = precios.get(clave_demo, [])
-        unidades_vistas: set[str] = set()
+        combinaciones_vistas: set[tuple[str, str]] = set()
         for item in demo:
             u = item.get("unidad", "")
-            if u in unidades_vistas:
+            mat = item.get("material") or "generico"
+            clave = (u, mat)
+            if clave in combinaciones_vistas:
                 errores.append(
-                    f"El catálogo '{clave_demo}' tiene unidad duplicada '{u}'. "
-                    "Cada unidad (m2, m) debe aparecer una sola vez."
+                    f"El catálogo '{clave_demo}' tiene (unidad='{u}', material='{mat}') "
+                    f"duplicado. Cada combinación debe aparecer una sola vez."
                 )
-            unidades_vistas.add(u)
+            combinaciones_vistas.add(clave)
 
     return errores
 
@@ -181,28 +191,52 @@ _CI_ESCALARES: list[str] = [
 ]
 
 
-def _transformar_ci(precios: dict, multiplicar: bool) -> None:
-    """Aplica o revierte el factor CI sobre todos los campos de precio.
+def _aplicar_ci(precios: dict) -> None:
+    """Multiplica todos los precios unitarios por el factor de Costes Indirectos.
 
-    Si ``multiplicar`` es True, multiplica (para cargar). Si es False, divide
-    (para persistir). Usa ``_CI_CAMPOS``, ``_CI_DICTS`` y ``_CI_ESCALARES``
-    como única fuente de verdad - no hay lógica de CI fuera de esta función.
+    Modifica el dict in-place. Si pct_ci es 1.0 o no existe, no hace nada.
+    Uso interno - llamar desde calcular_presupuesto() sobre una copia local.
+
+    ``_CI_CAMPOS``, ``_CI_DICTS`` y ``_CI_ESCALARES`` son la única fuente de
+    verdad sobre qué campos escalan con CI.
+
+    Convención del CI (invariante del sistema)
+    -------------------------------------------
+    La BD almacena precios **base sin margen de seguridad**. ``pct_ci`` es el
+    margen configurable por el licitador (default ``PCT_CI_DEFAULT`` = 1.05,
+    definido en ``src.domain.constantes``). Con el default, el resultado es
+    equivalente al Excel oficial EMASESA, que ya incorpora ese 5 % de margen
+    estándar ("prefiero pasarse a quedarse corto").
+
+    Invariante: ``BD.precio × pct_ci(1.05) == precio_oficial_EMASESA_Excel``.
+
+    Implicación operacional: al añadir un precio nuevo desde la UI admin hay
+    que introducir ``valor_Excel / 1.05`` (el precio BASE), no el valor Excel
+    directo. Si se guarda el valor Excel tal cual, el runtime aplica otro 1.05
+    y queda ``valor_Excel × 1.05`` (sobrevaloración).
+
+    Migraciones históricas que corrigieron violaciones de esta invariante:
+    M6 (entibación, factor 1.406→1.05), M8 (18 precios Patrón A ratio 1.05²
+    + Gres SAN DN300), M10 (5 imbornales ratio 1.05³), M11 (residuales de
+    excavación carga_mec + arrinonado).
+
+    Storage (desde M13): los precios en BD son INTEGER céntimos (ej. 12.96 €
+    → 1296). `cargar_todo()` / `guardar_todo()` hacen la traducción al dict
+    Python (floats €). Esta función opera siempre en floats €.
     """
     pct_ci = float(precios.get("pct_ci", 1.0))
-    accion = "aplicar" if multiplicar else "revertir"
     if pct_ci == 1.0:
-        logger.debug("[CI] pct_ci=1.0 → nada que %s", accion)
+        logger.debug("[CI] pct_ci=1.0 → nada que aplicar")
         return
 
-    logger.debug("[CI] %s CI factor=%.4f sobre todos los precios", accion.upper(), pct_ci)
-    op = (lambda v: v * pct_ci) if multiplicar else (lambda v: round(v / pct_ci, 6))
+    logger.debug("[CI] APLICAR CI factor=%.4f sobre todos los precios", pct_ci)
 
     # Catálogos (lista de dicts)
     for clave, campo in _CI_CAMPOS:
         for item in precios.get(clave, []):
             val = item.get(campo)
             if val:  # None, 0, 0.0 → no escalar
-                item[campo] = op(val)
+                item[campo] = val * pct_ci
 
     # Dicts planos
     for clave_dict, excluir in _CI_DICTS:
@@ -210,38 +244,29 @@ def _transformar_ci(precios: dict, multiplicar: bool) -> None:
         excluir = excluir or set()
         for k in list(d.keys()):
             if k not in excluir:
-                d[k] = op(d[k])
+                d[k] = d[k] * pct_ci
 
     # Escalares sueltos
     for clave_esc in _CI_ESCALARES:
         if clave_esc in precios:
-            precios[clave_esc] = op(precios[clave_esc])
-
-
-def _aplicar_ci(precios: dict) -> None:
-    """Multiplica todos los precios unitarios por el factor de Costes Indirectos.
-
-    Modifica el dict in-place. Si pct_ci es 1.0 o no existe, no hace nada.
-    Uso interno - llamar desde calcular_presupuesto() sobre una copia local.
-    """
-    _transformar_ci(precios, multiplicar=True)
+            precios[clave_esc] = precios[clave_esc] * pct_ci
 
 
 # Alias público para uso desde ensamblaje.py
 aplicar_ci = _aplicar_ci
 
 
-@st.cache_data(ttl=60)
 def cargar_precios() -> dict:
-    """Carga precios BASE desde SQLite con cache de 60s.
+    """Carga precios BASE desde SQLite.
 
     Devuelve precios SIN CI aplicado. El CI se aplica una única vez en
     calcular_presupuesto() sobre una copia local, evitando transformaciones
     en el flujo de carga/guardado y eliminando la posibilidad de deflación
     o inflación acumulativa por round-trips admin → BD.
 
-    La cache se invalida automáticamente tras TTL o manualmente con
-    cargar_precios.clear() (llamar tras guardar en admin).
+    Esta función es pura (sin cache). El cache para la UI Streamlit vive en
+    ``src/ui/precios_cache.py``; la UI debe importar desde allí si quiere
+    invalidación manual vía ``cargar_precios.clear()``.
     """
     logger.info("cargar_precios() - leyendo BD…")
     try:

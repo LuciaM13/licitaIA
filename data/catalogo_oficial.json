@@ -1,0 +1,542 @@
+{
+  "_meta": {
+    "excel_source": "240415_VALORACIÓN ACTUACIONES.xlsx",
+    "generado": "2026-04-19",
+    "pct_ci_excel": 1.05,
+    "nota": "Precios oficiales EMASESA con CI aplicado. La BD licitaia almacena precio_base = precio_oficial / 1.05. Invariante: BD.precio × 1.05 ≈ catalogo_oficial.precio."
+  },
+  "excavacion": {
+    "mec_hasta_25": 3.07,
+    "mec_mas_25": 5.0,
+    "manual_hasta_25": 11.17,
+    "manual_mas_25": 13.99,
+    "carga_mec": 0.34,
+    "transporte": 5.29,
+    "arrinonado": 22.18,
+    "relleno": 19.39,
+    "canon_tierras": 1.6
+  },
+  "tuberia_aba": [
+    {
+      "tipo": "PE-100",
+      "dn": 90,
+      "precio": 11.01
+    },
+    {
+      "tipo": "PE-100",
+      "dn": 110,
+      "precio": 14.56
+    },
+    {
+      "tipo": "PE-100",
+      "dn": 160,
+      "precio": 26.31
+    },
+    {
+      "tipo": "PE-100",
+      "dn": 200,
+      "precio": 38.39
+    },
+    {
+      "tipo": "FD",
+      "dn": 80,
+      "precio": 45.41
+    },
+    {
+      "tipo": "FD",
+      "dn": 100,
+      "precio": 47.81
+    },
+    {
+      "tipo": "FD",
+      "dn": 150,
+      "precio": 65.93
+    },
+    {
+      "tipo": "FD",
+      "dn": 200,
+      "precio": 90.47
+    },
+    {
+      "tipo": "FD",
+      "dn": 250,
+      "precio": 121.84
+    },
+    {
+      "tipo": "FD",
+      "dn": 300,
+      "precio": 153.88
+    },
+    {
+      "tipo": "FD",
+      "dn": 350,
+      "precio": 211.03
+    },
+    {
+      "tipo": "FD",
+      "dn": 400,
+      "precio": 251.54
+    },
+    {
+      "tipo": "FD",
+      "dn": 500,
+      "precio": 299.83
+    },
+    {
+      "tipo": "FD",
+      "dn": 600,
+      "precio": 403.08
+    },
+    {
+      "tipo": "FD",
+      "dn": 800,
+      "precio": 787.2
+    },
+    {
+      "tipo": "FD",
+      "dn": 1000,
+      "precio": 999.22
+    },
+    {
+      "tipo": "FD",
+      "dn": 1200,
+      "precio": 1185.05
+    }
+  ],
+  "tuberia_san": [
+    {
+      "tipo": "Hormigón",
+      "dn": 300,
+      "precio": 57.105000000000004
+    },
+    {
+      "tipo": "Hormigón",
+      "dn": 400,
+      "precio": 57.105000000000004
+    },
+    {
+      "tipo": "Hormigón",
+      "dn": 500,
+      "precio": 67.57499999999999
+    },
+    {
+      "tipo": "Hormigón",
+      "dn": 600,
+      "precio": 76.65
+    },
+    {
+      "tipo": "Hormigón",
+      "dn": 800,
+      "precio": 134.805
+    },
+    {
+      "tipo": "Hormigón",
+      "dn": 1000,
+      "precio": 185.595
+    },
+    {
+      "tipo": "Hormigón",
+      "dn": 1200,
+      "precio": 314.07
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 800,
+      "precio": 530.7
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 1000,
+      "precio": 573.43
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 1200,
+      "precio": 772.38
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 1500,
+      "precio": 1274.57
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 1800,
+      "precio": 1491.13
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 2000,
+      "precio": 1751.13
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 2500,
+      "precio": 2595.07
+    },
+    {
+      "tipo": "HA+PE80",
+      "dn": 3000,
+      "precio": 3864.38
+    },
+    {
+      "tipo": "Gres",
+      "dn": 300,
+      "precio": 126.1
+    },
+    {
+      "tipo": "Gres",
+      "dn": 400,
+      "precio": 214.0
+    },
+    {
+      "tipo": "Gres",
+      "dn": 500,
+      "precio": 311.38
+    },
+    {
+      "tipo": "Gres",
+      "dn": 600,
+      "precio": 412.4
+    },
+    {
+      "tipo": "Gres",
+      "dn": 800,
+      "precio": 1026.63
+    },
+    {
+      "tipo": "Gres",
+      "dn": 1000,
+      "precio": 1279.56
+    },
+    {
+      "tipo": "PVC",
+      "dn": 315,
+      "precio": 45.92
+    },
+    {
+      "tipo": "PVC",
+      "dn": 400,
+      "precio": 93.64
+    },
+    {
+      "tipo": "PVC",
+      "dn": 500,
+      "precio": 146.26
+    }
+  ],
+  "valvuleria_conexion": [
+    {
+      "dn": 100,
+      "precio": 756.33
+    },
+    {
+      "dn": 150,
+      "precio": 1946.48
+    },
+    {
+      "dn": 200,
+      "precio": 1176.56
+    },
+    {
+      "dn": 250,
+      "precio": 1456.17
+    },
+    {
+      "dn": 300,
+      "precio": 2140.38
+    },
+    {
+      "dn": 400,
+      "precio": 2617.14
+    }
+  ],
+  "demolicion_aba": [
+    {
+      "red": "ABA",
+      "tipo_demolicion": "bordillo",
+      "material": "granitico",
+      "unidad": "m",
+      "precio": 5.59,
+      "label_excel": "Granítico"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "bordillo",
+      "material": "hidraulico",
+      "unidad": "m",
+      "precio": 4.44,
+      "label_excel": "Hidráulico"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "acerado",
+      "material": "losa hidraulica",
+      "unidad": "m2",
+      "precio": 14.7,
+      "label_excel": "Losa Hidráulica"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "acerado",
+      "material": "losa terrazo",
+      "unidad": "m2",
+      "precio": 14.7,
+      "label_excel": "Losa Terrazo"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "acerado",
+      "material": "hormigon",
+      "unidad": "m2",
+      "precio": 14.7,
+      "label_excel": "Hormigón"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "calzada",
+      "material": "adoquin",
+      "unidad": "m2",
+      "precio": 15.8,
+      "label_excel": "adoquín"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "calzada",
+      "material": "aglomerado",
+      "unidad": "m2",
+      "precio": 14.29,
+      "label_excel": "aglomerado"
+    },
+    {
+      "red": "ABA",
+      "tipo_demolicion": "calzada",
+      "material": "hormigon",
+      "unidad": "m2",
+      "precio": 17.43,
+      "label_excel": "hormigón"
+    }
+  ],
+  "demolicion_san": [
+    {
+      "red": "SAN",
+      "tipo_demolicion": "bordillo",
+      "material": "granitico",
+      "unidad": "m",
+      "precio": 5.59,
+      "label_excel": "Granítico"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "bordillo",
+      "material": "hidraulico",
+      "unidad": "m",
+      "precio": 4.44,
+      "label_excel": "Hidráulico"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "acerado",
+      "material": "losa hidraulica",
+      "unidad": "m2",
+      "precio": 14.7,
+      "label_excel": "Losa Hidráulica"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "acerado",
+      "material": "losa terrazo",
+      "unidad": "m2",
+      "precio": 14.7,
+      "label_excel": "Losa Terrazo"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "acerado",
+      "material": "hormigon",
+      "unidad": "m2",
+      "precio": 14.7,
+      "label_excel": "Hormigón"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "calzada",
+      "material": "adoquin",
+      "unidad": "m2",
+      "precio": 15.8,
+      "label_excel": "adoquín"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "calzada",
+      "material": "aglomerado",
+      "unidad": "m2",
+      "precio": 14.29,
+      "label_excel": "aglomerado"
+    },
+    {
+      "red": "SAN",
+      "tipo_demolicion": "calzada",
+      "material": "hormigon",
+      "unidad": "m2",
+      "precio": 17.43,
+      "label_excel": "hormigón"
+    }
+  ],
+  "acerados_aba": [
+    {
+      "red": "ABA",
+      "material": "losa hidraulica",
+      "unidad": "m2",
+      "precio": 40.85
+    },
+    {
+      "red": "ABA",
+      "material": "losa terrazo",
+      "unidad": "m2",
+      "precio": 42.9
+    },
+    {
+      "red": "ABA",
+      "material": "hormigon",
+      "unidad": "m2",
+      "precio": 52.79
+    },
+    {
+      "red": "ABA",
+      "material": "granito",
+      "unidad": "m2",
+      "precio": 92.19
+    }
+  ],
+  "acerados_san": [
+    {
+      "red": "SAN",
+      "material": "losa hidraulica",
+      "unidad": "m2",
+      "precio": 37.14
+    },
+    {
+      "red": "SAN",
+      "material": "losa terrazo",
+      "unidad": "m2",
+      "precio": 43.2
+    },
+    {
+      "red": "SAN",
+      "material": "hormigon",
+      "unidad": "m2",
+      "precio": 52.79
+    },
+    {
+      "red": "SAN",
+      "material": "granito",
+      "unidad": "m2",
+      "precio": 84.67
+    }
+  ],
+  "bordillos": [
+    {
+      "material": "granitico",
+      "unidad": "m",
+      "precio": 22.9
+    },
+    {
+      "material": "hormigon",
+      "unidad": "m",
+      "precio": 16.0
+    }
+  ],
+  "calzadas": [
+    {
+      "material": "adoquin",
+      "unidad": "m2",
+      "precio": 35.23
+    },
+    {
+      "material": "capa de rodadura",
+      "unidad": "m3",
+      "precio": 139.64
+    },
+    {
+      "material": "capa base pavimento",
+      "unidad": "m3",
+      "precio": 117.34
+    },
+    {
+      "material": "hormigon",
+      "unidad": "m3",
+      "precio": 117.18
+    },
+    {
+      "material": "base",
+      "unidad": "m3",
+      "precio": 23.46
+    }
+  ],
+  "imbornales": [
+    {
+      "label": "Adaptación imbornal",
+      "precio": 120.0
+    },
+    {
+      "label": "Imbornal nuevo rejilla c/clapeta",
+      "precio": 547.98
+    },
+    {
+      "label": "Imbornal nuevo rejilla s/clapeta",
+      "precio": 547.98
+    },
+    {
+      "label": "Imbornal buzón c/clapeta",
+      "precio": 872.03
+    },
+    {
+      "label": "Imbornal buzón s/clapeta",
+      "precio": 802.03
+    }
+  ],
+  "acometidas": [
+    { "red": "ABA", "tipo": "Adaptación",      "precio": 32.26 },
+    { "red": "ABA", "tipo": "Reposición <6m",  "precio": 261.92 },
+    { "red": "ABA", "tipo": "Reposición >6m",  "precio": 326.36 },
+    { "red": "SAN", "tipo": "Adaptación gres", "precio": 485.43 },
+    { "red": "SAN", "tipo": "Adaptación PVC",  "precio": 446.64 },
+    { "red": "SAN", "tipo": "Reposición gres <6m", "precio": 1231.79 },
+    { "red": "SAN", "tipo": "Reposición gres >6m", "precio": 1759.63 },
+    { "red": "SAN", "tipo": "Reposición PVC <6m",  "precio": 885.12 },
+    { "red": "SAN", "tipo": "Reposición PVC >6m",  "precio": 1278.78 }
+  ],
+  "desmontaje": [
+    { "dn_max": 150, "precio": 11.01 },
+    { "dn_max": 160, "precio": 26.31 },
+    { "dn_max": 599, "precio": 14.56 }
+  ],
+  "pozos_san_ladrillo": [
+    { "profundidad_max": 2.5,    "precio": 1043.82 },
+    { "profundidad_max": 3.5,    "precio": 1273.56 },
+    { "profundidad_max": 5.0,    "precio": 1714.04 },
+    { "profundidad_max": 9999.0, "precio": 2455.28 }
+  ],
+  "tuberia_aba_hacch": [
+    { "dn": 1000, "precio": 79.84 },
+    { "dn": 1200, "precio": 49.16 },
+    { "dn": 1300, "precio": 47.79 },
+    { "dn": 1400, "precio": 107.50 },
+    { "dn": 1600, "precio": 53.60 },
+    { "dn": 1800, "precio": 55.71 },
+    { "dn": 2000, "precio": 58.34 },
+    { "dn": 2200, "precio": 60.78 },
+    { "dn": 2400, "precio": 63.69 },
+    { "dn": 2600, "precio": 66.21 }
+  ],
+  "pozos_existentes": [
+    { "accion": "acondicionamiento", "precio": 222.88 },
+    { "accion": "anulacion",         "precio": 545.82 },
+    { "accion": "demolicion",        "precio":  44.72 }
+  ],
+  "entibacion_blindada": [
+    { "red": null, "precio": 4.27 }
+  ],
+  "conduccion_provisional_pe": 12.60
+}
