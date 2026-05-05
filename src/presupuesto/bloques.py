@@ -147,6 +147,7 @@ def ensamblar_obra_civil_aba(
     _mat = _materiales_aba(p.aba_longitud_m, _aba_item, decisiones_aba)
     if _mat:
         estado["materiales_total"] += _mat[0]
+        estado["materiales_aba_total"] += _mat[0]
         _acumular(caps, "OBRA CIVIL ABASTECIMIENTO", _mat)
         logger.debug("[ABA] Materiales ABA: %.2f € (excluidos de GG/BI)", _mat[0])
 
@@ -208,7 +209,9 @@ def ensamblar_obra_civil_san(
         decisiones_san["pozo_registro"]["item"])
     if _mat_san:
         estado["materiales_total"] += _mat_san[0]
+        estado["materiales_san_total"] += _mat_san[0]
         _acumular(caps, "OBRA CIVIL SANEAMIENTO", _mat_san)
+        logger.debug("[SAN] Materiales SAN: %.2f € (incluidos en base GG/BI)", _mat_san[0])
 
     # Imbornales
     if p.imbornales_tipo != "none":
@@ -394,3 +397,8 @@ def ensamblar_seguridad_gestion(
         importe_ga = base_ss * p.pct_gestion
         _acumular(caps, "GESTIÓN AMBIENTAL",
                   (importe_ga, {"Gestión ambiental": importe_ga}))
+
+    if p.pct_obra_accesoria > 0:
+        importe_oa = base_ss * p.pct_obra_accesoria
+        _acumular(caps, "OBRA ACCESORIA URBANA",
+                  (importe_oa, {"Obra accesoria urbana": importe_oa}))
