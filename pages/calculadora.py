@@ -317,6 +317,7 @@ with c2:
 conduccion_provisional_m = 0.0
 espesor_pavimento_m = 0.0
 pct_servicios_afectados = 0.0
+pct_obra_accesoria = 0.0
 pozos_existentes_aba = "none"
 pozos_existentes_san = "none"
 imbornales_tipo = "none"
@@ -386,6 +387,21 @@ if incluir_aba:
         min_value=0.0, value=float(dui.get("conduccion_provisional_m", 0.0)),
         step=10.0,
         key="conduccion_provisional_m")
+
+o6, _ = st.columns(2)
+with o6:
+    pct_obra_accesoria = st.number_input(
+        "Obra accesoria urbana (mobiliario, desvios, pasarelas, zocalos) (%)",
+        min_value=0.0, max_value=25.0, value=0.0,
+        step=0.5, format="%.1f",
+        help=(
+            "Partidas de cap 11 BC3 no modeladas en el nucleo lineal: "
+            "mobiliario urbano, desvios de trafico, pasarelas peatonales, zocalos. "
+            "Rango observado en 7 obras EMASESA: 6-21%% PEM. "
+            "Obras centricas con trafico: 15-20%%. Obras perifericas: 5-10%%."
+        ),
+        key="pct_obra_accesoria",
+    ) / 100.0
 
 # ── Desmontaje tubería y pozos existentes ───────────────────────────────────
 _cat_desmontaje = precios.get("catalogo_desmontaje", [])
@@ -480,6 +496,11 @@ _se_resultado = generar_alertas_tecnicas(
 )
 _etiquetas = _se_resultado["etiquetas"]
 _alertas = _se_resultado["alertas"]
+# Cadena de inferencia del SE: se persiste en m17 para auditoría TFG vía
+# SELECT sobre `presupuesto_cadena_inferencia`. NO se renderiza en la UI:
+# las alertas CLIPS ya explican el motivo en lenguaje llano y el detalle
+# técnico (rule_id, capa, etiquetas) sería ruido para el licitador.
+_cadena_inferencia = _se_resultado.get("cadena_inferencia", [])
 
 # ── Clasificación del proyecto (etiquetas del sistema experto) ──
 # El orden de agenda de CLIPS no es reproducible entre ejecuciones, así
@@ -546,6 +567,7 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True, k
         subbase_san_espesor_m=subbase_san_espesor if incluir_san else 0.0,
         espesor_pavimento_m=espesor_pavimento_m,
         pct_servicios_afectados=pct_servicios_afectados,
+        pct_obra_accesoria=pct_obra_accesoria,
         desmontaje_tipo=desmontaje_tipo,
         pozos_existentes_aba=pozos_existentes_aba,
         pozos_existentes_san=pozos_existentes_san,
@@ -567,6 +589,12 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True, k
         with st.spinner("Calculando presupuesto…"):
             logger.info("▶ Usuario lanza cálculo de presupuesto")
             resultado = calcular_presupuesto(p, precios)
+            # Inyectar la cadena de inferencia del SE en el resultado para
+            # que historial.guardar_presupuesto() la persista en m17 (LD-5
+            # interpretación mínima: calcular_presupuesto() no llama al SE;
+            # la página, único caller del SE, ensambla el dict final antes
+            # de mostrar/persistir).
+            resultado["cadena_inferencia"] = _cadena_inferencia
             st.session_state[sk.RESULTADO] = resultado
             logger.info("✓ Cálculo completado - TOTAL=%.2f €", resultado["total"])
 
@@ -619,6 +647,7 @@ if st.button("Calcular presupuesto", type="primary", use_container_width=True, k
                 "pct_seguridad": str(pct_seguridad),
                 "pct_gestion": str(pct_gestion),
                 "pct_servicios_afectados": str(pct_servicios_afectados),
+                "pct_obra_accesoria": str(pct_obra_accesoria),
                 "espesor_pavimento_m": str(espesor_pavimento_m),
                 "desmontaje_tipo": desmontaje_tipo,
             })
