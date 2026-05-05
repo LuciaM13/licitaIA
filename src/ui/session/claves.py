@@ -47,3 +47,30 @@ CONFIRMAR_DRIFT_CRITICO = "confirmar_drift_critico"
 
 HIST_PAGE = "hist_page"
 VER_DETALLE_ID = "ver_detalle_id"
+
+
+# ---------------------------------------------------------------------------
+# Calculadora — creación inline de partidas (Phase 3)
+# ---------------------------------------------------------------------------
+
+INLINE_CREATE_TARGET = "inline_create_target"
+"""Identificador del catálogo que el usuario está creando ahora mismo
+(``"tuberias_aba"``, ``"acerados"``, …). Se setea al pulsar el botón
+"+" junto al ``selectbox``, lo lee la función decorada con
+``@st.dialog`` para saber qué formulario renderizar. Se limpia con
+``pop`` al cancelar el modal o tras el rerun post-INSERT exitoso."""
+
+INLINE_CREATE_RESULT = "inline_create_result"
+"""Payload one-shot tras un INSERT exitoso: tupla
+``(tabla, red, label)`` (o ``(tabla, red, tipo)`` para acometidas).
+
+Lo escribe el callback del diálogo tras un INSERT correcto, lo lee el
+``selectbox`` correspondiente en el rerun siguiente para fijar su
+``index=`` al nuevo item recién creado. Se borra (one-shot) al final
+del render de la calculadora vía ``_consumir_inline_result`` —no en
+cada selectbox individualmente—para que no haya carrera entre
+selectboxes que comparten el resultado.
+
+Se identifica por ``(tabla, red, label)`` y NO por ``id`` porque
+``cargar_todo`` no expone los IDs de fila al diccionario de precios
+(Riesgo 6 de PATTERNS.md): la UI sólo conoce labels."""
