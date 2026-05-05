@@ -3,11 +3,11 @@
 Verifica que:
   - El paquete ``db`` expone la misma API pública que el antiguo fichero
     monolítico (``conectar``, ``init_db``, ``DB_PATH``, ``_TABLAS_PERMITIDAS``).
-  - Existen los 16 ficheros de migración y cada uno expone ``VERSION``,
+  - Existen los 19 ficheros de migración y cada uno expone ``VERSION``,
     ``DESCRIPCION`` y ``aplicar``.
   - La lista ``MIGRACIONES`` del runner está completa y ordenada como en el
     runner histórico (con M7 antes que M6).
-  - Tras ``init_db()``, la tabla ``schema_version`` contiene las 16 versiones.
+  - Tras ``init_db()``, la tabla ``schema_version`` contiene las 19 versiones.
 
 Excepción a la regla "solo AppTest": valida invariantes estructurales de
 la capa de infraestructura sin superficie Streamlit.
@@ -56,7 +56,7 @@ def test_tablas_permitidas_incluye_historial():
 # ---------------------------------------------------------------------------
 
 def test_16_migraciones_registradas():
-    assert len(MIGRACIONES) == 16
+    assert len(MIGRACIONES) == 19
 
 
 def test_cada_migracion_expone_contrato():
@@ -83,7 +83,7 @@ def test_orden_declarativo_preserva_m7_antes_m6():
 
 def test_todas_las_versiones_del_1_al_16_presentes():
     versiones = {m.VERSION for m in MIGRACIONES}
-    assert versiones == set(range(1, 17))
+    assert versiones == set(range(1, 20))
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +112,9 @@ def test_ficheros_de_migracion_existen():
         "m14_audit_log.py",
         "m15_demolicion_material.py",
         "m16_san_bordillo_generico.py",
+        "m17_cadena_inferencia.py",
+        "m18_cat_aba_fd_dn60.py",
+        "m19_cat_aba_pe100_dn90_pn16.py",
     }
     presentes = {f.name for f in ruta_migraciones.glob("m*.py")}
     assert esperados.issubset(presentes), f"Faltan: {esperados - presentes}"
@@ -125,13 +128,13 @@ def test_schema_version_final_es_16_tras_init_db():
     # conftest.py ya ejecuta init_db() al arrancar la suite; aquí solo verificamos.
     with conectar() as conn:
         max_version = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
-    assert max_version == 16, f"schema_version esperado 16, obtenido {max_version}"
+    assert max_version == 19, f"schema_version esperado 19, obtenido {max_version}"
 
 
 def test_tabla_schema_version_tiene_16_filas():
     with conectar() as conn:
         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
-    assert count == 16
+    assert count == 19
 
 
 # ---------------------------------------------------------------------------
