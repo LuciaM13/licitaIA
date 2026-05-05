@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Plan 02.2-01 completado (pct_obra_accesoria); listo para 02.2-02
-last_updated: "2026-05-05T18:17:00.000Z"
-last_activity: 2026-05-05 -- Plan 02.2-01 completed (3 commits, 297 passed)
+stopped_at: Plan 02.2-02 completado (selector capitulo_emasesa + 4 fixes MAPPINGS); listo para 02.2-03
+last_updated: "2026-05-05T19:30:00.000Z"
+last_activity: 2026-05-05 -- Plan 02.2-02 completed (notebook helper only, 297 passed)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
-  percent: 77
+  completed_plans: 11
+  percent: 85
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-04)
 ## Current Position
 
 Phase: 02.2 (cerrar-gaps-individuales) — EXECUTING
-Plan: 2 of 4
-Status: Executing Phase 02.2 (Plan 01 completed)
-Last activity: 2026-05-05 -- Plan 02.2-01 completed (pct_obra_accesoria, 3 commits)
+Plan: 3 of 4
+Status: Executing Phase 02.2 (Plans 01, 02 completed)
+Last activity: 2026-05-05 -- Plan 02.2-02 completed (PartidaSelector capitulo_emasesa + 4 MAPPINGS fixes)
 
-Progress: [██░░░░░░░░] 25% (Phase 2.2: 1/4 plans)
+Progress: [█████░░░░░] 50% (Phase 2.2: 2/4 plans)
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Recent decisions affecting current work:
 - F2 usa `@st.dialog` + `insertar_variante_catalogo()` (single INSERT), nunca `guardar_todo()` (DELETE+INSERT destructivo)
 - Ampliar catálogo, no modificar precios validados contra Excel agregado
 - pct_obra_accesoria (02.2-01): palanca de calibración 0-25% sobre base_ss, default 0.0 preserva 141/141 invariante Excel; capítulo independiente OBRA ACCESORIA URBANA
+- PartidaSelector canonical-first (02.2-02): filtro `capitulo_emasesa` precede a `capitulo` BC3-interno; necesario en obras ABA+SAN como Santa Gema donde ambas redes comparten cap BC3 '02' y solo el canónico EMASESA ('01' vs '02') las separa
 
 ### Pending Todos
 
@@ -83,5 +84,5 @@ Ninguno aún.
 ## Session Continuity
 
 Last session: 2026-05-05
-Stopped at: Phase 2 context capturado, listo para `/gsd-plan-phase 2`
-Resume file: .planning/phases/02-validacion-catalogo/02-CONTEXT.md
+Stopped at: Plan 02.2-02 completado (selector canonical-first + 4 fixes MAPPINGS)
+Resume file: .planning/phases/02.2-cerrar-gaps-individuales/02.2-03-PLAN.md
