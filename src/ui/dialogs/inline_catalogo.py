@@ -145,40 +145,245 @@ def _dispatch_form(target: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Sub-formularios (stubs — implementación real en Tarea 2)
+# Sub-formularios contra el schema real (BLOCK 1 fix)
 # ---------------------------------------------------------------------------
+# Regla maestra: cada sub-form rellena exactamente las columnas NOT NULL sin
+# DEFAULT que su tabla declara en src/infraestructura/db/schema.py. Ningún
+# form pide columnas que no existan en el schema real. El form devuelve un
+# dict con SOLO las columnas que pide; el use case enriquece con `red` y
+# aplica `_eur_a_cents` exactamente UNA vez.
 
 def _form_tuberias_aba() -> dict:
-    return {}
+    """Schema: red='ABA', label, tipo, diametro_mm, precio_m."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input(
+            "Etiqueta (label)", key="_inline_tuberias_ABA_label"
+        )
+        tipo = st.text_input(
+            "Tipo (e.g. PE-100, FD)", key="_inline_tuberias_ABA_tipo"
+        )
+    with col2:
+        diametro_mm = st.number_input(
+            "Diámetro (mm)", min_value=1, value=100, step=1,
+            key="_inline_tuberias_ABA_dn",
+        )
+    precio_m = st.number_input(
+        "Precio €/m (BASE EMASESA)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_tuberias_ABA_precio_m",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "tipo": tipo.strip(),
+        "diametro_mm": int(diametro_mm),
+        "precio_m": float(precio_m),
+    }
 
 
 def _form_tuberias_san() -> dict:
-    return {}
+    """Schema: red='SAN', label, tipo, diametro_mm, precio_m."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input(
+            "Etiqueta (label)", key="_inline_tuberias_SAN_label"
+        )
+        tipo = st.text_input(
+            "Tipo (e.g. PVC, HM)", key="_inline_tuberias_SAN_tipo"
+        )
+    with col2:
+        diametro_mm = st.number_input(
+            "Diámetro (mm)", min_value=1, value=200, step=1,
+            key="_inline_tuberias_SAN_dn",
+        )
+    precio_m = st.number_input(
+        "Precio €/m (BASE EMASESA)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_tuberias_SAN_precio_m",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "tipo": tipo.strip(),
+        "diametro_mm": int(diametro_mm),
+        "precio_m": float(precio_m),
+    }
 
 
 def _form_valvuleria() -> dict:
-    return {}
+    """Schema: label UNIQUE, tipo, dn_min, dn_max, precio, intervalo_m, instalacion (NULLABLE)."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input("Etiqueta (label)", key="_inline_valvuleria_label")
+        tipo = st.text_input("Tipo de pieza", key="_inline_valvuleria_tipo")
+    with col2:
+        dn_min = st.number_input(
+            "DN mínimo (mm)", min_value=1, value=60, step=1,
+            key="_inline_valvuleria_dn_min",
+        )
+        dn_max = st.number_input(
+            "DN máximo (mm)", min_value=int(dn_min),
+            value=max(int(dn_min), 200), step=1,
+            key="_inline_valvuleria_dn_max",
+        )
+    col3, col4 = st.columns(2)
+    with col3:
+        intervalo_m = st.number_input(
+            "Intervalo (m)", min_value=0.01, value=100.0, step=1.0,
+            format="%.2f", key="_inline_valvuleria_intervalo",
+        )
+        instalacion = st.selectbox(
+            "Instalación",
+            ["(sin distinción)", "enterrada", "pozo"],
+            key="_inline_valvuleria_instalacion",
+        )
+    with col4:
+        precio = st.number_input(
+            "Precio €/ud (BASE EMASESA)",
+            min_value=0.0, value=0.0, step=0.01, format="%.2f",
+            key="_inline_valvuleria_precio",
+        )
+        st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "tipo": tipo.strip(),
+        "dn_min": int(dn_min),
+        "dn_max": int(dn_max),
+        "intervalo_m": float(intervalo_m),
+        "instalacion": None if instalacion == "(sin distinción)" else instalacion,
+        "precio": float(precio),
+    }
 
 
 def _form_acometidas() -> dict:
-    return {}
+    """Schema: red, tipo, precio. UNIQUE(red, tipo). NO tiene label ni diametro."""
+    tipo = st.text_input(
+        "Tipo de acometida", key="_inline_acometidas_tipo",
+        help="Identificador libre. UNIQUE por (red, tipo).",
+    )
+    precio = st.number_input(
+        "Precio €/ud (BASE EMASESA)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_acometidas_precio",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "tipo": tipo.strip(),
+        "precio": float(precio),
+    }
 
 
 def _form_acerados() -> dict:
-    return {}
+    """Schema: red, label, unidad CHECK IN ('m','m2','m3','ud'), precio."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input("Etiqueta (label)", key="_inline_acerados_label")
+    with col2:
+        unidad = st.selectbox(
+            "Unidad", ["m", "m2", "m3", "ud"], index=1,
+            key="_inline_acerados_unidad",
+        )
+    precio = st.number_input(
+        "Precio (BASE EMASESA, en € por unidad seleccionada)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_acerados_precio",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "unidad": unidad,
+        "precio": float(precio),
+    }
 
 
 def _form_bordillos() -> dict:
-    return {}
+    """Schema: label UNIQUE, unidad CHECK IN ('m','m2','ud'), precio."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input("Etiqueta (label)", key="_inline_bordillos_label")
+    with col2:
+        unidad = st.selectbox(
+            "Unidad", ["m", "m2", "ud"], index=0,
+            key="_inline_bordillos_unidad",
+        )
+    precio = st.number_input(
+        "Precio (BASE EMASESA, en € por unidad)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_bordillos_precio",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "unidad": unidad,
+        "precio": float(precio),
+    }
 
 
 def _form_calzadas() -> dict:
-    return {}
+    """Schema: label UNIQUE, unidad CHECK IN ('m2','m3'), precio."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input("Etiqueta (label)", key="_inline_calzadas_label")
+    with col2:
+        unidad = st.selectbox(
+            "Unidad", ["m2", "m3"], index=0,
+            key="_inline_calzadas_unidad",
+        )
+    precio = st.number_input(
+        "Precio (BASE EMASESA, en € por unidad)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_calzadas_precio",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "unidad": unidad,
+        "precio": float(precio),
+    }
 
 
 def _form_pozos() -> dict:
-    return {}
+    """Schema: label, precio, intervalo (NOT NULL). El resto opcional/DEFAULT."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input("Etiqueta (label)", key="_inline_pozos_label")
+    with col2:
+        intervalo = st.number_input(
+            "Intervalo (m)", min_value=0.01, value=100.0, step=1.0,
+            format="%.2f", key="_inline_pozos_intervalo",
+        )
+    precio = st.number_input(
+        "Precio €/ud (BASE EMASESA)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_pozos_precio",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "intervalo": float(intervalo),
+        "precio": float(precio),
+    }
 
 
 def _form_imbornales() -> dict:
-    return {}
+    """Schema: label UNIQUE, precio, tipo CHECK IN ('adaptacion','nuevo')."""
+    col1, col2 = st.columns(2)
+    with col1:
+        label = st.text_input("Etiqueta (label)", key="_inline_imbornales_label")
+    with col2:
+        tipo = st.selectbox(
+            "Tipo", ["adaptacion", "nuevo"], index=0,
+            key="_inline_imbornales_tipo",
+        )
+    precio = st.number_input(
+        "Precio €/ud (BASE EMASESA)",
+        min_value=0.0, value=0.0, step=0.01, format="%.2f",
+        key="_inline_imbornales_precio",
+    )
+    st.caption("Introduce el precio base EMASESA (sin el margen de seguridad)")
+    return {
+        "label": label.strip(),
+        "tipo": tipo,
+        "precio": float(precio),
+    }
