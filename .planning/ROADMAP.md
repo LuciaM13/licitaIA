@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
     - `pytest tests/test_bd_invariante_ci.py -q` debe seguir 141/141 verde tras cada plan
     - Migraciones únicamente aditivas (`INSERT OR IGNORE`); ninguna modificación de filas existentes en `precios.db`
     - §4.2.1–§4.2.6 de `resultados_tfg.md` no se reescriben; sólo se añade §4.2.7
-- [ ] **Phase 3: Creación inline de partidas** - `@st.dialog` junto al selectbox y página admin recortada a configuración
+- [ ] **Phase 3: Creación inline de partidas** - `@st.dialog` junto al selectbox y página admin recortada a configuración (4 plans aprobados 2026-05-05)
 - [ ] **Phase 4: Tests y robustez UX** - AppTest del flujo inline, mensajes legibles, suite limpia para defensa
 
 ## Phase Details
@@ -100,7 +100,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Junto al campo de precio aparece la etiqueta "Introduce el precio base EMASESA (sin el margen de seguridad)" y la inserción nunca dispara el `DELETE+INSERT` masivo de `guardar_todo()`
   4. La página antes llamada "Administrar precios" se llama "Configuración y catálogo" y solo contiene porcentajes globales (GG, BI, IVA, factor esponjamiento, pct_ci, pct_manual_defecto), defaults UI y vista de auditoría drift; las tablas editables de partidas han desaparecido
   5. Intentar guardar con label duplicado, campos vacíos o precio ≤ 0 muestra un error claro en el diálogo y no escribe nada en `precios.db`
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 03-01-PLAN.md — Infra inline: `insertar_variante_catalogo()` use case + `insertar_fila_catalogo`/`escribir_audit_evento` públicos en db_precios + 2 claves session_state + tests use case
+- [x] 03-02-PLAN.md — `@st.dialog` único + dispatcher por `INLINE_CREATE_TARGET` + 9 sub-formularios `_form_*` (schemas reales por catálogo) + caption EMASESA *(completed 2026-05-05; 11 targets, 152 passed)*
+- [ ] 03-03-PLAN.md — Wiring calculadora: botón "+" junto a cada selectbox + `index=` para auto-selección + `_consumir_inline_result()` único al final del render
+- [ ] 03-04-PLAN.md — Rename `admin_precios.py` → `configuracion_catalogo.py` + actualizar `app_licitaia.py` + AppTest del flujo inline + tabla cobertura final
 **UI hint**: yes
 
 ### Phase 4: Tests y robustez UX
@@ -127,5 +131,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Validación y ampliación del catálogo | 5/5 | Complete | 2026-05-05 |
 | 2.1. Fix del loader BC3 canónico | inline | Complete | 2026-05-05 |
 | 2.2. Cerrar gaps en proyectos individuales | 0/4 | Planned | - |
-| 3. Creación inline de partidas | 0/TBD | Not started | - |
+| 3. Creación inline de partidas | 2/4 | Executing (Wave 2 done) | - |
 | 4. Tests y robustez UX | 0/TBD | Not started | - |
