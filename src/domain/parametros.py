@@ -66,6 +66,12 @@ class ParametrosProyecto:
     # PEM menos cánones, desmontaje y materiales de suministro.
     pct_servicios_afectados: float = 0.0
 
+    # ── OBRA ACCESORIA URBANA ────────────────────────────────────────────────────
+    # % sobre base_ss (misma base que pct_servicios_afectados).
+    # Default 0.0 preserva los 141 casos certificados contra Excel EMASESA.
+    # Rango observado en 7 obras reales: 6-21% PEM; mediana aprox. 14%.
+    pct_obra_accesoria: float = 0.0
+
     # ── SUB-BASE DE PAVIMENTACIÓN ────────────────────────────────────────────
     subbase_aba_item: dict[str, Any] | None = None
     subbase_aba_espesor_m: float = 0.0
