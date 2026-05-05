@@ -20,8 +20,20 @@ y dependencias (F2 necesita saber qué falta, lo cual sale de F1).
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Trazabilidad del Sistema Experto** - Cadena inferencia visible bajo cada alerta, defendible ante tribunal
-- [ ] **Phase 2: Validación y ampliación del catálogo** - Gap analysis 7 obras reales y nuevas variantes en `precios.db`
+- [x] **Phase 1: Trazabilidad del Sistema Experto** - Cadena inferencia persistida en BD para defensa TFG; UI sin expander tecnico (completada 2026-05-05)
+- [x] **Phase 2: Validación y ampliación del catálogo** - Gap analysis 7 obras reales y nuevas variantes en `precios.db` (completada 2026-05-05)
+- [x] **Phase 2.1: Fix del loader BC3 canónico** (INSERTED) - State machine sobre cabeceras EMASESA, `PartidaBC3.capitulo_emasesa` poblado desde texto canónico; diagnóstico reportado en pantalla (completada 2026-05-05)
+- [ ] **Phase 2.2: Cerrar gaps en proyectos individuales** (INSERTED) - Selector fixes + `pct_obra_accesoria` + migraciones m19+ aditivas; preserva 141/141 cuadre Excel certificado
+  - **Wave 1:**
+    - [ ] 02.2-01-PLAN.md — `pct_obra_accesoria` field + bloques.py calc + calculadora.py slider/persistencia
+    - [ ] 02.2-02-PLAN.md — `PartidaSelector.capitulo_emasesa` + filtro canónico-first + 4 fixes MAPPINGS (Santa Gema ABA/SAN, Arsenal y Argentina calzada)
+  - **Wave 2** *(blocked on Wave 1 completion)*:
+    - [x] 02.2-03-PLAN.md — Verificar gap PE-100 DN90 PN16; crear m19 si confirmado; actualizar 5 assertions de `test_db_estructura.py` *(completed 2026-05-05; m19 INSERT OR IGNORE 1839 céntimos, tiebreaker order_by, 141/141 + 297 passed)*
+    - [ ] 02.2-04-PLAN.md — Append §4.2.7 a `resultados_tfg.md` + checkpoint dual verification (141/141 + notebook)
+  - **Cross-cutting constraints:**
+    - `pytest tests/test_bd_invariante_ci.py -q` debe seguir 141/141 verde tras cada plan
+    - Migraciones únicamente aditivas (`INSERT OR IGNORE`); ninguna modificación de filas existentes en `precios.db`
+    - §4.2.1–§4.2.6 de `resultados_tfg.md` no se reescriben; sólo se añade §4.2.7
 - [ ] **Phase 3: Creación inline de partidas** - `@st.dialog` junto al selectbox y página admin recortada a configuración
 - [ ] **Phase 4: Tests y robustez UX** - AppTest del flujo inline, mensajes legibles, suite limpia para defensa
 
@@ -61,6 +73,23 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] 02-04-PLAN.md — Migraciones m18+: un archivo por catalog gap, precios int(round(val/1.05*100)), registradas en MIGRACIONES
 - [ ] 02-05-PLAN.md — Cierre: tabla gap POST-migraciones + diff, seccion 4.2 en resultados_tfg.md, 5 assertions en test_db_estructura.py actualizadas, pytest verde
 
+### Phase 2.2: Cerrar gaps en proyectos individuales (INSERTED)
+**Goal**: Los gaps de LicitaIA contra los 7 BC3 individuales se reducen para las 3 obras in-scope (Santa Gema, Sarandi, Arsenal) mediante selector fixes y el nuevo parametro `pct_obra_accesoria`, sin alterar la matematica certificada contra el Excel oficial EMASESA (141/141 invariante)
+**Depends on**: Phase 2.1
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06
+**Success Criteria** (what must be TRUE):
+  1. `pytest tests/test_bd_invariante_ci.py -q` sigue 141/141 verde tras todos los cambios
+  2. El selector de Santa Gema `longitud_zanja_san_m` captura correctamente ~247m (era 13m) mediante `capitulo_emasesa='02'` y `agregar=True`
+  3. Los selectores de Arsenal y Argentina `m2_calzada_aba` usan `capitulo_emasesa='03'` en lugar del `capitulo='04'` que no encontraba nada
+  4. La calculadora muestra un slider "Obra accesoria urbana (mobiliario, desvios, pasarelas, zocalos) (%)" con rango 0-25%, default 0%
+  5. Con `pct_obra_accesoria` al percentil observado (mediana aprox. 14%), el gap de las 3 obras in-scope se reduce respecto al estado POST-2
+  6. La seccion 4.2.7 existe en `notebook/resultados_tfg.md` con tabla gap POST-2.2 real (sin placeholders); 4.2.1-4.2.6 intactas
+**Plans**: 4 plans
+- [ ] 02.2-01-PLAN.md — pct_obra_accesoria: campo en ParametrosProyecto + bloque ensamblar_seguridad_gestion + slider UI + persistencia historial
+- [ ] 02.2-02-PLAN.md — Selector fixes: PartidaSelector.capitulo_emasesa + seleccionar_partidas filtro canonico + 4 bugs MAPPINGS (Santa Gema ABA/SAN, Arsenal/Argentina calzada)
+- [x] 02.2-03-PLAN.md — Migraciones m19+ condicionales: verificar catalog gap PE-100 DN90 PN16, crear m19 si ausente, actualizar 5 assertions test_db_estructura *(completed 2026-05-05)*
+- [ ] 02.2-04-PLAN.md — TFG seccion 4.2.7 aditiva + checkpoint dual verification (invariant 141/141 + notebook gap closure)
+
 ### Phase 3: Creación inline de partidas
 **Goal**: El técnico puede crear una nueva variante de catálogo (tubería, acerado, calzada, valvulería, acometida, pozo, imbornal) desde la propia calculadora junto al `selectbox` que falla, sin perder el resto del formulario, y la página de administración queda recortada a porcentajes globales + defaults UI + auditoría drift
 **Depends on**: Phase 2
@@ -94,7 +123,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Trazabilidad del Sistema Experto | 0/4 | Planned | - |
-| 2. Validación y ampliación del catálogo | 0/5 | Planned | - |
+| 1. Trazabilidad del Sistema Experto | 4/4 | Complete | 2026-05-05 |
+| 2. Validación y ampliación del catálogo | 5/5 | Complete | 2026-05-05 |
+| 2.1. Fix del loader BC3 canónico | inline | Complete | 2026-05-05 |
+| 2.2. Cerrar gaps en proyectos individuales | 0/4 | Planned | - |
 | 3. Creación inline de partidas | 0/TBD | Not started | - |
 | 4. Tests y robustez UX | 0/TBD | Not started | - |
