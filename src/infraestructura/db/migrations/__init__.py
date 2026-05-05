@@ -34,6 +34,9 @@ from src.infraestructura.db.migrations import (
     m14_audit_log,
     m15_demolicion_material,
     m16_san_bordillo_generico,
+    m17_cadena_inferencia,
+    m18_cat_aba_fd_dn60,
+    m19_cat_aba_pe100_dn90_pn16,
 )
 
 
@@ -54,4 +57,7 @@ MIGRACIONES = [
     m14_audit_log,
     m15_demolicion_material,
     m16_san_bordillo_generico,
+    m17_cadena_inferencia,
+    m18_cat_aba_fd_dn60,
+    m19_cat_aba_pe100_dn90_pn16,
 ]

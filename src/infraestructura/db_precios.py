@@ -71,10 +71,15 @@ def cargar_todo(path: str | Path | None = None) -> dict:
             precios[row["clave"]] = row["valor"]
 
         # Tuberías (ABA/SAN) - incluye factor_piezas y precio_material_m
+        # Tiebreaker `id` ASC garantiza orden estable cuando hay múltiples
+        # variantes con el mismo `diametro_mm` (p.ej. PE-100 DN90 PN10/PN16
+        # tras m19): la fila canónica certificada (id menor, insertada antes)
+        # sale primero, preservando el contrato de los buscadores que retornan
+        # el primer match (p.ej. _buscar_tuberia en test_bd_invariante_ci).
         precios.update(_cargar_por_red(
             conn, "tuberias",
             "label, tipo, diametro_mm, precio_m, factor_piezas, precio_material_m",
-            "catalogo", order_by="diametro_mm"))
+            "catalogo", order_by="diametro_mm, id"))
         _convertir_filas(precios["catalogo_aba"], _CAMPOS_MONETARIOS["tuberias"])
         _convertir_filas(precios["catalogo_san"], _CAMPOS_MONETARIOS["tuberias"])
         # Valvulería (incluye factor_piezas, precio_material y instalacion nullable)
