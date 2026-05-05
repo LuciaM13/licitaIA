@@ -22,6 +22,18 @@ from src.infraestructura.db import conectar, _TABLAS_PERMITIDAS, _rows_to_dicts,
 logger = logging.getLogger(__name__)
 
 
+# Subconjunto de tablas autorizadas para edición inline (Phase 3 / Plan 03-01).
+# Más restrictivo que `_TABLAS_PERMITIDAS`: solo catálogos de partidas que la
+# UI de la calculadora permite ampliar al vuelo. Excluye tablas estructurales
+# (config, defaults_ui, audit_log, presupuestos*, etc.) y catálogos donde la
+# inserción inline aún no se ha modelado (demolicion, entibacion, subbases,
+# desmontaje, pozos_existentes_precios).
+_TABLAS_INLINE_EDITABLES = frozenset({
+    "tuberias", "valvuleria", "acometidas", "acerados",
+    "bordillos", "calzadas", "pozos", "imbornales",
+})
+
+
 # Campos de precio monetario que se almacenan como INTEGER céntimos en BD.
 # Se dividen por 100 al leer, se multiplican por 100 con round() al escribir.
 _CAMPOS_MONETARIOS = {
@@ -265,6 +277,132 @@ def _escribir_audit_log(conn, eventos, actor):
             "VALUES (?, ?, ?, ?, ?, ?)",
             (categoria, clave, operacion, antes_json, despues_json, actor),
         )
+
+
+# ---------------------------------------------------------------------------
+# API pública para creación inline (Phase 3 / Plan 03-01)
+# ---------------------------------------------------------------------------
+
+def escribir_audit_evento(
+    conn,
+    categoria: str,
+    clave: str,
+    operacion: str,
+    antes_json: str | None,
+    despues_json: str | None,
+    actor: str,
+) -> None:
+    """Escribe UNA fila en ``audit_log`` (wrapper público de 1 evento).
+
+    Args:
+        conn: conexión sqlite abierta (no se cierra aquí; el caller hace commit).
+        categoria: nombre lógico del catálogo (e.g. ``"acerados"``).
+        clave: identificador del item dentro de la categoría (label/tipo/...).
+        operacion: ``"INSERT"``, ``"UPDATE"`` o ``"DELETE"``.
+        antes_json: snapshot serializado pre-cambio (NULL en INSERT).
+        despues_json: snapshot serializado post-cambio (NULL en DELETE).
+        actor: identificador del actor para trazabilidad (e.g. ``"usuario_inline"``).
+
+    Reutiliza el helper privado ``_escribir_audit_log`` con una lista de un
+    solo evento; existe para que la capa de aplicación tenga una API pública
+    de 1 fila sin invocar el helper privado del módulo.
+    """
+    _escribir_audit_log(
+        conn,
+        [(categoria, clave, operacion, antes_json, despues_json)],
+        actor,
+    )
+
+
+def insertar_fila_catalogo(
+    tabla: str,
+    item: dict,
+    actor: str = "usuario_inline",
+    path: str | Path | None = None,
+) -> int:
+    """Inserta UNA fila en ``tabla`` y registra UN evento en ``audit_log``.
+
+    Diferencias frente a ``guardar_todo``:
+      - Es una operación quirúrgica: NO hace DELETE+INSERT masivo del
+        catálogo entero. Preserva los IDs existentes y por tanto NO altera
+        la invariante CI 141/141 del catálogo certificado.
+      - Trabaja sobre el subconjunto ``_TABLAS_INLINE_EDITABLES`` (whitelist
+        restrictiva). Cualquier tabla fuera de ese set produce ``ValueError``.
+
+    Conversión de monetarios:
+      Los campos listados en ``_CAMPOS_MONETARIOS[tabla]`` se convierten de
+      EUR (float) a céntimos (int) con ``_eur_a_cents`` (round bancario).
+      Esta función persiste el precio BASE EMASESA: NO multiplica por
+      ``pct_ci`` (1.05). El cargador aplica el CI en runtime.
+
+    Args:
+        tabla: nombre de la tabla destino (debe estar en
+            ``_TABLAS_INLINE_EDITABLES``).
+        item: dict con las columnas a insertar. La función NO valida la
+            forma del item más allá del whitelist de tabla y la conversión
+            de monetarios; las validaciones de negocio (red obligatoria,
+            duplicado por clave, precio>0) viven en el use case
+            ``src.aplicacion.editar_catalogo.insertar_variante_catalogo``.
+        actor: identificador para ``audit_log`` (default ``"usuario_inline"``).
+        path: ruta a una BD alternativa (sólo tests). ``None`` usa la
+            ``DB_PATH`` real.
+
+    Returns:
+        ``cursor.lastrowid`` del INSERT (int > 0).
+
+    Raises:
+        ValueError: si ``tabla`` no está en ``_TABLAS_INLINE_EDITABLES``.
+    """
+    if tabla not in _TABLAS_INLINE_EDITABLES:
+        raise ValueError(
+            f"tabla '{tabla}' no editable inline; "
+            f"permitidas: {sorted(_TABLAS_INLINE_EDITABLES)}"
+        )
+
+    logger.info(
+        "insertar_fila_catalogo -> tabla=%s, label=%s, actor=%s",
+        tabla, item.get("label", item.get("tipo", "?")), actor,
+    )
+
+    # Convertir monetarios a céntimos (sólo los campos listados como
+    # monetarios para esta tabla; los no-monetarios pasan tal cual).
+    campos_monetarios = _CAMPOS_MONETARIOS.get(tabla, ())
+    item_persistible: dict = {}
+    for col, val in item.items():
+        if col in campos_monetarios:
+            item_persistible[col] = _eur_a_cents(val)
+        else:
+            item_persistible[col] = val
+
+    # INSERT parametrizado dinámico: las columnas vienen de las claves del
+    # item (whitelisted vía _TABLAS_INLINE_EDITABLES y validadas aguas
+    # arriba por el use case). Los valores van por placeholders ?.
+    cols = list(item_persistible.keys())
+    placeholders = ", ".join(["?"] * len(cols))
+    columnas_sql = ", ".join(cols)
+    valores = tuple(item_persistible[c] for c in cols)
+
+    despues_json = json.dumps(item, ensure_ascii=False)
+    clave_audit = str(item.get("label") or item.get("tipo") or "")
+
+    with conectar(path) as conn:
+        cursor = conn.execute(
+            f"INSERT INTO {tabla} ({columnas_sql}) VALUES ({placeholders})",
+            valores,
+        )
+        nuevo_id = cursor.lastrowid
+        escribir_audit_evento(
+            conn,
+            categoria=tabla,
+            clave=clave_audit,
+            operacion="INSERT",
+            antes_json=None,
+            despues_json=despues_json,
+            actor=actor,
+        )
+        conn.commit()
+
+    return int(nuevo_id)
 
 
 def guardar_todo(precios: dict, path: str | Path | None = None, actor: str | None = None) -> None:
