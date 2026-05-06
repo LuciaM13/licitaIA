@@ -330,23 +330,6 @@ CREATE TABLE presupuestos (
     pct_ci      REAL NOT NULL DEFAULT 1.0
 );
 INSERT INTO "presupuestos" VALUES(4,'2026-04-12 11:38:41','',38433.57,4750.74,2192.65,45380.0,9529.8,54909.8,0.13,0.06,0.21,1.0);
-CREATE TABLE schema_version (  version INTEGER PRIMARY KEY,  descripcion TEXT NOT NULL,  aplicada_en TEXT NOT NULL DEFAULT (datetime('now')));
-INSERT INTO "schema_version" VALUES(1,'Columnas nuevas + datos iniciales por defecto','2026-04-11 21:33:38');
-INSERT INTO "schema_version" VALUES(2,'Fix entibación SAN umbral 1.4m y desmontaje DN=150 frontera','2026-04-12 08:50:25');
-INSERT INTO "schema_version" VALUES(3,'Añadir entibación SAN profunda P>=2.5m (22.73 €/m²)','2026-04-12 13:56:14');
-INSERT INTO "schema_version" VALUES(4,'Fix dem acerado base 7.44→14.0; pozos SAN dn_max 2500→9999 para DN>=3000','2026-04-12 14:10:57');
-INSERT INTO "schema_version" VALUES(5,'Eliminar ''Entibación tipo paralelo'' (dead code): profunda SAN ya cubierta por ''Entibación blindada SAN profunda''','2026-04-12 16:00:44');
-INSERT INTO "schema_version" VALUES(6,'Fix precios entibación: base 3.037→4.067 (superf) y 16.167→21.648 (profunda). Los anteriores usaban factor ~1.406 en vez de CI=1.05','2026-04-13 18:59:08');
-INSERT INTO "schema_version" VALUES(7,'Deduplicar demolicion (red, unidad) y añadir unique index','2026-04-15 14:40:22');
-INSERT INTO "schema_version" VALUES(8,'Fix drift Patrón A (18 precios ratio 1.05²) + Gres SAN DN300 aislado','2026-04-19 12:23:54');
-INSERT INTO "schema_version" VALUES(9,'Fix residual mec_hasta_25 (2.92→2.9238) para invariante BD × 1.05 = 3.07','2026-04-19 12:28:28');
-INSERT INTO "schema_version" VALUES(10,'Fix Patrón B imbornales (ratio 1.05³) alineado con Excel oficial','2026-04-19 13:22:37');
-INSERT INTO "schema_version" VALUES(11,'Fix residuales Patrón A en excavación (carga_mec, arrinonado)','2026-04-19 13:28:31');
-INSERT INTO "schema_version" VALUES(12,'CHECK constraints completos en tablas de precios (defensa en profundidad)','2026-04-19 13:31:56');
-INSERT INTO "schema_version" VALUES(13,'Precios a INTEGER céntimos (2 decimales exactos, sin error de float)','2026-04-19 13:38:54');
-INSERT INTO "schema_version" VALUES(14,'Tabla audit_log para trazabilidad (escritura desde guardar_todo)','2026-04-19 13:43:36');
-INSERT INTO "schema_version" VALUES(15,'Demolición con variantes por material (granitico/hidraulico/adoquin/etc.)','2026-04-19 13:50:21');
-INSERT INTO "schema_version" VALUES(16,'Añadir SAN bordillo generico (fallback legacy, mismo precio que ABA)','2026-04-19 14:10:09');
 CREATE TABLE "subbases" (
                 id    INTEGER PRIMARY KEY AUTOINCREMENT,
                 label TEXT NOT NULL UNIQUE,
