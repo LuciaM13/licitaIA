@@ -54,12 +54,12 @@ def test_precios_py_no_tiene_1_05_literal_en_codigo_vivo():
     paquete = _REPO_ROOT / "src" / "catalogo"
     ficheros = sorted(paquete.glob("*.py"))
     assert ficheros, f"paquete vacío: {paquete}"
-    literales_encontrados: list[tuple[str, int, float]] = []
+    literales_encontrados: list[tuple[str, int]] = []
     for fichero in ficheros:
         arbol = ast.parse(fichero.read_text(encoding="utf-8"))
         for nodo in ast.walk(arbol):
             if isinstance(nodo, ast.Constant) and nodo.value == 1.05:
-                literales_encontrados.append((fichero.name, nodo.lineno, nodo.value))
+                literales_encontrados.append((fichero.name, nodo.lineno))
     assert not literales_encontrados, (
         f"Literal 1.05 en código vivo de catálogo: {literales_encontrados}. "
         "Usar PCT_CI_DEFAULT de src.modelo.constantes."
