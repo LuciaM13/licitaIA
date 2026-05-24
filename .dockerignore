@@ -1,60 +1,38 @@
-# Control de versiones
+# El Dockerfile usa COPY explicitos, asi que el "build context" se mantiene
+# pequenio aunque .dockerignore no cubra todo. Estos patrones son red de
+# seguridad para evitar que pycache local entre en la imagen al copiar src/.
+
+# Control de versiones y configuracion git
 .git
 .gitignore
 .gitattributes
 
-# Entornos virtuales y cachés de Python
-.venv
-venv
-env
+# Cachés Python y entornos virtuales
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+.venv
+venv
+env
 .pytest_cache
 .mypy_cache
 .ruff_cache
+
+# Cobertura
+.coverage
+coverage.xml
+htmlcov
 
 # IDE / editores
 .vscode
 .idea
 *.swp
 .DS_Store
+Thumbs.db
+desktop.ini
 
-# Tests (no necesarios para la imagen en producción)
-tests
-.coverage
-htmlcov
-
-# Documentación y notas del TFG (no van en la imagen)
-docs
-*.md
-!requirements.txt
-AGENTS.md
-
-# Snapshots y artefactos de herramientas de desarrollo
-.playwright-mcp
-*.yml
-snapshot*.yml
-snap*.yml
-
-# Excel de auditoría / referencia (no necesario en runtime, 180 KB)
-*.xlsx
-*.xls
-
-# Docker
-Dockerfile
-.dockerignore
-docker-compose*.yml
-# Tarballs de la propia imagen (evita que un `docker save` previo entre
-# recursivamente en el contexto de build y engorde la imagen 1.2 GB).
-*.tar
-
-# Backups locales de la BD (nunca deben entrar a la imagen)
-data/*.bak*
-data/*.db.bak_*
-
-# Secretos (por seguridad — nunca dentro de la imagen)
+# Secretos (defensivo — nunca dentro de la imagen)
 .streamlit/secrets.toml
 .env
 *.env
@@ -62,6 +40,19 @@ data/*.db.bak_*
 # Logs
 *.log
 
-# Directorios de build y plans locales
+# Asistentes / herramientas locales (no deberian estar pero por si acaso)
 .claude
 .anthropic
+.cursor
+.codacy
+.aider*
+.planning
+
+# Docker artefactos
+Dockerfile
+.dockerignore
+*.tar
+
+# Backups locales de BD
+data/*.bak*
+data/*.db.bak_*

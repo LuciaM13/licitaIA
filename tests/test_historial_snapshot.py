@@ -29,8 +29,8 @@ import sqlite3
 
 import pytest
 
-from src.infraestructura.db import DB_PATH
-from src.aplicacion.historial import (
+from src.almacenamiento import DB_PATH
+from src.presupuesto.historial import (
     guardar_presupuesto, obtener_presupuesto, eliminar_presupuesto,
 )
 from tests.helpers import _resultado_minimal
@@ -101,5 +101,86 @@ def test_presupuesto_historico_inmune_a_cambio_precios(bd_aislada):
                 assert cap_info_real["partidas"].get(desc) == pytest.approx(importe, abs=0.01), (
                     f"Partida '{desc}' cambió tras mutar precios."
                 )
+    finally:
+        eliminar_presupuesto(id_p, path=bd_aislada)
+
+
+# ---------------------------------------------------------------------------
+# SE-06: roundtrip de cadena_inferencia + compat hacia atrás
+# ---------------------------------------------------------------------------
+
+
+def test_cadena_inferencia_persiste_y_se_recupera_intacta(bd_aislada):
+    """SE-06: cadena_inferencia se guarda y se recupera sin perder orden ni campos."""
+    resultado = _resultado_minimal()
+    # Sembrar el resultado con una cadena de inferencia conocida.
+    # Mezcla deliberada de etiquetas (CAPA 1/2) y alertas (CAPA 3) para
+    # probar que el campo `nivel` se persiste correctamente.
+    resultado["cadena_inferencia"] = [
+        {
+            "capa": 3,
+            "rule_id": "alerta-fibrocemento-sin-gestion",
+            "nivel": "alerta",
+            "texto": "Regla disparada: alerta-fibrocemento-sin-gestion (Fibrocemento sin gestion ambiental) - CAPA 3.\n  - desmontaje_tipo == fibrocemento.\n  - pct_gestion = 0.00 % == 0.0 %.\nFuente: RD 396/2006",
+            "fuente": "RD 396/2006",
+        },
+    ]
+    parametros = {
+        "aba_longitud_m": "100",
+        "aba_profundidad_m": "2.0",
+        "aba_diametro_mm": "150",
+    }
+    id_p = guardar_presupuesto(
+        resultado, parametros,
+        descripcion="snapshot cadena_inferencia",
+        pct_ci=1.05,
+        path=bd_aislada,
+    )
+    assert id_p > 0
+    try:
+        detalle = obtener_presupuesto(id_p, path=bd_aislada)
+        assert detalle is not None
+        cadena = detalle.get("cadena_inferencia")
+        assert cadena is not None, "obtener_presupuesto no hidrato cadena_inferencia"
+        assert len(cadena) == 1, f"Esperaba 1 item, encontrado {len(cadena)}"
+        # Item unico: alerta capa 3 (tras aplanado del SE, las etiquetas previas no se emiten).
+        assert cadena[0]["rule_id"] == "alerta-fibrocemento-sin-gestion"
+        assert cadena[0]["nivel"] == "alerta"
+        assert cadena[0]["capa"] == 3
+        # Texto y fuente: subcadenas estables.
+        assert "pct_gestion" in cadena[0]["texto"]
+        assert "alerta-fibrocemento-sin-gestion" in cadena[0]["texto"]
+        assert "RD 396/2006" in cadena[0]["texto"]
+        assert cadena[0]["fuente"] == "RD 396/2006"
+    finally:
+        eliminar_presupuesto(id_p, path=bd_aislada)
+
+
+def test_presupuesto_pre_m17_carga_con_cadena_vacia(bd_aislada):
+    """SE-06: presupuestos guardados sin clave `cadena_inferencia` cargan con [] sin error."""
+    resultado = _resultado_minimal()
+    # No incluir la clave en absoluto: simula presupuestos guardados antes
+    # de m17 (la tabla puede existir vacia, pero el resultado de entrada
+    # no tiene la clave).
+    assert "cadena_inferencia" not in resultado
+    parametros = {
+        "aba_longitud_m": "50",
+        "aba_profundidad_m": "1.0",
+        "aba_diametro_mm": "100",
+    }
+    id_p = guardar_presupuesto(
+        resultado, parametros,
+        descripcion="snapshot pre-m17",
+        pct_ci=1.05,
+        path=bd_aislada,
+    )
+    try:
+        detalle = obtener_presupuesto(id_p, path=bd_aislada)
+        assert detalle is not None
+        # La clave debe aparecer hidratada con lista vacia.
+        assert detalle.get("cadena_inferencia") == [], (
+            f"Esperaba lista vacia para presupuesto sin cadena_inferencia, "
+            f"encontrado: {detalle.get('cadena_inferencia')!r}"
+        )
     finally:
         eliminar_presupuesto(id_p, path=bd_aislada)

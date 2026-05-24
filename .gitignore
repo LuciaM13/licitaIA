@@ -73,3 +73,44 @@ desktop.ini
 # Configuración local de Claude Code, Codacy, etc.
 .claude/
 .github/instructions/codacy.instructions.md
+
+# Planning del workflow GSD (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, etc.)
+# Local-only por decisión del usuario; no debe acabar en el repo.
+.planning/
+
+# Notebooks de validación TFG — trabajo local, no van al repo.
+# Los .md exportados sí se versionan (texto, diffable).
+# Los .ipynb se ignoran (JSON con outputs = diffs ilegibles).
+notebook/.ipynb_checkpoints/
+notebook/_*.py
+notebook/*.ipynb
+
+# Scratch local (scripts de generación TFG, capturas, etc.) — no al repo.
+scratch/
+
+# --- Adiciones publicacion publica (2026-05-07) ---
+
+# Blindar xlsx en proyectos individuales (datos no publicos EMASESA)
+data/proyectos_individuales/*.xlsx
+data/proyectos_individuales/*.xls
+
+# Asistentes / herramientas locales
+.anthropic/
+.aider*
+.cursor*
+.codacy*
+
+# Backups y patches
+*.bak
+*.orig
+*.rej
+
+# Build artifacts (preventivo)
+build/
+dist/
+*.egg-info/
+.tox/
+.nox/
+
+# Streamlit cache local
+.streamlit/cache/

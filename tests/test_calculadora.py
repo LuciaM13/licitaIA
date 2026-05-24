@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from helpers import _app_calculadora, _calcular_aba, _calcular_san
-from src.aplicacion.historial import (
+from src.presupuesto.historial import (
     contar_presupuestos, eliminar_presupuesto, listar_presupuestos,
 )
 
@@ -17,8 +17,43 @@ from src.aplicacion.historial import (
 
 def test_calculadora_carga():
     """La pagina de calculadora carga sin excepciones."""
-    at = _app_calculadora().run()
+    # Timeout extendido: el primer .run() en la suite paga el coste de cargar
+    # CLIPS por primera vez (cold start), que excede el default de 3s.
+    at = _app_calculadora().run(timeout=10)
     assert not at.exception
+
+
+@pytest.mark.parametrize("modo", [
+    "Solo Abastecimiento",
+    "Solo Saneamiento",
+    "Abastecimiento + Saneamiento",
+])
+def test_no_alertas_falsas_al_abrir(modo):
+    """Abrir cada modo sin tocar nada NO debe mostrar las falsas alertas
+    'valvuleria sin red ABA' ni 'densidad de acometidas inusual'.
+
+    Regresion de los falsos positivos detectados el 2026-05-23: en SAN-only,
+    el default fantasma instalacion_valvuleria='enterrada' disparaba la
+    R14 y el default acometidas_san_n=26 con aba_longitud_m=0 disparaba
+    densidad anomala. Fix: colapsacion de inputs en motor_clips +
+    eliminacion de R10/R11/R14 + guarda (aba_activa 1) en densidad.
+    """
+    at = _app_calculadora().run(timeout=10)
+    at.radio(key="modo_actuacion").set_value(modo).run()
+    assert not at.exception
+
+    # Las alertas se renderizan como st.warning/error/info con el msg como
+    # primer argumento. Recogemos todos los msgs visibles.
+    msgs = (
+        [w.body for w in at.warning]
+        + [e.body for e in at.error]
+        + [i.body for i in at.info]
+    )
+    msgs_concat = " | ".join(msgs)
+    assert "valvuleria sin red ABA activa" not in msgs_concat, \
+        f"Falso positivo de valvuleria en modo {modo}. Mensajes: {msgs}"
+    assert "Densidad de acometidas inusual" not in msgs_concat, \
+        f"Falso positivo de densidad en modo {modo}. Mensajes: {msgs}"
 
 
 def test_aba_solo_basico():
@@ -287,6 +322,9 @@ def test_guardar_en_historial():
     n_antes = contar_presupuestos()
 
     at.button(key="btn_guardar").click().run()
+    assert contar_presupuestos() == n_antes
+
+    at.button(key="btn_confirmar_guardar_historial").click().run()
     assert not at.exception
 
     n_despues = contar_presupuestos()
@@ -299,6 +337,23 @@ def test_guardar_en_historial():
     if lista:
         eliminar_presupuesto(lista[0]["id"])
         assert contar_presupuestos() == n_antes
+
+
+def test_cancelar_guardar_en_historial_no_persiste():
+    """Cancelar la confirmacion de historial no crea presupuesto."""
+    at = _app_calculadora().run()
+    at = _calcular_aba(at, dn=100, longitud=50.0, profundidad=1.0)
+    assert not at.exception
+    assert "resultado" in at.session_state
+
+    n_antes = contar_presupuestos()
+
+    at.button(key="btn_guardar").click().run()
+    assert not at.exception
+    at.button(key="btn_cancelar_guardar_historial").click().run()
+    assert not at.exception
+
+    assert contar_presupuestos() == n_antes
 
 
 def test_trazabilidad_presente():
@@ -737,4 +792,132 @@ def test_desmontaje_dn_boundary():
     assert tiene_desm, (
         f"DN=150 con desmontaje normal deberia generar partida. "
         f"Partidas: {list(partidas.keys())}"
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Phase 1 — SE-06: cadena de inferencia se inyecta en el resultado para persistir
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_resultado_calculadora_incluye_cadena_inferencia():
+    """SE-06: tras calcular, st.session_state['resultado']['cadena_inferencia'] está poblada.
+
+    La cadena de inferencia del SE (provenance) NO se renderiza en la UI
+    (decisión: las alertas CLIPS ya explican el motivo en lenguaje llano y el
+    detalle técnico sería ruido). Sí se inyecta en el dict de resultado para
+    que `historial.guardar_presupuesto` la persista en m17, donde queda
+    consultable como auditoría TFG vía SQL.
+    """
+    at = _app_calculadora().run()
+
+    # Disparar fibrocemento + pct_gestion=0 para activar la cadena.
+    at.number_input(key="ABAS_longitud").set_value(100.0)
+    at.number_input(key="ABAS_profundidad").set_value(1.2)
+    at.selectbox(key="ABAS_diametro").set_value(150)
+    at.run()
+    at.radio(key="desmontaje_tipo").set_value("fibrocemento").run()
+    at.number_input(key="pct_gestion").set_value(0.0).run()
+
+    at.button(key="btn_calcular").click().run()
+    assert not at.exception, at.exception
+    assert "resultado" in at.session_state
+
+    cadena = at.session_state["resultado"].get("cadena_inferencia")
+    assert cadena is not None, "Falta la clave cadena_inferencia en el resultado"
+    assert len(cadena) >= 1, f"Esperaba al menos 1 item (alerta), encontrado {len(cadena)}"
+
+    rule_ids = {item["rule_id"] for item in cadena}
+    assert "obra-regulada-amianto" not in rule_ids  # tras aplanado del SE, las etiquetas previas no se emiten
+    assert "alerta-fibrocemento-sin-gestion" in rule_ids
+
+    alerta_item = next(it for it in cadena if it["rule_id"] == "alerta-fibrocemento-sin-gestion")
+    assert alerta_item["capa"] == 3
+    assert alerta_item["nivel"] == "alerta"
+    assert "pct_gestion" in alerta_item["texto"]
+    assert ("0.00" in alerta_item["texto"]) or ("0.0" in alerta_item["texto"])
+    assert alerta_item["fuente"] == "RD 396/2006"
+
+
+def test_metarregla_render_separado_de_alertas_base():
+    """SE-07: cuando dispara `alerta-meta-proyecto-alto-riesgo`, su mensaje NO
+    aparece en la lista plana de st.warning/error; en su lugar se renderiza en
+    un bloque st.markdown destacado con el rotulo 'Diagnostico combinado'.
+
+    Escenifica el encadenamiento forward chaining en la UI: las alertas base
+    actuan como premisas (lista plana arriba) y la metarregla como conclusion
+    de orden superior (bloque destacado abajo). Sin esta separacion, la
+    metarregla se confunde con una alerta base mas y se pierde su valor
+    semantico como agregada.
+    """
+    at = _app_calculadora().run(timeout=10)
+
+    # Disparar combinacion ?r1 (geometrico) + ?r3 (amianto):
+    #   profundidad 4.0 m + S&S 2.5 % -> alerta-blindaje-necesario
+    #   desmontaje fibrocemento + G.A. 0 % -> alerta-fibrocemento-sin-gestion
+    #   desmontaje fibrocemento + S&S 2.5 % < 4 % -> alerta-amianto-sin-margen-seguridad
+    # Estas tres alertas base activan la metarregla A AND (B OR C).
+    at.number_input(key="ABAS_longitud").set_value(100.0)
+    at.number_input(key="ABAS_profundidad").set_value(4.0)
+    at.selectbox(key="ABAS_diametro").set_value(100)
+    at.run()
+    at.number_input(key="pct_seguridad").set_value(2.5).run()
+    at.number_input(key="pct_gestion").set_value(0.0).run()
+    at.radio(key="desmontaje_tipo").set_value("fibrocemento").run()
+    assert not at.exception, at.exception
+
+    # Recoger todos los msgs visibles en componentes nativos de alerta.
+    msgs_warning = [w.body for w in at.warning]
+    msgs_error = [e.body for e in at.error]
+    msgs_alerta_plana = msgs_warning + msgs_error
+
+    # La metarregla NO debe aparecer en la lista plana de alertas base.
+    META_MSG_FRAGMENT = "Proyecto de alto riesgo"
+    assert not any(META_MSG_FRAGMENT in m for m in msgs_alerta_plana), (
+        f"La metarregla aparece como alerta plana, deberia estar en bloque "
+        f"destacado. Alertas planas: {msgs_alerta_plana}"
+    )
+
+    # Las base que la activaron SI deben aparecer en la lista plana.
+    assert any("blindaje" in m.lower() for m in msgs_alerta_plana), (
+        f"Falta alerta base 'blindaje-necesario'. Alertas: {msgs_alerta_plana}"
+    )
+    assert any("fibrocemento" in m.lower() for m in msgs_alerta_plana), (
+        f"Falta alerta base 'fibrocemento-sin-gestion'. Alertas: {msgs_alerta_plana}"
+    )
+
+    # El bloque destacado debe contener el rotulo + el mensaje de la meta.
+    msgs_markdown = [m.value for m in at.markdown]
+    assert any("Diagnóstico combinado" in m for m in msgs_markdown), (
+        f"Falta el rotulo 'Diagnostico combinado' en st.markdown."
+    )
+    assert any(META_MSG_FRAGMENT in m for m in msgs_markdown), (
+        f"Falta el mensaje de la metarregla en st.markdown."
+    )
+    # La clase CSS que diferencia el bloque debe estar inyectada.
+    assert any("licitaia-meta-conclusion" in m for m in msgs_markdown), (
+        f"Falta la clase CSS 'licitaia-meta-conclusion' en el bloque destacado."
+    )
+
+
+def test_metarregla_no_dispara_no_hay_bloque_destacado():
+    """SE-07 (complemento): si la metarregla NO dispara, el bloque destacado
+    'Diagnostico combinado' no aparece en absoluto (no debe colarse vacio).
+    """
+    at = _app_calculadora().run(timeout=10)
+
+    # Caso simple: ABA basica sin desmontaje, sin profundidad critica.
+    # Solo se podria disparar como mucho una alerta base, nunca la meta.
+    at.number_input(key="ABAS_longitud").set_value(50.0)
+    at.number_input(key="ABAS_profundidad").set_value(1.2)
+    at.selectbox(key="ABAS_diametro").set_value(100)
+    at.run()
+    assert not at.exception, at.exception
+
+    msgs_markdown = [m.value for m in at.markdown]
+    assert not any("Diagnóstico combinado" in m for m in msgs_markdown), (
+        "El bloque 'Diagnostico combinado' aparece cuando no deberia."
+    )
+    assert not any("licitaia-meta-conclusion" in m for m in msgs_markdown), (
+        "La clase CSS de bloque destacado se inyecto sin metarregla activa."
     )

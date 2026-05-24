@@ -1,0 +1,240 @@
+# =====================================================================
+# GOB.24.059 Calle Baloncesto - experimento de validacion TFG
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.24.059 Calle Baloncesto.xlsx (Hoja1)
+#   - Dump: .planning/research/validacion/_dump_GOB.24.059.json
+#   - Mapeo labels: .planning/research/validacion/mapeo_labels.md
+#
+# Caracterizacion: relining_principal. ABA puro (no SAN). La unica
+# tuberia de longitud real es ULLAST001 (Renovacion FC mediante Relining
+# con PEAD PE 100 DN 90, 586 m). El resto son taponamientos puntuales,
+# valvulas, conexiones y acometidas. NO hay tuberia de instalacion
+# nueva en zanja.
+#
+# Receta canary GOB.25.026 aplicada con caveat: el modelo LicitaIA esta
+# pensado para instalacion nueva, no Relining. Se modela la ABA con la
+# longitud y DN del Relining, pero se espera gap en el coste de tuberia
+# (precio Relining 39,49 EUR/m << coste FD instalado en zanja).
+#
+# Numeracion real de capitulos en el Excel (NO coincide con la canonica
+# 03/08 sugerida en la receta):
+#   01 OBRA CIVIL ABASTECIMIENTO       78.899,24 EUR
+#   02 PAVIMENTACION ABASTECIMIENTO    20.451,93 EUR
+#   03 ACOMETIDAS ABASTECIMIENTO       30.186,03 EUR
+#   05 SEGURIDAD Y SALUD                3.500,00 EUR
+#   06 GESTION AMBIENTAL               12.462,80 EUR
+#   TOTAL                             145.500,01 EUR
+# Cap "11" NO existe como top: las partidas 11.x estan dispersas entre
+# caps 01 y 02. Cada una se lista en partidas_fuera_alcance.
+# =====================================================================
+
+expediente: GOB.24.059
+nombre: "Calle Baloncesto"
+fuente_xlsx: "data/proyectos_individuales/GOB.24.059 Calle Baloncesto.xlsx"
+
+tipo_obra: relining_principal
+
+# No hay capitulos enteros excluidos (cap 11 disperso se gestiona partida a partida).
+capitulos_fuera_alcance: []
+
+# Partidas individuales fuera del alcance del modelo. Justificacion:
+#   - Partidas 11.x dispersas (cap 11 no es top) gestionadas como alzadas.
+#   - Variantes especificas no presentes en el catalogo canonico LicitaIA.
+#   - Operaciones complementarias (provisionales, conexiones FC-PE,
+#     desplazamiento maquinaria) que el modelo LicitaIA no parametriza.
+partidas_fuera_alcance:
+  # Cap 01 - alzadas 11.x dispersas (servicios afectados, accesos):
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA)"
+    importe: 4200.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.015"
+    desc: "Localizacion y proteccion servicios afectados abastecimiento (PA)"
+    importe: 6510.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  # Cap 02 - alzadas 11.x dispersas (mobiliario, zocalos, desvios):
+  - codigo: "11.1.010"
+    desc: "Reparacion mobiliario urbano (PA)"
+    importe: 3675.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.040"
+    desc: "Reparacion zocalos (PA)"
+    importe: 5775.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.030"
+    desc: "Desvios y corte de trafico temporal abastecimiento (PA)"
+    importe: 2257.50
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  # Cap 01 - conduccion provisional (no es tuberia definitiva):
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE (566 m)"
+    importe: 6859.92
+    motivo: "PE provisional para mantener servicio durante obra; no es tuberia de instalacion definitiva"
+  # Cap 01 - conexiones PE-FC (operaciones puntuales no modeladas):
+  - codigo: "ULLAST004"
+    desc: "Conexion PE DN 90 - FC DN 200 (2 ud)"
+    importe: 3586.56
+    motivo: "Conexion puntual entre material nuevo y existente; LicitaIA no la parametriza"
+  - codigo: "ULLAST005"
+    desc: "Conexion PE DN 90 - FC DN 100 (2 ud)"
+    importe: 2680.28
+    motivo: "Conexion puntual entre material nuevo y existente; LicitaIA no la parametriza"
+  # Cap 01 - desplazamiento de maquinaria (gasto estructural no modelable):
+  - codigo: "ULLAST003"
+    desc: "Desplazamiento de maquinaria"
+    importe: 5081.01
+    motivo: "Gasto estructural de movilizacion; no parametrizado en LicitaIA"
+  # Cap 01 - taponamientos (no son tuberia de zanja, son operaciones puntuales):
+  - codigo: "3.1.17.025"
+    desc: "Taponamiento FD, DN 60-100 mm (5 ud)"
+    importe: 1317.35
+    motivo: "Taponamiento puntual de red existente; no es tuberia de instalacion nueva"
+  - codigo: "3.1.17.030"
+    desc: "Taponamiento FD, DN 125-150 mm (4 ud)"
+    importe: 1132.68
+    motivo: "Taponamiento puntual de red existente; no es tuberia de instalacion nueva"
+  # Cap 01 - carga y transporte de material aprovechable (logistica fuera de modelo):
+  - codigo: "3.1.1.005"
+    desc: "Carga y transporte material aprovechable (17 expediciones)"
+    importe: 765.51
+    motivo: "Logistica de aprovechamiento de bocas de riego desmontadas; no parametrizado"
+  # Cap 02 - paso peatones granallada (variante especifica fuera de catalogo):
+  - codigo: "4.1.4.110"
+    desc: "Solado paso peatones hormigon granallada boton/direccional 40x60x4,9 (128 m2)"
+    importe: 3370.24
+    motivo: "Variante especifica de baldosa granallada para pasos peatonales; no presente en catalogo acerados_aba canonico"
+
+parametros:
+
+  # -- ABASTECIMIENTO ------------------------------------------------
+  # IMPORTANTE: la unica partida con longitud > taponamiento puntual es
+  # ULLAST001 (Renovacion FC mediante Relining con PEAD PE 100 DN 90,
+  # 586 m, 39,49 EUR/m, total 23.141,14 EUR). Se modela como PE-100
+  # DN 90 segun mapeo (PEAD insertado -> PE-100, con caveat: es Relining,
+  # no instalacion nueva). El catalogo LicitaIA fija precio de instalacion
+  # nueva en zanja, que sobreestimara este coste; la diferencia esperada
+  # es atribuible a la cobertura del catalogo (no se modela Relining).
+  aba:
+    tipo: PE-100
+    dn: 90
+    longitud_m: 586.0       # ULLAST001: Renovacion FC mediante Relining
+    profundidad_m: 1.40     # default conservador; el Excel no especifica
+                            # profundidad para Relining (catas a 1,0-1,5 m)
+                            # TODO: confirmar con memoria del expediente
+
+  # Sin SAN (proyecto solo abastecimiento)
+
+  # -- PAVIMENTACION ABA ---------------------------------------------
+  # Totales reales del cap 02 (Excel filas 148-245).
+  # Reposicion (no demolicion):
+  #   - calzada: 4 m3 base HM-20 (4.2.005) -> NO hay m2 reposicion calzada;
+  #     solo hay base de hormigon en posibles afecciones. Se usa el m2
+  #     de demolicion calzada (1.1.05) = 30 m2 como proxy de la superficie
+  #     real afectada.
+  #   - acerado: 54.345 m2 cigarrillo (4.1.4.040)
+  #   - bordillo: 12 m bicapa 17x28 (4.3.040)
+  # Demolicion (referencia, no es parametro directo):
+  #   - calzada demolida: 30 m2 (1.1.05) "Posibles Afecciones"
+  #   - acerado demolido: 54.375 m2 (1.2.05)
+  #   - bordillo levantado: 30 m (1.1.45) "Posibles Afecciones"
+  pavimentacion_aba:
+    calzada_m2: 30.0                  # m2 demolicion calzada (proxy reposicion)
+    calzada_label: "Aglomerado"
+    acerado_m2: 54.345                # m2 reposicion baldosa cigarrillo
+    acerado_label: "Baldosa cigarrillo"
+    bordillo_m: 12.0                  # m reposicion bicapa 17x28
+    bordillo_label: "Bordillo bicapa 17x28"
+
+  # -- SUBBASE ABA ---------------------------------------------------
+  # Excel fila 188: 4.2.015 Base albero compactado 65.16 m3
+  # Excel fila 197: 4.2.020 Base de zahorra        12.099 m3
+  # Se mantiene Base albero compactado como label canonico (zahorra no
+  # esta en catalogo_subbases canonico).
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20                   # default EMASESA; no especificado en Excel
+
+  # -- MATERIALES A DEMOLER ------------------------------------------
+  # Defaults estandar EMASESA, ajustados a las descripciones reales:
+  #   - calzada demolida: 30 m2 "aglomerado y hormigon" -> aglomerado
+  #   - acerado demolido: 54.375 m2 "soleria+solera"   -> losa_hidraulica
+  #   - bordillo levantado: 30 m "hidraulico s/ hormigon" -> granitico (default)
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+
+  # -- ACOMETIDAS ----------------------------------------------------
+  # Cap 03 ACOMETIDAS ABASTECIMIENTO (Excel filas 247-256):
+  #   3.1.9.050 (Acom Abto <=63 PE-80 dem y rep <6m): 70 uds @ 424,47 = 29.712,90
+  #   3.1.9.055 (Acom Abto <=63 PE-80 dem y rep >6m):  1 ud  @ 473,13 =    473,13
+  #   Total ABA = 71 uds, importe real = 30.186,03 EUR
+  #
+  # NOTA cobertura catalogo: misma variante "Acom Abto <=63 PE-80 dem
+  # y repos pavto" que en canary GOB.25.026; el catalogo LicitaIA usa
+  # el acometida generico EMASESA (precio infravalora ~). Diferencia
+  # esperada atribuible a cobertura, no a transcripcion.
+  acometidas:
+    aba_n: 71
+    san_n: 0
+
+  # -- PARAMETROS DE OBRA --------------------------------------------
+  # Excavaciones cap 01 (filas 4-31):
+  #   2.2.2.001 manual:    333.9 m3
+  #   2.2.2.005 mecanica:  220.8 m3
+  #   pct_manual = 333.9 / (333.9+220.8) = 0.602
+  # NOTA: ratio inusualmente alto por las catas Relining (excavacion
+  # manual obligada). Se mantiene el valor real derivado.
+  obra:
+    pct_manual: 0.60                  # 333.9 / 554.7 = 0.602 (alto por catas Relining)
+    instalacion_valvuleria: enterrada # Valvulas DN80 (2 ud), DN100 (4 ud), DN200 (2 ud)
+                                      # todas marcadas (enterrada) en descripcion
+    desmontaje_tipo: fibrocemento     # 1.4.040: 36 m de FC < 350 mm con riesgo amianto
+    desmontaje_longitud_m: 36.0
+    pozos_existentes_aba: demolicion  # 1.3.05: 10 ud "valvulas existentes"
+    pozos_existentes_aba_n: 10
+    pozos_existentes_san: none
+    espesor_pavimento_m: 0.10         # default EMASESA; no especificado en Excel
+
+  # -- IMBORNALES ----------------------------------------------------
+  # No hay partidas de imbornal en el proyecto.
+  imbornales:
+    tipo: none
+    n: 0
+    nuevo_label: ""
+
+  # -- PORCENTAJES ---------------------------------------------------
+  # IMPORTANTE: porcentajes a 0 segun procedimiento del experimento.
+  # Se ejecuta primero con 0, se lee base_ss del log, y se deriva
+  #   pct_seguridad = _ss_eur_objetivo / base_ss
+  #   pct_gestion  = _ga_eur_objetivo / base_ss
+  #
+  # _ss_eur_objetivo: cap 05 SEGURIDAD Y SALUD = 3.500,00 EUR (S01)
+  # _ga_eur_objetivo: cap 06 GESTION AMBIENTAL = 12.462,80 EUR
+  #   incluye G01 Gestion residuos (3.014,78) + P01 Proteccion Arbolado (9.448,02)
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 3500.00         # cap 05 partida S01
+    _ga_eur_objetivo: 12462.80        # cap 06 = G01 + P01
+
+notas:
+  - "Proyecto RELINING_PRINCIPAL: la unica partida con longitud real es ULLAST001 (586 m PEAD DN90 por Relining, 23.141 EUR). NO hay tuberia de instalacion nueva en zanja."
+  - "Caveat de modelado: LicitaIA fija precio de instalacion nueva. El Relining en el Excel cuesta 39,49 EUR/m; LicitaIA aplicara precio FD/PE-100 de zanja completa (>>39,49). Diferencia esperada atribuible a cobertura del catalogo (Relining no modelado)."
+  - "Profundidad 1.40 m asumida como default conservador. El Excel solo da profundidades de catas (1,0-1,5 m). TODO: confirmar con memoria del expediente."
+  - "pct_manual = 0.60 derivado del cap 01 (333.9 m3 manual / 554.7 m3 total). Ratio alto por catas manuales obligadas para Relining."
+  - "Cap 11 NO es top en este expediente: las 5 partidas 11.x estan dispersas entre caps 01 y 02; cada una listada en partidas_fuera_alcance (suma 22.417,50 EUR)."
+  - "Conduccion provisional PE 3.1.9.020 (566 m, 6.859,92 EUR) fuera de alcance: tuberia provisional para mantener servicio, no instalacion definitiva."
+  - "Conexiones PE-FC (ULLAST004, ULLAST005) fuera de alcance: operaciones puntuales no parametrizadas en LicitaIA."
+  - "Taponamientos FD (3.1.17.025/030, 9 ud, 2.450 EUR) fuera de alcance: operaciones puntuales en red existente, no son tuberia de zanja."
+  - "Desplazamiento maquinaria ULLAST003 (5.081 EUR) fuera de alcance: gasto estructural no parametrizado."
+  - "Carga y transporte material aprovechable 3.1.1.005 (17 ud, 765 EUR) fuera de alcance: logistica de aprovechamiento."
+  - "Paso peatones granallada 4.1.4.110 (128 m2, 3.370 EUR) fuera de alcance: variante especifica no presente en catalogo acerados_aba canonico (mismo criterio que canary GOB.25.026)."
+  - "Acometidas: 71 ud variante 'Acom Abto <=63 mm PE-80 dem/repos pavto' (424-473 EUR/ud); el catalogo LicitaIA usa acometida generico (precio infravalora). Diferencia atribuible a cobertura de catalogo."
+  - "Pavimentacion cap 02 es minima (20.452 EUR de PEM total 145.500): solo afecciones puntuales y reposicion local. La obra principal es Relining sin levantar pavimento."
+  - "Calzada_m2 = 30 m2 usado como proxy: el Excel solo tiene 4 m3 de base HM-20 en calzada; se usa la superficie de demolicion (30 m2 'Posibles Afecciones') como mejor estimacion de m2 calzada afectados."
+  - "Pozos existentes: 10 ud demolidos (1.3.05) etiquetados 'valvulas existentes'. Se mantiene como pozos_existentes_aba=demolicion."
+  - "Desmontaje fibrocemento: 36 m de FC <350 mm (1.4.040) con tratamiento riesgo amianto."
+  - "S&S = 3.500,00 EUR (cap 05 partida S01); GA = 12.462,80 EUR (cap 06 = G01 3.014,78 + P01 9.448,02). P01 incluido siguiendo criterio canary GOB.25.026."

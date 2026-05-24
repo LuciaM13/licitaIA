@@ -82,7 +82,6 @@ CREATE TABLE IF NOT EXISTS acerados (
     label  TEXT NOT NULL,
     unidad TEXT NOT NULL CHECK(unidad IN ('m', 'm2', 'm3', 'ud')),
     precio INTEGER NOT NULL CHECK(precio > 0),
-    factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0),
     UNIQUE(red, label)
 );
 
@@ -91,8 +90,7 @@ CREATE TABLE IF NOT EXISTS bordillos (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     label  TEXT NOT NULL UNIQUE,
     unidad TEXT NOT NULL CHECK(unidad IN ('m', 'm2', 'ud')),
-    precio INTEGER NOT NULL CHECK(precio > 0),
-    factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0)
+    precio INTEGER NOT NULL CHECK(precio > 0)
 );
 
 -- Calzadas
@@ -100,8 +98,7 @@ CREATE TABLE IF NOT EXISTS calzadas (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     label  TEXT NOT NULL UNIQUE,
     unidad TEXT NOT NULL CHECK(unidad IN ('m2', 'm3')),
-    precio INTEGER NOT NULL CHECK(precio > 0),
-    factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0)
+    precio INTEGER NOT NULL CHECK(precio > 0)
 );
 
 -- Espesores de calzada (vinculado a calzadas por ID)
@@ -123,7 +120,6 @@ CREATE TABLE IF NOT EXISTS demolicion (
     unidad TEXT NOT NULL CHECK(unidad IN ('m', 'm2', 'm3', 'ud')),
     material TEXT NOT NULL DEFAULT 'generico',
     precio INTEGER NOT NULL CHECK(precio > 0),
-    factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0),
     UNIQUE(red, unidad, material)
 );
 
@@ -209,6 +205,11 @@ CREATE TABLE IF NOT EXISTS pozos_existentes_precios (
 -- =========================================================================
 -- HISTORIAL DE PRESUPUESTOS GENERADOS
 -- =========================================================================
+-- NOTA: las tablas de historial almacenan importes como REAL (euros),
+-- no como INTEGER en centimos. Es asimetria deliberada con catalogo:
+-- los snapshots historicos preservan exactamente los euros mostrados al
+-- usuario en el momento del calculo, validados contra Excel EMASESA.
+-- No convertir a INTEGER sin re-baselinear test_snapshot_excel.
 
 -- Tabla principal: un registro por presupuesto generado
 CREATE TABLE IF NOT EXISTS presupuestos (

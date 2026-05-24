@@ -142,6 +142,39 @@ a:hover, .stApp a:hover {
   outline: 2px solid var(--emasesa-cyan) !important;
   outline-offset: 2px !important;
 }
+
+/* Bloque de conclusion de orden superior (metarregla del sistema experto).
+   Se renderiza debajo de las alertas base para escenificar la inferencia
+   "premisas -> conclusion". Diferenciado por:
+   - borde izquierdo grueso en cian EMASESA (acento visual fuerte)
+   - fondo sutilmente tintado (degradado horizontal blanco -> ambar muy claro)
+   - etiqueta en mayusculas con letter-spacing (estilo titular de bloque) */
+.licitaia-meta-conclusion {
+  margin-top: 1.1rem;
+  padding: 1.1rem 1.3rem;
+  background: linear-gradient(to right, #FFF8E1, var(--surface));
+  border-left: 6px solid var(--emasesa-cyan-dark);
+  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.licitaia-meta-conclusion .meta-label {
+  font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.10em;
+  color: var(--emasesa-cyan-dark);
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.licitaia-meta-conclusion .meta-msg {
+  font-size: 1.0rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
 </style>
 """
 

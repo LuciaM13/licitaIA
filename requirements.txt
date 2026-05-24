@@ -1,8 +1,8 @@
-# Dependencias de runtime (lo que necesita la imagen Docker para correr la app).
+# Dependencias de runtime de la app Streamlit.
 # Versiones mínimas auditadas contra los 294 tests del proyecto.
-#
-# Para dependencias de desarrollo (pytest, linters, etc.) ver requirements-dev.txt.
 
-streamlit>=1.38,<2.0    # UI framework. Usa st.navigation (≥1.36), st.logo (≥1.37).
-pandas>=2.0,<3.0        # DataFrames para editor de precios (pages/admin_precios.py).
-clipspy>=1.0.6,<2.0     # Motor CLIPS para alertas técnicas (src/reglas/alertas_clips.py).
+streamlit>=1.48,<2.0    # UI framework. Usa st.navigation (≥1.36), st.logo (≥1.37), on_dismiss en @st.dialog (≥1.48).
+pandas>=2.0,<3.0        # DataFrames para editor de precios (pages/configuracion_catalogo.py).
+clipspy>=1.0.6,<2.0     # Motor CLIPS para alertas técnicas (src/sistema_experto/motor_clips.py).
+openpyxl>=3.1,<4.0      # Lectura de Excel BC3 (src/validacion_proyectos/parser_excel.py).
+pyyaml>=6.0,<7.0        # Carga de YAML con parámetros de obras (src/validacion_proyectos/cargador_yaml.py).

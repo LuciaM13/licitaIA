@@ -38,42 +38,37 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 # ``streamlit.testing``; prohibir ``src.ui`` captura ``src.ui.session``.
 
 _REGLAS: list[tuple[str, tuple[str, ...]]] = [
-    # Dominio: ninguna dependencia externa al propio dominio.
-    ("src/domain", (
+    # Modelo (dominio puro): ninguna dependencia externa al propio dominio.
+    ("src/modelo", (
         "streamlit", "clips", "sqlite3",
-    )),
-    # Aplicación: no toca UI ni widgets. Sí puede tocar dominio,
-    # presupuesto (cálculos), reglas (decisor) e infraestructura (el
-    # use case de historial tiene persistencia embebida — aceptado en
-    # ADR-001 como transición pragmática).
-    ("src/aplicacion", (
-        "streamlit",
     )),
     # Presupuesto: cálculos por capítulo, sin CLIPS ni persistencia ni UI.
     ("src/presupuesto", (
         "streamlit", "clips", "sqlite3",
     )),
-    # Infraestructura: adaptadores, no UI.
-    ("src/infraestructura", (
+    # Almacenamiento: capa de persistencia, no UI.
+    ("src/almacenamiento", (
+        "streamlit",
+    )),
+    # Editor de catálogo: caso de uso puro, no debe depender de Streamlit.
+    ("src/catalogo/editor", (
         "streamlit",
     )),
 ]
 
-# Ficheros bajo ``src/reglas`` con reglas específicas: solo
-# ``alertas_clips.py`` puede importar ``clips`` (es su razón de ser).
+# Ficheros bajo ``src/sistema_experto`` con reglas específicas: solo
+# ``motor_clips.py`` puede importar ``clips`` (es su razón de ser).
 _REGLAS_REGLAS: list[tuple[str, tuple[str, ...]]] = [
-    ("src/reglas/decisor.py", ("streamlit", "clips", "sqlite3")),
-    ("src/reglas/explicaciones.py", ("streamlit", "clips", "sqlite3")),
-    ("src/reglas/normalizacion.py", ("streamlit", "clips", "sqlite3")),
-    # Nota: elegibilidad.py y desempates.py se movieron a src/domain/reglas/
-    # en Paso 2 de Fase 3. El chequeo de esa carpeta lo cubre la regla de
-    # ``src/domain`` arriba.
+    ("src/sistema_experto/decisor.py", ("streamlit", "clips", "sqlite3")),
+    ("src/sistema_experto/explicaciones.py", ("streamlit", "clips", "sqlite3")),
+    ("src/sistema_experto/normalizacion.py", ("streamlit", "clips", "sqlite3")),
+    # Nota: elegibilidad.py y desempates.py viven en src/modelo/reglas/. El
+    # chequeo de esa carpeta lo cubre la regla de ``src/modelo`` arriba.
     # templates.py carga las reglas CLIPS como strings; no ejecuta CLIPS.
-    ("src/reglas/templates.py", ("streamlit", "sqlite3")),
-    # motor.py y trazabilidad.py son shims de re-export: no tocan clips
-    # directamente (re-exportan desde decisor/alertas_clips).
-    ("src/reglas/motor.py", ("streamlit", "sqlite3")),
-    ("src/reglas/trazabilidad.py", ("streamlit", "sqlite3")),
+    ("src/sistema_experto/reglas_clips.py", ("streamlit", "sqlite3")),
+    # trazabilidad_clips.py es Python puro: dict estático + formateador.
+    # Provenance del SE para defensa TFG (Phase 1).
+    ("src/sistema_experto/trazabilidad.py", ("streamlit", "clips", "sqlite3")),
 ]
 
 
@@ -84,7 +79,7 @@ _REGLAS_REGLAS: list[tuple[str, tuple[str, ...]]] = [
 # Añadir entradas aquí requiere comentario obligatorio.
 
 _EXCEPCIONES: dict[tuple[str, str], str] = {
-    ("src/reglas/alertas_clips.py", "clips"):
+    ("src/sistema_experto/motor_clips.py", "clips"):
         "Razón de ser del fichero: es el único adaptador al motor CLIPS.",
 }
 
@@ -115,7 +110,11 @@ def _imports_top_level(ruta: Path) -> list[tuple[int, str]]:
 def _ficheros_bajo(directorio: str) -> list[Path]:
     ruta = _REPO_ROOT / directorio
     if not ruta.exists():
-        return []
+        raise FileNotFoundError(
+            f"Ruta de capa no existe: {ruta}. "
+            f"Si el refactor movió la capa, actualiza _REGLAS en este archivo. "
+            f"Devolver lista vacía aquí crea tests fantasma que pasan sin verificar nada."
+        )
     return [p for p in ruta.rglob("*.py") if p.name != "__pycache__"]
 
 
@@ -165,7 +164,7 @@ def test_capa_no_cruza_frontera(capa: str, prohibidos: tuple[str, ...]):
 def test_fichero_de_reglas_respeta_prohibiciones(
     ruta_fichero: str, prohibidos: tuple[str, ...],
 ):
-    """Ficheros concretos bajo ``src/reglas/`` con sus prohibiciones específicas."""
+    """Ficheros concretos bajo ``src/sistema_experto/`` con sus prohibiciones específicas."""
     fichero = _REPO_ROOT / ruta_fichero
     if not fichero.exists():
         pytest.skip(f"{ruta_fichero} no existe")
@@ -180,7 +179,7 @@ def test_fichero_de_reglas_respeta_prohibiciones(
         pytest.fail(msg)
 
 
-def test_solo_alertas_clips_importa_clips():
+def test_solo_motor_clips_importa_clips():
     """Verificación positiva: exactamente 1 fichero en src/ importa ``clips``."""
     importadores: list[str] = []
     for fichero in _REPO_ROOT.joinpath("src").rglob("*.py"):
@@ -188,8 +187,8 @@ def test_solo_alertas_clips_importa_clips():
             if mod == "clips":
                 importadores.append(_ruta_relativa(fichero))
                 break
-    assert importadores == ["src/reglas/alertas_clips.py"], (
-        f"Solo 'src/reglas/alertas_clips.py' debe importar clips. Obtenido: {importadores}"
+    assert importadores == ["src/sistema_experto/motor_clips.py"], (
+        f"Solo 'src/sistema_experto/motor_clips.py' debe importar clips. Obtenido: {importadores}"
     )
 
 

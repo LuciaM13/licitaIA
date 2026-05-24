@@ -1,0 +1,211 @@
+# =====================================================================
+# GOB.25.020 Fuselaje - replica del experimento de validacion TFG
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.25.020 Fuselaje.xlsx (Hoja1)
+#   - Dump: .planning/research/validacion/_dump_GOB.25.020.json
+#   - Receta canary: data/proyectos_individuales/parametros/GOB.25.026.yaml
+#
+# Caracterizacion: instalacion nueva pura, ABA puro FD DN100,
+# sin Relining, sin SAN.
+#
+# IMPORTANTE: el README del extractor decia "ABA + SAN" pero la
+# verificacion manual del Excel (filas 3, 129, 185, 191, 197) confirma
+# que NO existe cap top SAN. Los caps top son:
+#   01 OBRA CIVIL ABASTECIMIENTO
+#   02 PAVIMENTACION ABASTECIMIENTO
+#   03 ACOMETIDAS ABASTECIMIENTO
+#   04 SEGURIDAD Y SALUD
+#   05 GESTION AMBIENTAL
+# (Existe 11.1.020 "servicios afectados saneamiento" como PA dentro
+# del cap 01, pero no hay tuberia SAN, ni acometidas SAN, ni pozos SAN
+# en el catalogo de partidas. README desactualizado.)
+# =====================================================================
+
+expediente: GOB.25.020
+nombre: "Fuselaje"
+fuente_xlsx: "data/proyectos_individuales/GOB.25.020 Fuselaje.xlsx"
+
+tipo_obra: instalacion_nueva
+
+# Capitulos enteros excluidos del modelo LicitaIA. En este expediente
+# NO existe cap top "11" separado: las partidas 11.x estan distribuidas
+# dentro de los caps 01 y 02 (servicios afectados, mobiliario, desvios,
+# zocalos, pasarelas). Se gestionan a nivel partida.
+capitulos_fuera_alcance: []
+
+# Partidas individuales fuera del alcance del modelo. Justificacion:
+#   - Variantes especificas no presentes en el catalogo canonico LicitaIA.
+#   - Partidas alzadas / servicios afectados que el modelo LicitaIA no
+#     parametriza (cap 11 disperso).
+partidas_fuera_alcance:
+  # Cap 02 - variantes de pavimentacion no presentes en catalogo:
+  - codigo: "4.1.4.120"
+    desc: "Paso deprimido minusvalidos"
+    importe: 14709.90
+    motivo: "Variante especifica de paso deprimido para minusvalidos (15 ud); no presente en catalogo acerados_aba"
+  # Cap 01 - conduccion provisional (no es tuberia de zanja):
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE"
+    importe: 4290.30
+    motivo: "PE provisional para mantener servicio durante obra; no es tuberia de instalacion definitiva"
+  # Cap 01 - partidas alzadas 11.x dispersas:
+  - codigo: "11.1.015"
+    desc: "Localizacion y proteccion servicios afectados abastecimiento (PA)"
+    importe: 5808.60
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.020"
+    desc: "Localizacion y proteccion servicios afectados saneamiento (PA)"
+    importe: 5841.15
+    motivo: "Partida alzada cap 11; servicios afectados SAN aunque el proyecto no instale red SAN; fuera del modelo LicitaIA"
+  - codigo: "11.1.040"
+    desc: "Reparacion zocalos (PA)"
+    importe: 4890.90
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.025"
+    desc: "A justificar por desvios de trafico (PA)"
+    importe: 5810.56
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.045"
+    desc: "Mobiliario Urbano (PA)"
+    importe: 6322.05
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.030"
+    desc: "Desvios y corte de trafico temporal abastecimiento (PA)"
+    importe: 6405.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA) [cap 01]"
+    importe: 6535.85
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  # Cap 02 - partidas alzadas 11.x dispersas:
+  - codigo: "11.1.010"
+    desc: "Reparacion mobiliario urbano (PA)"
+    importe: 2457.88
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA) [cap 02]"
+    importe: 6535.85
+    motivo: "Partida alzada cap 11; segunda incidencia (en cap 02); fuera del modelo LicitaIA"
+
+parametros:
+
+  # ── ABASTECIMIENTO ──────────────────────────────────────────────────
+  # Tuberias FD detectadas (fila 50, 54, 58):
+  #   FD DN80  L=100,0 m  imp=4541,00
+  #   FD DN100 L=228,5 m  imp=10924,59  <-- principal (mayor longitud y mayor importe)
+  #   FD DN150 L=12,0  m  imp=791,16
+  # Profundidad: titulos de excavacion son "<2,50m" (max). Se asume
+  # mediana 1,20 m como valor conservador y consistente con expedientes
+  # urbanos similares.
+  aba:
+    tipo: FD
+    dn: 100
+    longitud_m: 228.5
+    profundidad_m: 1.20
+
+  # Sin SAN (verificado: no existe cap top SAN en el Excel)
+
+  # ── PAVIMENTACION ABA ───────────────────────────────────────────────
+  # Totales reales del cap 02 (Excel filas 130-175):
+  #   - calzada_m2 = 78,94 m2 (partida 4.1.2.025 "Pavimento adoquin
+  #     hormigon prefabricado 10x20x8")
+  #   - acerado_m2 = 533,71 m2 = 162,5 (4.1.4.060 "Solado baldosa
+  #     hidraulica 40x40x4") + 371,21 (4.1.4.040 "Solado baldosa
+  #     hidraulica tipo cigarrillo 30x30")
+  #   - bordillo_m = 0 (no hay partida de levantado ni reposicion de
+  #     bordillo; se confirma con _descripciones_bordillo_reposicion=[]
+  #     en el dump)
+  pavimentacion_aba:
+    calzada_m2: 78.94
+    calzada_label: "Pavimento adoquin hormigon prefabricado 10x20x8"
+    acerado_m2: 533.71
+    acerado_label: "Baldosa hidraulica 40x40 + cigarrillo 30x30"
+    bordillo_m: 0.0
+    bordillo_label: ""
+
+  # ── SUBBASE ABA ─────────────────────────────────────────────────────
+  # Partida 4.2.015 "Base albero compactado" 147,036 m3 detectada.
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20
+
+  # ── MATERIALES A DEMOLER ────────────────────────────────────────────
+  # Defaults estandar EMASESA, ajustados a las descripciones reales:
+  #   - acerado demolido: 612,65 m2 "soleria+solera" -> losa_hidraulica
+  #   - calzada: no hay partida de demolicion explicita -> aglomerado (default)
+  #   - bordillo: no hay levantado -> default granitico (sin efecto, bordillo_m=0)
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+
+  # ── ACOMETIDAS ──────────────────────────────────────────────────────
+  # Cap 03 ACOMETIDAS ABASTECIMIENTO (Excel fila 186):
+  #   3.1.9.030 "Acom Abto <=63 mm PE-80 sin dem ni repos de pavto <6m"
+  #   medicion = 37 ud, precio = 240,16 EUR, importe total = 8885,92 EUR
+  # Verificado: 37 acometidas reales (no es bug del extractor).
+  # Sin acometidas SAN.
+  acometidas:
+    aba_n: 37
+    san_n: 0
+
+  # ── PARAMETROS DE OBRA ──────────────────────────────────────────────
+  # pct_manual derivado del cap 01 (Excel filas 4-15):
+  #   exc.manual zanjas (2.2.3.2.001):    82,7415 m3
+  #   exc.mecanica zanjas (2.2.3.2.010): 193,0635 m3
+  #   pct_manual = 82,7415 / (82,7415 + 193,0635) = 0,30
+  obra:
+    pct_manual: 0.30
+    instalacion_valvuleria: enterrada    # 2 valv DN80 + 1 valv DN100, todas enterradas
+    desmontaje_tipo: fibrocemento        # partida 3.1.1.035 "Levantado y retirada
+    desmontaje_longitud_m: 7.2           #   tuberia FC <350 mm" L=7,2 m
+    pozos_existentes_aba: none           # no hay partidas de pozo en el Excel
+    pozos_existentes_aba_n: 0
+    pozos_existentes_san: none
+    espesor_pavimento_m: 0.10            # default EMASESA; no especificado en Excel
+
+  # ── IMBORNALES ──────────────────────────────────────────────────────
+  imbornales:
+    tipo: none
+    n: 0
+    nuevo_label: ""
+
+  # ── PORCENTAJES ─────────────────────────────────────────────────────
+  # IMPORTANTE: porcentajes a 0 segun procedimiento del experimento.
+  # Se ejecuta primero con 0, se lee base_ss del log, y se deriva
+  #   pct_seguridad = _ss_eur_objetivo / base_ss
+  #   pct_gestion  = _ga_eur_objetivo / base_ss
+  #
+  # _ss_eur_objetivo: cap 04 SEGURIDAD Y SALUD = partida S01 = 8500,00 EUR
+  #   (Excel fila 195, "Total capitulo 4" = 8500,00).
+  #   El extractor reporto 36472,32 EUR como "ss_eur": valor incorrecto,
+  #   probablemente por clasificar partidas 4.1.x/4.2.x del cap 02
+  #   (PAVIMENTACION) como cap "04". El cap top 04 real solo contiene S01.
+  #
+  # _ga_eur_objetivo: cap 05 GESTION AMBIENTAL = P01 + G01 =
+  #   = 7649,75 (Proteccion Arbolado) + 4420,11 (Gestion residuos)
+  #   = 12069,86 EUR (Excel fila 206, "Total capitulo 5" = 12069,86).
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 8500.00
+    _ga_eur_objetivo: 12069.86
+
+notas:
+  - "Replica del experimento de validacion TFG (canary GOB.25.026), iteracion 1."
+  - "Verificado manualmente: NO existe cap top SAN. README del extractor desactualizado."
+  - "Tuberia ABA principal: FD DN100 L=228,5 m (mayor longitud entre las 3 variantes FD)."
+  - "Profundidad 1.20 m asumida como mediana del rango '<2,50m' visible en titulos de excavacion. Revisar si memoria del expediente da otro valor."
+  - "Espesor subbase 0.20 m: default EMASESA; el Excel no lo especifica."
+  - "Espesor pavimento 0.10 m: default EMASESA; el Excel no lo especifica."
+  - "pct_manual = 0.30 derivado del cap 01 (exc_manual / (manual+mecanica) zanjas)."
+  - "calzada_m2 = 78.94 (4.1.2.025 adoquin hormigon); acerado_m2 = 533.71 (4.1.4.060 + 4.1.4.040)."
+  - "bordillo_m = 0: no hay partida de levantado ni reposicion de bordillo en el Excel."
+  - "Acometidas ABA = 37 (verificado, partida unica 3.1.9.030 a 240,16 EUR/ud, total 8885,92 EUR)."
+  - "S&S = 8500 EUR (S01 cap 04). El extractor reporto 36472 EUR: valor incorrecto por clasificacion erronea de partidas 4.x del cap 02."
+  - "GA = 12069,86 EUR (cap 05 = P01 Proteccion Arbolado 7649,75 + G01 Gestion residuos 4420,11)."
+  - "Cap 11 (50607,84 EUR) en este expediente NO es un cap top separado: 9 partidas 11.x dispersas entre caps 01 y 02; cada una listada en partidas_fuera_alcance."
+  - "Hay 1 hidrante DN100 (3.1.8.040, 2 ud) y 6 tomas de agua (3.1.7.050) que el modelo LicitaIA puede o no parametrizar; se incluyen dentro del alcance del cap 01."
+  - "Desmontaje fibrocemento: 7,2 m (3.1.1.035 'Levantado y retirada tuberia FC <350 mm')."

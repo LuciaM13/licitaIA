@@ -19,7 +19,7 @@ from __future__ import annotations
 import inspect
 import typing
 
-from src.domain.tipos import (
+from src.modelo.tipos import (
     ItemCatalogo,
     Precios,
     ResultadoPresupuesto,
@@ -73,14 +73,14 @@ def test_capitulo_obra_civil_firma_usa_itemcatalogo_y_precios():
 
 
 def test_calcular_presupuesto_firma_devuelve_resultadopresupuesto():
-    from src.aplicacion.calcular_presupuesto import calcular_presupuesto
+    from src.presupuesto.orquestador import calcular_presupuesto
     hints = typing.get_type_hints(calcular_presupuesto)
     assert hints["precios_base"] is Precios
     assert hints["return"] is ResultadoPresupuesto
 
 
 def test_elegibilidad_firmas_usan_itemcatalogo():
-    from src.domain.reglas.elegibilidad import (
+    from src.modelo.reglas.elegibilidad import (
         elegibles_entibacion, elegibles_pozos,
         elegibles_valvuleria, elegibles_desmontaje,
     )
@@ -112,7 +112,7 @@ def test_cargar_precios_devuelve_shape_compatible_con_precios():
     No es un check estricto (Precios es ``total=False``) pero sí verifica
     que las claves más importantes del contrato están presentes.
     """
-    from src.infraestructura.precios import cargar_precios
+    from src.catalogo.carga import cargar_precios
     precios = cargar_precios()
     for clave in ("pct_ci", "pct_gg", "pct_bi", "pct_iva",
                   "catalogo_aba", "catalogo_san", "excavacion"):

@@ -1,0 +1,236 @@
+# =====================================================================
+# GOB.25.041 Calle Argentina CR - aplicacion receta canary (mixto)
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.25.041 Calle Argentina CR.xlsx (Hoja1)
+#   - Dump: .planning/research/validacion/_dump_GOB.25.041.json
+#   - Receta canary: GOB.25.026 (Sarandi) iter 2
+#
+# Caracterizacion: obra MIXTA (zanja + relining).
+#   - Relining puro: tuberia PE-100 DN90 PN16 dentro de FC existente
+#     (GOB25041.001, L=625.28 m), conexiones FC-PE y PE-PE.
+#   - Zanja convencional: PE-100 DN90 PN10 (3.1.2.3.015), L=140.09 m,
+#     en sustitucion de tuberia FC existente que se levanta y retira
+#     (1.4.040, L=140.09 m).
+#
+# La tuberia PRINCIPAL en zanja modelable por LicitaIA es la PE-100 DN90
+# PN10 de L=140.09 m. La tuberia relining (625.28 m) y todas sus partidas
+# auxiliares se llevan a fuera_alcance porque LicitaIA no modela relining.
+# =====================================================================
+
+expediente: GOB.25.041
+nombre: "Calle Argentina CR"
+fuente_xlsx: "data/proyectos_individuales/GOB.25.041 Calle Argentina CR.xlsx"
+
+tipo_obra: mixto
+
+# Cap 11 NO existe como capitulo top en este expediente: las partidas 11.x
+# estan distribuidas en caps 01 y 02. Se gestionan a nivel partida.
+capitulos_fuera_alcance: []
+
+# Partidas individuales fuera del alcance del modelo. Justificacion:
+#   - Bloque RELINING completo (tuberia + conexiones FC-PE/PE-PE +
+#     desmontaje FC + demolicion acerado para relining): LicitaIA no
+#     modela rehabilitacion sin zanja; el modelo solo cubre zanja
+#     convencional.
+#   - Cap 11 disperso (PA): mobiliario, servicios afectados, pasarelas,
+#     desvios trafico, reparacion zocalos.
+#   - Conduccion provisional, taponamientos, toma de agua: operaciones
+#     auxiliares no parametrizadas por LicitaIA.
+#   - Variantes especificas no presentes en catalogo (solado paso
+#     peatones granallado, alcorques).
+partidas_fuera_alcance:
+  # Bloque RELINING - tuberia y conexiones FC/PE
+  - codigo: "GOB25041.001"
+    desc: "Tuberia PE-100 DN90 PN16 RELINING (en interior FC existente)"
+    importe: 15375.64
+    motivo: "Relining puro (rehabilitacion sin zanja); LicitaIA no modela esta tecnologia. L=625.28 m."
+  - codigo: "GOB25041.002"
+    desc: "Conexion FC-PE DN100-90 mm"
+    importe: 6598.32
+    motivo: "Conexion auxiliar del relining (8 ud); fuera del alcance del modelo de zanja"
+  - codigo: "GOB25041.003"
+    desc: "Conexion PE-PE DN90-90 mm"
+    importe: 24776.29
+    motivo: "Conexion auxiliar del relining (23 ud); fuera del alcance del modelo de zanja"
+  # Cap 01 - operaciones auxiliares no modeladas
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE"
+    importe: 9643.66
+    motivo: "PE provisional para mantener servicio durante obra; no es tuberia de instalacion definitiva (mismo criterio canary)"
+  - codigo: "3.1.17.050"
+    desc: "Taponamientos provisionales y/o definitivos"
+    importe: 4921.15
+    motivo: "Operacion auxiliar de obra (13 ud); LicitaIA no la parametriza"
+  - codigo: "3.1.7.050"
+    desc: "Toma de agua en red de agua potable"
+    importe: 2941.30
+    motivo: "Operacion auxiliar (10 ud); LicitaIA no la parametriza"
+  - codigo: "3.1.1.015"
+    desc: "Plano liquidacion redes con cotas y coordenadas"
+    importe: 246.35
+    motivo: "Documentacion final de obra; LicitaIA no la parametriza"
+  - codigo: "1.3.10"
+    desc: "Demolicion elementos hormigon en masa o armado"
+    importe: 81.15
+    motivo: "Demolicion puntual no modelada (5 m3 por necesidades de obra)"
+  # Cap 02 - variantes especificas y alcorques
+  - codigo: "4.1.4.110"
+    desc: "Solado paso peatones hormigon granallada boton/direccional 40x60x4,9"
+    importe: 1474.48
+    motivo: "Variante especifica (paso peatones granallado, accesibilidad) no presente en catalogo acerados_aba; precio unitario 26,33 EUR/m2 sin equivalente canonico"
+  - codigo: "4.3.130"
+    desc: "Formacion de alcorque 0,8x1 m"
+    importe: 2150.28
+    motivo: "Variante especifica (alcorque con bordillo bicapa+granito) no parametrizada por LicitaIA"
+  # Cap 01 - partidas alzadas 11.x dispersas (servicios afectados / mobiliario):
+  - codigo: "11.1.045"
+    desc: "Mobiliario Urbano (PA)"
+    importe: 6300.00
+    motivo: "Partida alzada cap 11 dispersa; fuera del modelo LicitaIA"
+  - codigo: "11.1.015"
+    desc: "Localizacion y proteccion servicios afectados abastecimiento (PA)"
+    importe: 5250.00
+    motivo: "Partida alzada cap 11 dispersa; fuera del modelo LicitaIA"
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA)"
+    importe: 4200.00
+    motivo: "Partida alzada cap 11 dispersa; fuera del modelo LicitaIA"
+  - codigo: "11.1.025"
+    desc: "A justificar por desvios de trafico (PA)"
+    importe: 6300.00
+    motivo: "Partida alzada cap 11 dispersa; fuera del modelo LicitaIA"
+  # Cap 02 - partida alzada 11.x dispersa
+  - codigo: "11.1.040"
+    desc: "Reparacion zocalos (PA)"
+    importe: 11045.63
+    motivo: "Partida alzada cap 11 dispersa; fuera del modelo LicitaIA"
+
+parametros:
+
+  # -- ABASTECIMIENTO --------------------------------------------------
+  # Tuberia principal en ZANJA: PE-100 DN90 PN10 L=140.09 m (3.1.2.3.015).
+  # NO se modela el relining (625.28 m) ni la FD DN100 L=10 m (10 m por
+  # necesidades de obra, no es la tuberia principal) ni el desague FD DN300
+  # L=1 m (es un desague puntual, no tuberia principal).
+  aba:
+    tipo: PE100
+    dn: 90
+    longitud_m: 140.09       # partida 3.1.2.3.015 "Tuberia PE-100 DN90 PN10"
+    profundidad_m: 0.90      # cuadro mediciones zanja: ancho 0,9 m / prof 0,9 m
+                             # (filas 6 y 31: 140.09 x 0,9 x [0,5..1])
+                             # Suma profundidad fondo+apoyo+arrinonado+relleno
+                             # ~ 0,4+0,5 = 0,9 m. Conservador y derivado de
+                             # geometria real del Excel.
+
+  # Sin SAN
+
+  # -- PAVIMENTACION ABA -----------------------------------------------
+  # Totales reales del cap 02 (Excel filas 124-174):
+  #   - calzada_m2 = 127.52 m2 (1.1.01 demolicion + 4.5.025 reposicion)
+  #     coincide con la unica reposicion de calzada de la obra.
+  #   - acerado_m2 = 475.92 m2 (4.1.4.040 solado cigarrillo, idem demolicion
+  #     acerado 1.2.05 que incluye 0.35*900.89 relining + 160.61 zanja).
+  #     El paso peatones granallado (56 m2, 4.1.4.110) se marca fuera de
+  #     alcance por variante especifica.
+  #   - bordillo_m = 66 m (1.1.45 levantado + 4.3.030 reposicion bicapa)
+  pavimentacion_aba:
+    calzada_m2: 127.52                # 1.1.01 demolicion = 4.5.025 reposicion
+    calzada_label: "Aglomerado"
+    acerado_m2: 475.92                # 4.1.4.040 solado cigarrillo
+    acerado_label: "Baldosa hidraulica cigarrillo 30x30"
+    bordillo_m: 66.0                  # 4.3.030 bordillo bicapa 10x20x100
+    bordillo_label: "Bordillo bicapa 10x20x100"
+
+  # -- SUBBASE ABA -----------------------------------------------------
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20                   # default EMASESA; no especificado en Excel
+
+  # -- MATERIALES A DEMOLER --------------------------------------------
+  # Defaults estandar EMASESA, ajustados a las descripciones reales:
+  #   - calzada demolida: 127.52 m2 "mezcla asfaltica" (1.1.01) -> aglomerado
+  #   - acerado demolido: 475.92 m2 "soleria+solera" (1.2.05)   -> losa_hidraulica
+  #   - bordillo levantado: 66 m "hidraulico s/ hormigon" (1.1.45) -> granitico (default)
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+
+  # -- ACOMETIDAS ------------------------------------------------------
+  # Cap 03 ACOMETIDAS ABASTECIMIENTO (Excel filas 176-180):
+  #   3.1.9.030 (Acom Abto <=63 PE-80 sin dem ni repos pavto <6m): 41 uds
+  #   @ 240.16 = 9846.56 EUR
+  #   Total ABA = 41 uds, importe real = 9.846,56 EUR
+  #
+  # NOTA cobertura catalogo: variante 'sin demolicion ni reposicion de
+  # pavimento' (240.16 EUR/ud) es mas barata que el generico EMASESA.
+  # Diferencia atribuible a cobertura de catalogo, no a transcripcion.
+  acometidas:
+    aba_n: 41
+    san_n: 0
+
+  # -- PARAMETROS DE OBRA ----------------------------------------------
+  obra:
+    pct_manual: 1.00                  # cap 01 partida 2.2.3.2.002:
+                                      # "Exc tierras BAJO RENDIMIENTO,
+                                      #  mayoritariamente manual con
+                                      #  apoyo de pequena maquinaria"
+                                      # Es la unica partida de excavacion
+                                      # del expediente (312.08 m3); 100%
+                                      # bajo rendimiento.
+    instalacion_valvuleria: enterrada # 12 valv DN100 en pozo + 2 valv DN80
+                                      # enterradas + 1 valv DN200 en pozo;
+                                      # mayoria en pozo, pero conservador
+                                      # mantener convencion canary.
+    desmontaje_tipo: fibrocemento     # partida 1.4.040 "Levantado y retirada
+                                      # tuberia FC, DN<=350 mm"
+    desmontaje_longitud_m: 140.09     # 1.4.040 L=140.09 m (zanja); el relining
+                                      # NO requiere desmontaje (se queda dentro
+                                      # del FC existente).
+    pozos_existentes_aba: demolicion  # 1.3.05 "Demolicion pozo registro
+                                      # existente" 10 ud
+    pozos_existentes_aba_n: 10
+    pozos_existentes_san: none
+    espesor_pavimento_m: 0.10         # default EMASESA; no especificado en Excel
+
+  # -- IMBORNALES ------------------------------------------------------
+  imbornales:
+    tipo: none
+    n: 0
+    nuevo_label: ""
+
+  # -- PORCENTAJES -----------------------------------------------------
+  # IMPORTANTE: porcentajes a 0 segun procedimiento del experimento.
+  # Se ejecuta primero con 0, se lee base_ss del log, y se deriva
+  #   pct_seguridad = _ss_eur_objetivo / base_ss
+  #   pct_gestion  = _ga_eur_objetivo / base_ss
+  #
+  # _ss_eur_objetivo: cap 04 SEGURIDAD Y SALUD = S01 = 12.600,00 EUR
+  # _ga_eur_objetivo: cap 05 GESTION AMBIENTAL = G01 (4962.12) +
+  #                    GOB25041.004 Proteccion Arbolado (1000.00) = 5962.12
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 12600.00        # cap 04 partida S01
+    _ga_eur_objetivo: 5962.12         # cap 05 = G01 + GOB25041.004
+
+notas:
+  - "Obra MIXTA: relining (625.28 m PE100 DN90 PN16 dentro de FC existente) + zanja convencional (140.09 m PE100 DN90 PN10 sustituyendo FC). Solo se modela la zanja convencional."
+  - "Tuberia ABA principal: PE-100 DN90 PN10 L=140.09 m (partida 3.1.2.3.015). Es la unica tuberia en zanja del expediente."
+  - "Bloque relining (15375.64 + 6598.32 + 24776.29 = 46750.25 EUR) marcado fuera de alcance: LicitaIA no modela rehabilitacion sin zanja."
+  - "Desmontaje fibrocemento (1.4.040): L=140.09 m, importe 10.450,71 EUR. Coincide exactamente con la longitud de zanja, indicando sustitucion FC->PE 1:1 en zanja."
+  - "Profundidad 0.90 m derivada de geometria zanja en cuadro de mediciones (140.09 m x 0.9 ancho x 0.9 prof; suma de capas apoyo+arrinonado+relleno)."
+  - "Espesor subbase 0.20 m: default EMASESA; el Excel no lo especifica."
+  - "Espesor pavimento 0.10 m: default EMASESA; el Excel no lo especifica."
+  - "pct_manual = 1.00 derivado del cap 01: la unica partida de excavacion (2.2.3.2.002 'bajo rendimiento, mayoritariamente manual') tiene 312.08 m3."
+  - "Bordillo demolido es 'hidraulico sobre hormigon' (66 m); se mantiene default 'granitico' por convencion EMASESA."
+  - "Cap 11 NO es cap top separado: las 5 partidas 11.x (33.095,63 EUR) estan distribuidas entre caps 01 y 02; cada una listada en partidas_fuera_alcance."
+  - "Solado paso peatones granallado (4.1.4.110, 1474.48 EUR) marcado fuera de alcance: variante especifica de accesibilidad no presente en catalogo acerados_aba."
+  - "Alcorques (4.3.130, 2150.28 EUR) marcados fuera de alcance: elemento de jardineria no parametrizado por LicitaIA."
+  - "Conduccion provisional PE (3.1.9.020, 9643.66 EUR) marcada fuera de alcance: tuberia provisional, mismo criterio canary."
+  - "Acometidas: 41 ud variante '<=63 mm PE-80 sin demolicion ni reposicion pavto <6m' (240.16 EUR/ud). Diferencia con generico catalogo atribuible a cobertura, no transcripcion."
+  - "S&S = 12.600,00 EUR (cap 04 S01), GA = 5.962,12 EUR (cap 05 = G01 4962.12 + Proteccion Arbolado GOB25041.004 1000.00)."
+  - "Pozos: 10 demoliciones de pozo existente (1.3.05) + 10 pozos nuevos (3.1.10.050). pozos_existentes_aba_n=10."
+  - "Verificacion suma fuera_alcance: relining bloque (46750.25) + cap11 disperso (33095.63) + auxiliares cap01 (9643.66+4921.15+2941.30+246.35+81.15=17833.61) + variantes cap02 (1474.48+2150.28=3624.76) = 101304.25 EUR. PEM bruto 204192.71, dentro de alcance estimado ~102888.46 EUR."

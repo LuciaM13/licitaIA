@@ -2,9 +2,9 @@
 
 Cubren dos capas:
 
-  - ``src.infraestructura.db_precios.insertar_fila_catalogo`` y
+  - ``src.catalogo.repositorio.insertar_fila_catalogo`` y
     ``escribir_audit_evento`` (helpers públicos de INSERT-único, Tarea 1).
-  - ``src.aplicacion.editar_catalogo.insertar_variante_catalogo``
+  - ``src.catalogo.editor.insertar_variante_catalogo``
     (use case con validaciones, Tarea 2).
 
 Los tests usan una BD temporal por test (``tmp_path`` + ``shutil.copy``)
@@ -51,7 +51,7 @@ def bd_temporal(tmp_path: Path) -> Path:
 
 def test_1_insertar_fila_catalogo_ok(bd_temporal: Path):
     """INSERT en ``acerados`` con item valido -> devuelve lastrowid > 0."""
-    from src.infraestructura.db_precios import insertar_fila_catalogo
+    from src.catalogo.repositorio import insertar_fila_catalogo
 
     item = {"red": "ABA", "label": "test_acerado_a", "unidad": "m2", "precio": 12.34}
     nuevo_id = insertar_fila_catalogo("acerados", item, path=bd_temporal)
@@ -72,7 +72,7 @@ def test_1_insertar_fila_catalogo_ok(bd_temporal: Path):
 
 def test_2_insertar_fila_catalogo_persiste_centimos(bd_temporal: Path):
     """El precio en EUR se persiste como INTEGER centimos (precio*100)."""
-    from src.infraestructura.db_precios import insertar_fila_catalogo
+    from src.catalogo.repositorio import insertar_fila_catalogo
 
     item = {"red": "ABA", "label": "test_centimos", "unidad": "m2", "precio": 12.34}
     nuevo_id = insertar_fila_catalogo("acerados", item, path=bd_temporal)
@@ -91,7 +91,7 @@ def test_2_insertar_fila_catalogo_persiste_centimos(bd_temporal: Path):
 
 def test_3_insertar_fila_catalogo_tabla_no_permitida(bd_temporal: Path):
     """Tablas fuera del whitelist inline rechazan con ValueError legible."""
-    from src.infraestructura.db_precios import insertar_fila_catalogo
+    from src.catalogo.repositorio import insertar_fila_catalogo
 
     with pytest.raises(ValueError) as exc:
         insertar_fila_catalogo(
@@ -104,8 +104,8 @@ def test_3_insertar_fila_catalogo_tabla_no_permitida(bd_temporal: Path):
 
 def test_4_escribir_audit_evento_anade_una_fila(bd_temporal: Path):
     """``escribir_audit_evento`` escribe exactamente +1 fila en audit_log."""
-    from src.infraestructura.db.connection import conectar
-    from src.infraestructura.db_precios import escribir_audit_evento
+    from src.almacenamiento.conexion import conectar
+    from src.catalogo.repositorio import escribir_audit_evento
 
     with sqlite3.connect(str(bd_temporal)) as conn:
         antes = conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
@@ -145,11 +145,11 @@ def test_4_escribir_audit_evento_anade_una_fila(bd_temporal: Path):
 
 def test_5_insertar_variante_catalogo_ok_acerados(bd_temporal: Path, monkeypatch):
     """Caso feliz: acerados ABA con item valido -> id int + audit +1 fila."""
-    from src.infraestructura.db.connection import DB_PATH as MOD_DB_PATH  # noqa
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento.conexion import DB_PATH as MOD_DB_PATH  # noqa
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     with sqlite3.connect(str(bd_temporal)) as conn:
         audit_antes = conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
@@ -183,10 +183,10 @@ def test_5_insertar_variante_catalogo_ok_acerados(bd_temporal: Path, monkeypatch
 
 def test_6_validacion_label_vacio(bd_temporal: Path, monkeypatch):
     """label vacio en tabla cuya unicidad incluye label -> ValueError."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     with pytest.raises(ValueError) as exc:
         insertar_variante_catalogo(
@@ -198,10 +198,10 @@ def test_6_validacion_label_vacio(bd_temporal: Path, monkeypatch):
 
 def test_7_validacion_precio_no_positivo(bd_temporal: Path, monkeypatch):
     """precio <= 0 -> ValueError con mensaje que menciona 'precio'."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     with pytest.raises(ValueError) as exc:
         insertar_variante_catalogo(
@@ -213,10 +213,10 @@ def test_7_validacion_precio_no_positivo(bd_temporal: Path, monkeypatch):
 
 def test_8a_duplicado_tuberias(bd_temporal: Path, monkeypatch):
     """tuberias: dos INSERT con mismo (red, label) -> el segundo lanza."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     base = {"label": "tubo_dup_X", "tipo": "PE-100",
             "diametro_mm": 90, "precio_m": 12.0}
@@ -232,10 +232,10 @@ def test_8a_duplicado_tuberias(bd_temporal: Path, monkeypatch):
 
 def test_8b_duplicado_acometidas(bd_temporal: Path, monkeypatch):
     """acometidas: clave (red, tipo). Sin label."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     insertar_variante_catalogo(
         "acometidas", red="ABA",
@@ -251,10 +251,10 @@ def test_8b_duplicado_acometidas(bd_temporal: Path, monkeypatch):
 
 def test_8c_duplicado_bordillos_solo_label(bd_temporal: Path, monkeypatch):
     """bordillos: unicidad (label,). Misma label distinto unidad -> dup."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     insertar_variante_catalogo(
         "bordillos", red=None,
@@ -270,10 +270,10 @@ def test_8c_duplicado_bordillos_solo_label(bd_temporal: Path, monkeypatch):
 
 def test_8d_pozos_no_chequea_duplicado(bd_temporal: Path, monkeypatch):
     """pozos: _CLAVES_UNICIDAD vacia -> el use case no lanza por duplicado."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     item1 = {"label": "pozo_dup_X", "precio": 100.0, "intervalo": 1.0}
     item2 = {"label": "pozo_dup_X", "precio": 110.0, "intervalo": 2.0}
@@ -287,10 +287,10 @@ def test_8d_pozos_no_chequea_duplicado(bd_temporal: Path, monkeypatch):
 
 def test_9a_red_obligatoria_para_tuberias(bd_temporal: Path, monkeypatch):
     """tuberias en _TABLAS_CON_RED: red=None -> ValueError."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     with pytest.raises(ValueError) as exc:
         insertar_variante_catalogo(
@@ -304,10 +304,10 @@ def test_9a_red_obligatoria_para_tuberias(bd_temporal: Path, monkeypatch):
 
 def test_9b_red_prohibida_para_valvuleria(bd_temporal: Path, monkeypatch):
     """valvuleria fuera de _TABLAS_CON_RED: red != None -> ValueError."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     with pytest.raises(ValueError) as exc:
         insertar_variante_catalogo(
@@ -322,10 +322,10 @@ def test_9b_red_prohibida_para_valvuleria(bd_temporal: Path, monkeypatch):
 
 def test_9c_acometidas_red_obligatoria_ok(bd_temporal: Path, monkeypatch):
     """acometidas exige red; con red valida e item valido -> OK (no lanza)."""
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     nuevo_id = insertar_variante_catalogo(
         "acometidas", red="ABA",
@@ -339,10 +339,10 @@ def test_10_precio_centimos_no_doble_conversion(bd_temporal: Path, monkeypatch):
 
     Confirma que el use case persiste BASE; el CI lo aplica el cargador.
     """
-    from src.infraestructura.db import connection as conn_mod
+    from src.almacenamiento import conexion as conn_mod
     monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
 
-    from src.aplicacion.editar_catalogo import insertar_variante_catalogo
+    from src.catalogo.editor import insertar_variante_catalogo
 
     nuevo_id = insertar_variante_catalogo(
         "acerados", red="ABA",
@@ -358,20 +358,299 @@ def test_10_precio_centimos_no_doble_conversion(bd_temporal: Path, monkeypatch):
     )
 
 
+# ---------------------------------------------------------------------------
+# Plan 03-03 - 5 catalogos restantes (demolicion, subbases, desmontaje,
+# pozos_existentes_precios, espesores_calzada).
+# ---------------------------------------------------------------------------
+
+def test_12_demolicion_ok(bd_temporal: Path, monkeypatch):
+    """demolicion ABA con item valido -> persiste con UNIQUE(red, unidad, material)."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    item = {
+        "label": "test_demol_t12",
+        "unidad": "m2",
+        "material": "granitico",
+        "precio": 22.50,
+    }
+    nuevo_id = insertar_variante_catalogo(
+        "demolicion", red="ABA", item=item, actor="usuario_inline",
+    )
+    assert nuevo_id > 0
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        fila = conn.execute(
+            "SELECT red, label, unidad, material, precio FROM demolicion WHERE id=?",
+            (nuevo_id,),
+        ).fetchone()
+    assert fila == ("ABA", "test_demol_t12", "m2", "granitico", 2250)
+
+
+def test_12b_demolicion_material_generico_rechazado(bd_temporal: Path, monkeypatch):
+    """`generico` queda reservado para filas legacy; alta inline -> ValueError.
+
+    El resto de slugs (incluidos no-canónicos como 'pizarra') se aceptan
+    tras la apertura del set EMASESA en Phase 03-04.
+    """
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    with pytest.raises(ValueError) as exc:
+        insertar_variante_catalogo(
+            "demolicion", red="ABA",
+            item={"label": "lbl", "unidad": "m2",
+                  "material": "generico", "precio": 1.0},
+        )
+    assert "generico" in str(exc.value).lower()
+
+
+def test_12d_demolicion_material_libre_normalizado(bd_temporal: Path, monkeypatch):
+    """Un slug fuera del set canónico EMASESA se acepta tras normalización."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    nuevo_id = insertar_variante_catalogo(
+        "demolicion", red="ABA",
+        item={"label": "demol pizarra roja", "unidad": "m2",
+              "material": "Pizarra Roja", "precio": 9.99},
+    )
+    assert nuevo_id > 0
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        fila = conn.execute(
+            "SELECT material FROM demolicion WHERE id=?", (nuevo_id,),
+        ).fetchone()
+    assert fila == ("pizarra_roja",)
+
+
+def test_12c_demolicion_duplicado(bd_temporal: Path, monkeypatch):
+    """UNIQUE(red, unidad, material) -> segundo INSERT con mismo set lanza."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    # La BD seed puede traer (SAN, m2, adoquin); limpiamos para aislar el test.
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        conn.execute(
+            "DELETE FROM demolicion "
+            "WHERE red='SAN' AND unidad='m2' AND material='adoquin'"
+        )
+        conn.commit()
+
+    base = {"label": "lbl_dup", "unidad": "m2",
+            "material": "adoquin", "precio": 12.0}
+    insertar_variante_catalogo("demolicion", red="SAN", item=dict(base))
+    with pytest.raises(ValueError) as exc:
+        insertar_variante_catalogo(
+            "demolicion", red="SAN",
+            item={**base, "label": "otro_label", "precio": 13.0},
+        )
+    assert "ya existe" in str(exc.value).lower()
+
+
+def test_13_subbases_ok(bd_temporal: Path, monkeypatch):
+    """subbases con label + precio_m3 -> persiste y precio_m3 va a centimos."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    item = {"label": "test_subbase_t13", "precio_m3": 8.75}
+    nuevo_id = insertar_variante_catalogo(
+        "subbases", red=None, item=item, actor="usuario_inline",
+    )
+    assert nuevo_id > 0
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        fila = conn.execute(
+            "SELECT label, precio_m3 FROM subbases WHERE id=?",
+            (nuevo_id,),
+        ).fetchone()
+    assert fila == ("test_subbase_t13", 875)
+
+
+def test_14_desmontaje_ok(bd_temporal: Path, monkeypatch):
+    """desmontaje con label, dn_max, precio_m, es_fibrocemento -> persiste."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    item = {
+        "label": "test_desmont_t14",
+        "dn_max": 250,
+        "precio_m": 4.30,
+        "es_fibrocemento": 0,
+    }
+    nuevo_id = insertar_variante_catalogo(
+        "desmontaje", red=None, item=item, actor="usuario_inline",
+    )
+    assert nuevo_id > 0
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        fila = conn.execute(
+            "SELECT label, dn_max, precio_m, es_fibrocemento "
+            "FROM desmontaje WHERE id=?",
+            (nuevo_id,),
+        ).fetchone()
+    assert fila == ("test_desmont_t14", 250, 430, 0)
+
+
+def test_15_pozos_existentes_ok(bd_temporal: Path, monkeypatch):
+    """pozos_existentes_precios con red + accion -> persiste con UNIQUE(red, accion)."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    # La BD seed puede traer ya las 4 combinaciones canónicas; usamos red=ABA
+    # con accion=demolicion y nos basamos en que el INSERT puede chocar con
+    # UNIQUE: limpiamos primero esa fila si existe.
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        conn.execute(
+            "DELETE FROM pozos_existentes_precios "
+            "WHERE red='ABA' AND accion='demolicion'"
+        )
+        conn.commit()
+
+    item = {"accion": "demolicion", "precio": 250.0, "intervalo_m": 80.0}
+    nuevo_id = insertar_variante_catalogo(
+        "pozos_existentes_precios", red="ABA", item=item, actor="usuario_inline",
+    )
+    assert nuevo_id > 0
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        fila = conn.execute(
+            "SELECT red, accion, precio, intervalo_m "
+            "FROM pozos_existentes_precios WHERE id=?",
+            (nuevo_id,),
+        ).fetchone()
+    assert fila == ("ABA", "demolicion", 25000, 80.0)
+
+
+def test_15b_pozos_existentes_accion_invalida(bd_temporal: Path, monkeypatch):
+    """accion fuera del set canónico (demolicion/anulacion) -> ValueError."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_variante_catalogo
+
+    with pytest.raises(ValueError) as exc:
+        insertar_variante_catalogo(
+            "pozos_existentes_precios", red="ABA",
+            item={"accion": "remodelacion", "precio": 100.0, "intervalo_m": 50.0},
+        )
+    assert "accion" in str(exc.value).lower()
+
+
+def test_16_calzada_con_espesor_ok(bd_temporal: Path, monkeypatch):
+    """insertar_calzada_con_espesor crea ambas filas atomicamente y audita."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_calzada_con_espesor
+
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        audit_antes = conn.execute(
+            "SELECT COUNT(*) FROM audit_log WHERE actor='usuario_inline'"
+        ).fetchone()[0]
+
+    item = {"label": "test_calz_t16", "unidad": "m3", "precio": 35.0}
+    nuevo_id = insertar_calzada_con_espesor(
+        item, espesor_m=0.25, actor="usuario_inline",
+    )
+    assert nuevo_id > 0
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        calzada = conn.execute(
+            "SELECT label, unidad, precio FROM calzadas WHERE id=?",
+            (nuevo_id,),
+        ).fetchone()
+        espesor = conn.execute(
+            "SELECT espesor_m FROM espesores_calzada WHERE calzada_id=?",
+            (nuevo_id,),
+        ).fetchone()
+        audit_despues = conn.execute(
+            "SELECT COUNT(*) FROM audit_log WHERE actor='usuario_inline'"
+        ).fetchone()[0]
+    assert calzada == ("test_calz_t16", "m3", 3500)
+    assert espesor == (0.25,)
+    assert audit_despues == audit_antes + 1
+
+
+def test_16b_calzada_con_espesor_unidad_invalida(bd_temporal: Path, monkeypatch):
+    """insertar_calzada_con_espesor solo aplica a unidad='m3'."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_calzada_con_espesor
+
+    with pytest.raises(ValueError) as exc:
+        insertar_calzada_con_espesor(
+            {"label": "x", "unidad": "m2", "precio": 10.0},
+            espesor_m=0.20,
+        )
+    assert "m3" in str(exc.value).lower()
+
+
+def test_16c_calzada_con_espesor_atomicidad(bd_temporal: Path, monkeypatch):
+    """Si el INSERT en calzadas falla por duplicado, no debe quedar fila
+    huérfana y el audit_log no debe crecer."""
+    from src.almacenamiento import conexion as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", bd_temporal)
+
+    from src.catalogo.editor import insertar_calzada_con_espesor
+
+    item = {"label": "test_calz_dup", "unidad": "m3", "precio": 30.0}
+    insertar_calzada_con_espesor(item, espesor_m=0.20, actor="usuario_inline")
+
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        audit_antes = conn.execute(
+            "SELECT COUNT(*) FROM audit_log WHERE actor='usuario_inline'"
+        ).fetchone()[0]
+
+    with pytest.raises(ValueError):
+        insertar_calzada_con_espesor(
+            dict(item), espesor_m=0.30, actor="usuario_inline",
+        )
+
+    with sqlite3.connect(str(bd_temporal)) as conn:
+        audit_despues = conn.execute(
+            "SELECT COUNT(*) FROM audit_log WHERE actor='usuario_inline'"
+        ).fetchone()[0]
+    assert audit_despues == audit_antes, (
+        "Cancelar por duplicado no debe escribir en audit_log"
+    )
+
+
 def test_11_use_case_no_importa_streamlit():
     """Importar el use case NO debe arrastrar streamlit a sys.modules.
 
     Cubre frontera arquitectonica (test_fronteras_capas verifica AST; este
     verifica el comportamiento en runtime).
-    """
-    # Si streamlit ya estaba cargado por otro test, lo desactivamos para
-    # detectar import accidental al cargar el modulo del use case.
-    sys.modules.pop("streamlit", None)
-    # Reimport limpio
-    sys.modules.pop("src.aplicacion.editar_catalogo", None)
-    import src.aplicacion.editar_catalogo  # noqa: F401
 
-    assert "streamlit" not in sys.modules, (
-        "src.aplicacion.editar_catalogo NO debe importar streamlit "
-        "(frontera de capas test_fronteras_capas.py)."
+    Implementación: subprocess para aislar el sys.modules de este test del
+    resto de la suite. Pop-ear streamlit en el proceso del test rompe el
+    singleton de Streamlit y contamina los AppTest siguientes (test_historial,
+    test_inline_create_dialog).
+    """
+    import subprocess
+    code = (
+        "import sys; "
+        "import src.catalogo.editor; "
+        "assert 'streamlit' not in sys.modules, "
+        "'src.catalogo.editor importa streamlit en runtime'"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=str(_REPO_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, (
+        "src.catalogo.editor NO debe importar streamlit "
+        f"(frontera de capas test_fronteras_capas.py).\nstderr: {result.stderr}"
     )

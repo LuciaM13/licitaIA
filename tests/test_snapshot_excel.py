@@ -27,9 +27,9 @@ import copy
 
 import pytest
 
-from src.domain.parametros import ParametrosProyecto
-from src.infraestructura.precios import cargar_precios, aplicar_ci
-from src.aplicacion.calcular_presupuesto import calcular_presupuesto
+from src.modelo.parametros import ParametrosProyecto
+from src.catalogo.carga import cargar_precios, aplicar_ci
+from src.presupuesto.orquestador import calcular_presupuesto
 
 
 def _hacer_params_referencia(precios: dict) -> ParametrosProyecto:
@@ -80,26 +80,35 @@ def _hacer_params_referencia(precios: dict) -> ParametrosProyecto:
 def test_snapshot_valores_financieros():
     """Verifica que los totales financieros coinciden con el baseline Excel.
 
-    Baseline actualizado 2026-04-19 tras audit A2C:
-    - Acometidas ABA: renombrados tipos y reajustado precio al Excel oficial
-      (Adaptación 32.26, Reposición <6m 261.92, Reposición >6m 326.36 €).
+    Baseline coordinado con notebook/resultados_tfg.md (audit BD-Excel
+    2026-04-19): la aritmética del cálculo está certificada contra el
+    Excel maestro EMASESA. Cualquier divergencia aquí indica regresión.
+
+    Baseline actualizado 2026-04-27 tras audit base GG/BI ABA vs SAN:
+    - Convención EMASESA confirmada con fórmulas del Excel oficial:
+      ABA `=SUM(J57:J60)` excluye e)Materiales de la base GG/BI;
+      SAN `=SUM(J48:J52)` los incluye. LicitaIA antes excluía siempre →
+      infraestimaba GG/BI cuando había red SAN. Corregido en
+      `calcular_presupuesto.py` para excluir solo materiales ABA.
+    - PEM no cambia (58845.26). GG sube 6985.40 → 7041.31 (+55.91 €) por
+      añadir 430.07 € de materiales SAN a la base. BI sube proporcional.
+      PEC sube de 69060 → 69140 tras el ROUNDUP.
+
+    Baseline previo (2026-04-19) tras audit A2C:
+    - Acometidas ABA: renombrados tipos y reajustado precio al Excel oficial.
       factor_piezas retirado de 1.2 → 1.0 (el Excel ya incluye piezas).
-      Impacto: 3 acometidas × (478.21 - 261.92) = -648.87 € directos.
     - Desmontaje ABA DN<150 y DN<600 corregidos (~22 % sobreprecio).
-    - 15 subcoberturas insertadas (desmontaje DN=160, pozos SAN ladrillo,
-      tuberías ABA HACCH) — no afectan este proyecto (usa FD DN150 y gres).
-    - Impacto neto PEM: -749.42 € vs snapshot previo (59594.68 → 58845.26).
     """
     precios = cargar_precios()
     p = _hacer_params_referencia(precios)
     r = calcular_presupuesto(p, precios)
 
     assert r["pem"] == pytest.approx(58845.26, abs=0.01)
-    assert r["gg"] == pytest.approx(6985.40, abs=0.01)
-    assert r["bi"] == pytest.approx(3224.03, abs=0.01)
-    assert r["pbl_sin_iva"] == pytest.approx(69060.0, abs=0.01)
-    assert r["iva"] == pytest.approx(14502.60, abs=0.01)
-    assert r["total"] == pytest.approx(83562.60, abs=0.01)
+    assert r["gg"] == pytest.approx(7041.31, abs=0.01)
+    assert r["bi"] == pytest.approx(3249.84, abs=0.01)
+    assert r["pbl_sin_iva"] == pytest.approx(69140.0, abs=0.01)
+    assert r["iva"] == pytest.approx(14519.40, abs=0.01)
+    assert r["total"] == pytest.approx(83659.40, abs=0.01)
 
 
 def test_material_demolicion_afecta_total():

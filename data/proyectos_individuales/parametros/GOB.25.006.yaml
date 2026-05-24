@@ -1,0 +1,278 @@
+# =====================================================================
+# GOB.25.006 Calle Santa Gema / Santa Rita - replica de la receta canary
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.25.006 Calle Santa Gema Santa Rita.xlsx (Hoja1)
+#   - Dump:  .planning/research/validacion/_dump_GOB.25.006.json
+#   - Mapeo: .planning/research/validacion/mapeo_labels.md
+#
+# Caracterizacion: instalacion nueva DUAL ABA + SAN, el mas grande y
+# completo de los 7 expedientes (PEM 340.000 EUR).
+#   - ABA: FD DN80 L=200,77m (cabecera) + FD DN60 L=45m (secundaria PN01)
+#   - SAN: Gres DN300 L=246,78m
+# Cap 11 NO existe como cap top separado: las partidas 11.x estan
+# distribuidas por los caps 01, 02, 03, 04. Cada una listada en
+# partidas_fuera_alcance.
+# =====================================================================
+
+expediente: GOB.25.006
+nombre: "Calle Santa Gema Santa Rita"
+fuente_xlsx: "data/proyectos_individuales/GOB.25.006 Calle Santa Gema Santa Rita.xlsx"
+
+tipo_obra: instalacion_nueva
+
+# Cap 11 disperso: las partidas 11.x estan dentro de caps 01/02/03/04.
+# No hay cap top "11" en este expediente; se gestionan a nivel partida.
+capitulos_fuera_alcance: []
+
+# Subtotales reales por cap top (Excel, importes brutos por cap, antes
+# de descontar partidas fuera de alcance):
+#   01 OBRA CIVIL ABA  =  68.130,41
+#   02 OBRA CIVIL SAN  = 123.856,35
+#   03 PAV ABA         =  29.870,74
+#   04 PAV SAN         =  29.032,80
+#   05 ACOM ABA        =  22.208,46
+#   06 ACOM SAN        =  43.893,76
+#   07 S&S             =  10.000,00
+#   08 GA              =  13.007,54
+#   TOTAL              = 339.999,06  (~340.000 EUR PEM)
+
+# Partidas fuera de alcance:
+#   - Cap 11 disperso (PA servicios afectados, mobiliario, desvios, bombeo,
+#     pasarelas, zocalos): ocho partidas en caps 01/02/03/04 = 36.574,55 EUR.
+#   - Variantes no normalizadas que no mapean a catalogo canonico LicitaIA.
+#   - Conduccion provisional PE (no es tuberia definitiva).
+#   - Tuberia secundaria FD DN60 L=45m (PN01): el modelo LicitaIA solo
+#     parametriza UNA tuberia ABA principal; la secundaria queda fuera.
+partidas_fuera_alcance:
+  # Cap 01 - cap 11 disperso (servicios afectados y pasarelas):
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA)"
+    importe: 4515.74
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  - codigo: "11.1.015"
+    desc: "Localizacion y proteccion servicios afectados abastecimiento (PA)"
+    importe: 4725.00
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  # Cap 01 - conduccion provisional (no es tuberia definitiva):
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE"
+    importe: 5626.40
+    motivo: "PE provisional para mantener servicio durante obra; no es tuberia de instalacion definitiva"
+  # Cap 01 - tuberia ABA secundaria (FD DN60 L=45m):
+  - codigo: "PN01"
+    desc: "Tuberia FD, DN 60 mm (Abto.)"
+    importe: 1934.10
+    motivo: "Tuberia ABA secundaria; el modelo LicitaIA parametriza solo la principal (FD DN80 L=200,77m)"
+  # Cap 01 - derivaciones T no normalizadas (codigos PN02/PN03/PN04):
+  - codigo: "PN02_300/80"
+    desc: "Derivacion en T FD, DN 150/80 mm, EEB (NO NORMALIZADO)"
+    importe: 274.16
+    motivo: "Variante no normalizada; sin equivalente canonico en catalogo LicitaIA"
+  - codigo: "PN03_150/80"
+    desc: "Derivacion en T FD, DN 300/100 mm, EEB (NO NORMALIZADO)"
+    importe: 659.00
+    motivo: "Variante no normalizada; sin equivalente canonico en catalogo LicitaIA"
+  - codigo: "PN04_80/80"
+    desc: "Derivacion en T FD, DN 80/80 mm, EEB (NO NORMALIZADO)"
+    importe: 132.54
+    motivo: "Variante no normalizada; sin equivalente canonico en catalogo LicitaIA"
+  # Cap 02 - cap 11 disperso (saneamiento):
+  - codigo: "11.1.060"
+    desc: "Bombeo (PA)"
+    importe: 4725.00
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  - codigo: "11.1.020"
+    desc: "Localizacion y proteccion servicios afectados saneamiento (PA)"
+    importe: 4462.50
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  # Cap 03 - cap 11 disperso (pavimentacion ABA):
+  - codigo: "11.1.010"
+    desc: "Reparacion mobiliario urbano (PA)"
+    importe: 706.86
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  - codigo: "11.1.040"
+    desc: "Reparacion zocalos (PA)"
+    importe: 7825.65
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  - codigo: "11.1.030"
+    desc: "Desvios y corte de trafico temporal abastecimiento (PA)"
+    importe: 4725.00
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+  # Cap 04 - cap 11 disperso (pavimentacion SAN):
+  - codigo: "11.1.035"
+    desc: "Desvios y corte de trafico temporal saneamiento (PA)"
+    importe: 4888.80
+    motivo: "Partida alzada cap 11 disperso; fuera del modelo LicitaIA"
+
+parametros:
+
+  # -- ABASTECIMIENTO --------------------------------------------------
+  # Tuberia principal ABA: FD DN80 L=200,77m (codigo 3.1.2.1.005).
+  # Existe tambien FD DN60 L=45m (PN01) como secundaria; queda fuera
+  # de alcance por restriccion del modelo (1 sola tuberia ABA).
+  aba:
+    tipo: FD
+    dn: 80
+    longitud_m: 200.77
+    profundidad_m: 1.40       # mediana del rango "<2,50m" visible en
+                              # titulos de excavacion (2.2.3.2.001/010).
+
+  # -- SANEAMIENTO -----------------------------------------------------
+  # Tuberia principal SAN: Gres DN300 L=246,78m (codigo 3.2.2.3.020).
+  # Coincide con la longitud de demolicion 3.2.1.045 (HM <500mm 246,78m).
+  san:
+    tipo: Gres
+    dn: 300
+    longitud_m: 246.78
+    profundidad_m: 1.60       # mediana del rango "<2,50m" en exc. cap 02;
+                              # SAN tipicamente mas profundo que ABA.
+
+  # -- PAVIMENTACION ABA ----------------------------------------------
+  # Cap 03 PAV ABA (filas 276-345). Reposiciones reales:
+  #   - 4.3.040 Bordillo bicapa 17x28x100: 60 m
+  #   - 4.2.010 Base hormigon en firmes de acerado: 81,10 m3 (proxy de
+  #     superficie acerado a reponer, usando espesor estandar)
+  #   - 4.2.005 Base hormigon en firmes de calzada: 2,75 m3
+  # Demoliciones (proxy de superficie afectada):
+  #   - 1.1.05 Demolicion pavimento aglomerado y hormigon: 16,50 m2
+  #   - 1.2.05 Demolicion acerado (soleria+solera): 324,42 m2
+  #   - 1.1.45 Levantado bordillo hidraulico sobre hormigon: 57,60 m
+  # NO hay partidas de reposicion final de aglomerado ni soleria (la
+  # capa de rodadura se repone fuera del expediente o con base como
+  # capa estructural). Para el modelo LicitaIA se usan los m2 de
+  # demolicion como medida de superficie afectada por la red ABA.
+  pavimentacion_aba:
+    calzada_m2: 16.5
+    calzada_label: "Aglomerado"
+    acerado_m2: 324.42
+    acerado_label: "Losa hidraulica"
+    bordillo_m: 60.0
+    bordillo_label: "Bordillo bicapa 17x28"
+
+  # -- PAVIMENTACION SAN ----------------------------------------------
+  # Cap 04 PAV SAN (filas 347-385). Reposiciones reales:
+  #   - 4.2.020 Base zahorra:                 81,44 m3
+  #   - 4.2.005 Base hormigon firmes calzada: 117,63 m3
+  # Demolicion:
+  #   - 1.1.05 Demolicion pavimento aglomerado y hormigon: 407,19 m2
+  # NO hay acerado en cap SAN (ruta principal por calzada).
+  # Sin partida de bordillo en cap 04.
+  pavimentacion_san:
+    calzada_m2: 407.19
+    calzada_label: "Aglomerado"
+    acera_m2: 0.0
+    acera_label: ""
+
+  # -- SUBBASE ABA -----------------------------------------------------
+  # Cap 03: Base albero compactado 64,88 m3 (4.2.015) - mapeo directo.
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20            # default EMASESA; no especificado en Excel
+
+  # -- SUBBASE SAN -----------------------------------------------------
+  # Cap 04: Base de zahorra 81,44 m3 (4.2.020). El catalogo LicitaIA
+  # NO tiene "Base de zahorra"; segun mapeo_labels.md se aproxima a
+  # "Base albero compactado" (default subbase EMASESA).
+  subbase_san:
+    label: "Base albero compactado"   # mapeo de "Base de zahorra"
+    espesor_m: 0.20
+
+  # -- MATERIALES A DEMOLER -------------------------------------------
+  # Defaults estandar EMASESA, ajustados a las descripciones reales:
+  #   - calzada ABA demolida (16,5 m2): "aglomerado y hormigon" -> aglomerado
+  #   - acerado ABA demolido (324,42 m2): "soleria+solera"      -> losa_hidraulica
+  #   - bordillo ABA levantado (57,6 m): "hidraulico s/horm."   -> granitico (default)
+  #   - calzada SAN demolida (407,19 m2): "aglomerado y horm."  -> aglomerado
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+    acerado_san: losa_hidraulica
+    calzada_san: aglomerado
+
+  # -- ACOMETIDAS ------------------------------------------------------
+  # Cap 05 ACOMETIDAS ABASTECIMIENTO (filas 386-395):
+  #   3.1.9.050 (Acom Abto <=63 PE-80 dem y rep <6m): 25 uds @ 439,36 = 10.984,00
+  #   3.1.9.055 (Acom Abto <=63 PE-80 dem y rep >6m): 23 uds @ 488,02 = 11.224,46
+  #   Total ABA = 48 uds, importe real = 22.208,46 EUR
+  #
+  # Cap 06 ACOMETIDAS SANEAMIENTO (filas 396-413):
+  #   3.2.6.3.2.1.010 (DN150 L<6m pozo):  2 uds = 1.376,14
+  #   3.2.6.3.2.1.025 (DN150 L<6m red):   2 uds = 1.228,50
+  #   3.2.6.3.2.2.010 (DN200 L<6m pozo): 16 uds = 13.430,56
+  #   3.2.6.3.2.2.025 (DN200 L<6m red):  32 uds = 27.858,56
+  #   Total SAN = 52 uds, importe real = 43.893,76 EUR
+  #
+  # NOTA cobertura catalogo: las variantes ABA <=63 PE-80 dem/repos
+  # pavto y SAN gres DN150/DN200 con/sin reposicion no estan separadas
+  # en el catalogo LicitaIA (acometida generica por red). Diferencia de
+  # precio atribuible a cobertura de catalogo, no a transcripcion.
+  acometidas:
+    aba_n: 48
+    san_n: 52
+
+  # -- PARAMETROS DE OBRA ---------------------------------------------
+  # pct_manual cap 01 (exc. manual / exc. total):
+  #   manual = 189,69 (zanja) + 13,00 (cielo abierto) = 202,69 m3
+  #   mecan. = 243,17 (zanja) + 13,00 (cielo abierto) = 256,17 m3
+  #   total  = 458,86 m3   ->   pct_manual = 202,69 / 458,86 = 0,4416
+  obra:
+    pct_manual: 0.44                  # cap 01: 202,69 m3 manual / 458,86 m3 total
+    instalacion_valvuleria: enterrada # 3 valvulas DN60+DN80 enterradas
+    desmontaje_tipo: fibrocemento
+    desmontaje_longitud_m: 245        # 1.4.040 "Levantado y retirada tuberia FC, DN <350" L=245 m
+    pozos_existentes_aba: demolicion
+    pozos_existentes_aba_n: 2         # cap 01: 2 uds 1.3.05 "Demolicion pozo registro existente"
+    pozos_existentes_san: demolicion
+    pozos_existentes_san_n: 7         # cap 02: 7 uds 1.3.05 (informativo)
+    espesor_pavimento_m: 0.10         # default EMASESA; no especificado en Excel
+
+  # -- IMBORNALES ------------------------------------------------------
+  # Cap 02 fila 249: 25 uds 3.2.4.4.2.020 "Imbornal 60x30cm, Acom. PVC
+  # DN 200m, rejilla D-400, clapeta (horm.pref.)". Coincide con
+  # caracterizacion. Existen ademas 7 demoliciones de imbornal previo
+  # (3.2.4.3.005, fila 139, 344,19 EUR).
+  imbornales:
+    tipo: nuevo
+    n: 25
+    nuevo_label: "Imbornal 60x30cm, Acom. PVC DN 200m, rejilla D-400, clapeta (horm.pref.)"
+
+  # -- PORCENTAJES -----------------------------------------------------
+  # Procedimiento del experimento: porcentajes a 0. Se ejecuta primero
+  # con 0, se lee base_ss del log, y se deriva
+  #   pct_seguridad = _ss_eur_objetivo / base_ss
+  #   pct_gestion   = _ga_eur_objetivo / base_ss
+  #
+  # _ss_eur_objetivo: cap 07 partida S01 = 10.000,00 EUR
+  # _ga_eur_objetivo: cap 08 partida 08.01 = 13.007,54 EUR
+  # _sa_eur_objetivo: cap 11 disperso (informativo, fuera de alcance)
+  #   suma 8 partidas 11.x = 36.574,55 EUR (no 9.187,50; ese era el
+  #   subtotal solo del bloque cap 02 detectado por caracterizacion).
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 10000.00        # cap 07 S01
+    _ga_eur_objetivo: 13007.54        # cap 08 = 08.01
+    _sa_eur_objetivo: 36574.55        # cap 11 disperso (informativo; fuera de alcance)
+
+notas:
+  - "Proyecto DUAL ABA + SAN, el mas completo de los 7 expedientes (PEM 340.000)."
+  - "Tuberia ABA principal: FD DN80 L=200,77m. La secundaria FD DN60 L=45m (PN01) queda fuera de alcance: el modelo LicitaIA parametriza una sola tuberia ABA."
+  - "Tuberia SAN: Gres DN300 L=246,78m (3.2.2.3.020). Confirma con demolicion 3.2.1.045 (HM <500mm) misma longitud."
+  - "Cap 11 NO existe como cap top separado: las partidas 11.x estan distribuidas en caps 01/02/03/04 (8 partidas, total 36.574,55 EUR). Cada una listada en partidas_fuera_alcance."
+  - "Profundidad ABA 1.40 m y SAN 1.60 m: medianas del rango '<2,50m' visible en titulos de excavacion. SAN mas profundo por convencion."
+  - "Espesor subbase 0.20 m y pavimento 0.10 m: defaults EMASESA; el Excel no los especifica."
+  - "pct_manual = 0.44 derivado del cap 01 ABA: 202,69 m3 manual / 458,86 m3 total."
+  - "Pavimentacion ABA: NO hay reposicion final de aglomerado/soleria, solo bases de hormigon. Se usan m2 de demolicion (16,50 calzada / 324,42 acerado / 60 m bordillo nuevo) como medida de superficie afectada."
+  - "Pavimentacion SAN: ruta principal por calzada (407,19 m2 demolicion); sin acerado SAN."
+  - "Subbase SAN: el Excel usa 'Base de zahorra' (4.2.020); el catalogo LicitaIA no la tiene como label, se mapea a 'Base albero compactado' segun mapeo_labels.md."
+  - "Acometidas: ABA 48 uds (25 <6m + 23 >6m) confirmadas; SAN 52 uds (2+2+16+32 entre DN150/DN200, pozo/red) confirmadas. La caracterizacion 48+52 era CORRECTA, no inflada."
+  - "Imbornales: 25 nuevos (3.2.4.4.2.020). Hay tambien 7 demoliciones de imbornal previo (3.2.4.3.005)."
+  - "Pozos existentes ABA: 2 demoliciones (1.3.05 cap 01). Pozos existentes SAN: 7 demoliciones (1.3.05 cap 02). En cap 02 hay ademas 12 pozos NUEVOS (3.2.5.2.040) y 1 acondicionamiento de pozo existente (3.2.5.6.005); ambos forman parte de la red SAN."
+  - "Desmontaje fibrocemento ABA: 245 m (1.4.040 'Levantado y retirada tuberia de FC, DN <350 mm')."
+  - "Variantes ABA no normalizadas (PN02/PN03/PN04: derivaciones T 'NO NORMALIZADO') marcadas fuera de alcance: sin equivalente en catalogo canonico."
+  - "Conduccion provisional PE (3.1.9.020, 5.626,40 EUR) marcada fuera de alcance: tuberia provisional, no instalacion definitiva."
+  - "S&S = 10.000,00 EUR (cap 07 partida S01). GA = 13.007,54 EUR (cap 08 partida 08.01)."
+  - "Subtotales por cap: 01=68.130,41 / 02=123.856,35 / 03=29.870,74 / 04=29.032,80 / 05=22.208,46 / 06=43.893,76 / 07=10.000,00 / 08=13.007,54. Total Excel=339.999,06 (~340.000 EUR PEM)."

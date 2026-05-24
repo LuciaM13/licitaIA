@@ -18,8 +18,8 @@ import math
 import pytest
 
 from src.presupuesto.capitulos_obra_civil import _importe
-from src.aplicacion.calcular_presupuesto import _reresolver_items_ci
-from src.domain.parametros import ParametrosProyecto
+from src.presupuesto.orquestador import _reresolver_items_ci
+from src.modelo.parametros import ParametrosProyecto
 
 
 # ---------------------------------------------------------------------------

@@ -13,8 +13,8 @@ import math
 
 import pytest
 
-from src.domain.geometria import calcular_geometria
-from src.domain.financiero import calcular_resumen
+from src.modelo.geometria import calcular_geometria
+from src.modelo.financiero import calcular_resumen
 from src.presupuesto.materiales import materiales_san
 
 
@@ -138,7 +138,7 @@ def test_financiero_materiales_excluidos():
 def test_ci_no_escala_campos_no_precio():
     """CI no modifica campos no-precio (umbral, factor_piezas, diámetro)."""
     import copy
-    from src.infraestructura.precios import cargar_precios, aplicar_ci
+    from src.catalogo.carga import cargar_precios, aplicar_ci
 
     precios = cargar_precios()
     copia = copy.deepcopy(precios)
@@ -210,7 +210,7 @@ def test_canon_mixto_aba_vs_san():
       SAN H37 = H72*(H63+0.75)
     """
     from src.presupuesto.capitulos_obra_civil import capitulo_obra_civil
-    from src.infraestructura.precios import cargar_precios, aplicar_ci
+    from src.catalogo.carga import cargar_precios, aplicar_ci
     import copy
 
     precios = cargar_precios()

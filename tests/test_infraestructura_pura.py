@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from src.infraestructura.db import DB_PATH, conectar
+from src.almacenamiento import DB_PATH, conectar
 
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -35,22 +35,31 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 
 def test_precios_infraestructura_no_importa_streamlit():
-    """El AST de ``precios.py`` no debe contener ningún ``import streamlit``."""
-    fichero = _REPO_ROOT / "src" / "infraestructura" / "precios.py"
-    arbol = ast.parse(fichero.read_text(encoding="utf-8"))
-    imports_streamlit = []
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, ast.Import):
-            for alias in nodo.names:
-                if alias.name.split(".")[0] == "streamlit":
-                    imports_streamlit.append(alias.name)
-        elif isinstance(nodo, ast.ImportFrom):
-            if (nodo.module or "").split(".")[0] == "streamlit":
-                imports_streamlit.append(nodo.module)
-    assert not imports_streamlit, (
-        f"src/infraestructura/precios.py importa streamlit: {imports_streamlit}. "
-        "La capa de infraestructura debe ser pura; el cache UI vive en src/ui/."
-    )
+    """Los módulos del paquete ``src/catalogo/`` no deben importar ``streamlit``.
+
+    Tras el rediseño arquitectónico: lo que era ``infraestructura/precios.py``
+    ahora vive partido en ``src/catalogo/carga.py`` + ``src/catalogo/guardado.py``.
+    Comprobamos que ninguno de los `.py` directos del paquete (sin descender
+    a subpaquetes ``editor/`` o ``repositorio/``) importa Streamlit.
+    """
+    paquete = _REPO_ROOT / "src" / "catalogo"
+    ficheros = sorted(paquete.glob("*.py"))
+    assert ficheros, f"paquete vacío: {paquete}"
+    for fichero in ficheros:
+        arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+        imports_streamlit = []
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.Import):
+                for alias in nodo.names:
+                    if alias.name.split(".")[0] == "streamlit":
+                        imports_streamlit.append(alias.name)
+            elif isinstance(nodo, ast.ImportFrom):
+                if (nodo.module or "").split(".")[0] == "streamlit":
+                    imports_streamlit.append(nodo.module)
+        assert not imports_streamlit, (
+            f"{fichero.relative_to(_REPO_ROOT)} importa streamlit: {imports_streamlit}. "
+            "La capa de catálogo debe ser pura; el cache UI vive en src/ui/."
+        )
 
 
 def test_cargar_precios_funciona_sin_streamlit_en_subproceso():
@@ -62,7 +71,7 @@ def test_cargar_precios_funciona_sin_streamlit_en_subproceso():
     script = (
         "import sys\n"
         "assert 'streamlit' not in sys.modules, 'streamlit ya está cargado antes del import'\n"
-        "from src.infraestructura.precios import cargar_precios\n"
+        "from src.catalogo.carga import cargar_precios\n"
         "assert 'streamlit' not in sys.modules, 'precios.py cargó streamlit transitivamente'\n"
         "precios = cargar_precios()\n"
         "assert 'pct_ci' in precios\n"

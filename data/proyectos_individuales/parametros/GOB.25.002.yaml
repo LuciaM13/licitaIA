@@ -1,0 +1,182 @@
+# =====================================================================
+# GOB.25.002 Avda Libertad - CASO LIMITE Relining
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.25.002 Avda Libertad.xlsx (Hoja1)
+#   - Dump: .planning/research/validacion/_dump_GOB.25.002.json
+#   - Mapeo labels: .planning/research/validacion/mapeo_labels.md
+#
+# CARACTERIZACION:
+#   PEM bruto = 179.999,99 EUR
+#   Relining PEAD DN110 = 121.104,00 EUR (67 % del PEM)
+#   + Conexiones / taponamientos / afeccion trafico asociados a Relining
+#   = ~144.987,71 EUR fuera de alcance.
+#   Solo se modela la parte de instalacion nueva en zanja:
+#     FD DN150 L=16,5 m en zona "arqueta Bellavista", mas la pequena
+#     obra civil asociada (excavacion, pozos, valvulas/desagues, S&S, GA).
+#
+# DECISION ARQUITECTURAL TFG:
+#   tipo_obra = relining_principal -> el comparador agrega aparte.
+#   Cuadre se reporta sobre el subconjunto modelable (<33 % del PEM).
+# =====================================================================
+
+expediente: GOB.25.002
+nombre: "Avda Libertad"
+fuente_xlsx: "data/proyectos_individuales/GOB.25.002 Avda Libertad.xlsx"
+
+tipo_obra: relining_principal
+
+# Sin capitulos enteros excluidos: el cap top 01 OBRA CIVIL ABASTECIMIENTO
+# mezcla zanja nueva (FD DN150 16,5 m) con todo el aparato de Relining.
+# Se filtra a nivel partida.
+capitulos_fuera_alcance: []
+
+# Partidas de Relining PEAD DN110 y sus operaciones asociadas
+# (conexiones a red existente, taponamientos, conduccion provisional,
+# afeccion al trafico). Tecnica fuera del modelo LicitaIA.
+partidas_fuera_alcance:
+  # --- Relining propiamente dicho ---
+  - codigo: "GOB.05.2025.001"
+    desc: "Relining PEAD 110 mm (L=2400 m)"
+    importe: 121104.00
+    motivo: "Tecnica de rehabilitacion sin zanja, no modelada por LicitaIA"
+  # --- Conexiones del Relining a la red existente ---
+  - codigo: "GOB.05.2025.002"
+    desc: "Conexion PE-FC 110-300 mm"
+    importe: 2249.31
+    motivo: "Conexion del tramo Relining a red FC existente; operativa Relining"
+  - codigo: "GOB.05.2025.003"
+    desc: "Conexion PE-PE 110 mm (5 uds)"
+    importe: 7810.35
+    motivo: "Conexion entre tramos PE del Relining; operativa Relining"
+  - codigo: "GOB.05.2025.004"
+    desc: "Conexion PE-FD 110-600 mm"
+    importe: 7570.30
+    motivo: "Conexion del Relining a red FD existente; operativa Relining"
+  - codigo: "3.1.14.1.030"
+    desc: "Conexion PE-FD DN 110/150/160 mm"
+    importe: 1191.80
+    motivo: "Conexion proyecto-existente asociada al Relining; no acometida domiciliaria"
+  # --- Taponamientos en red existente (cierre tramos sustituidos por Relining) ---
+  - codigo: "3.1.17.065"
+    desc: "Taponamiento HACH DN 600 mm (2 uds)"
+    importe: 1906.74
+    motivo: "Cierre de red existente sustituida por Relining; LicitaIA no parametriza taponamientos"
+  - codigo: "3.1.17.030"
+    desc: "Taponamiento FD DN 125-150 mm (2 uds)"
+    importe: 579.10
+    motivo: "Cierre de red existente sustituida por Relining; LicitaIA no parametriza taponamientos"
+  # --- Operativa global Relining ---
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE (10 m)"
+    importe: 126.00
+    motivo: "Tuberia provisional para mantener servicio durante el Relining; no instalacion definitiva"
+  - codigo: "GOB.05.2025.005"
+    desc: "Afeccion al trafico (PA)"
+    importe: 2488.11
+    motivo: "Partida alzada de senalizacion/balizamiento; LicitaIA no la parametriza"
+  # --- Otros elementos no modelados (a documentar gap) ---
+  - codigo: "3.1.4.2.010"
+    desc: "Ventosa Trifuncional DN 80 mm (2 uds)"
+    importe: 1385.72
+    motivo: "Elemento de aireacion no modelado por LicitaIA en este expediente; trazado mayoritario es Relining"
+  - codigo: "3.1.7.050"
+    desc: "Toma de agua en red de agua potable (2 uds)"
+    importe: 588.26
+    motivo: "Toma para conexion de servicio temporal; asociada a operativa Relining"
+
+parametros:
+
+  # -- ABASTECIMIENTO ---------------------------------------------------
+  # Solo se modela la tuberia FD DN150 nueva en zanja (zona arqueta
+  # Bellavista). Es el UNICO tramo de instalacion definitiva en zanja
+  # del expediente.
+  aba:
+    tipo: FD
+    dn: 150
+    longitud_m: 16.5         # partida 3.1.2.1.020 "Tuberia FD, DN 150 mm (Abto.)"
+    profundidad_m: 1.40      # mediana del rango "<2,50m" visible en titulos
+                             # de excavacion (2.2.3.2.001/010 con altura 1,52 m
+                             # en el desglose). Defendible para TFG.
+
+  # Sin SAN
+
+  # -- PAVIMENTACION ABA ------------------------------------------------
+  # El Excel NO contiene capitulo de pavimentacion (cap 03 es "Gestion
+  # residuos", no pavimentos). El proyecto es mayoritariamente Relining
+  # sin afeccion superficial significativa. Para el tramo modelado
+  # (FD DN150 16,5 m) no hay m2 de calzada/acerado/bordillo desglosados.
+  pavimentacion_aba:
+    calzada_m2: 0.0
+    calzada_label: ""
+    acerado_m2: 0.0
+    acerado_label: ""
+    bordillo_m: 0.0
+    bordillo_label: ""
+
+  # -- SUBBASE ABA ------------------------------------------------------
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20          # default EMASESA; no especificado en Excel
+
+  # -- MATERIALES A DEMOLER ---------------------------------------------
+  # No hay partidas de demolicion de pavimento en el Excel (mas alla del
+  # pozo). Defaults estandar EMASESA por compatibilidad con el modelo.
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+
+  # -- ACOMETIDAS -------------------------------------------------------
+  # El Excel NO contiene capitulo de acometidas domiciliarias.
+  acometidas:
+    aba_n: 0
+    san_n: 0
+
+  # -- PARAMETROS DE OBRA -----------------------------------------------
+  # Cap 01 excavacion ZANJA (DN150 zona arqueta Bellavista):
+  #   2.2.3.2.010 mecanica = 15.048 m3
+  #   2.2.3.2.001 manual   = 10.032 m3
+  #   pct_manual zanja = 10.032 / (15.048 + 10.032) = 0.40
+  # (Excavacion de pozos 100/150 m3 va aparte y corresponde a los 16
+  # pozos del trazado completo.)
+  obra:
+    pct_manual: 0.40
+    instalacion_valvuleria: enterrada   # 10 valvulas DN100 + 1 DN150 en pozos;
+                                        # mayoria enterrada en pozo prefabricado
+    desmontaje_tipo: none
+    desmontaje_longitud_m: 0.0
+    pozos_existentes_aba: demolicion
+    pozos_existentes_aba_n: 1           # 1.3.05 Demolicion pozo registro existente
+    pozos_existentes_san: none
+    espesor_pavimento_m: 0.10           # default EMASESA; no especificado en Excel
+
+  # -- IMBORNALES -------------------------------------------------------
+  imbornales:
+    tipo: none
+    n: 0
+    nuevo_label: ""
+
+  # -- PORCENTAJES ------------------------------------------------------
+  # Procedimiento del experimento: porcentajes a 0 inicialmente.
+  # _ss_eur_objetivo: cap 02 partida S01            = 5.000,00 EUR
+  # _ga_eur_objetivo: cap 03 partida G01            =   948,90 EUR
+  # No hay cap 11 (servicios afectados) separado ni partidas 11.x
+  # dispersas en este expediente.
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 5000.00
+    _ga_eur_objetivo: 948.90
+
+notas:
+  - "CASO LIMITE Relining: este proyecto es mayoritariamente Relining PEAD DN110 (tecnica fuera del modelo LicitaIA). Solo se modela la parte de instalacion nueva en zanja: FD DN150 L=16,5 m en zona arqueta Bellavista. El subconjunto modelado representa <33 % del PEM bruto. El cuadre se reporta sobre ese subconjunto."
+  - "PEM bruto = 179.999,99 EUR. Fuera de alcance (Relining + conexiones + taponamientos + afeccion trafico + ventosas + tomas) = 146.999,69 EUR. PEM modelable estimado ~33.000 EUR."
+  - "tipo_obra = relining_principal: marca para que el comparador identifique este expediente aparte en el reporte agregado."
+  - "Profundidad 1,40 m asumida como mediana del rango '<2,50m'; el desglose 2.2.3.2.010 muestra altura 1,52 m, coherente."
+  - "pct_manual = 0,40 derivado del cap 01 zanja DN150: 10,032 m3 manual / 25,08 m3 total. La excavacion de pozos (250 m3) corresponde a los 16 pozos del trazado completo de Relining y no se atribuye al tramo de zanja."
+  - "Pozos: el Excel desglosa 16 pozos (3.1.10.050) para el trazado Relining + desagues. Solo 1 pozo es 'demolicion existente' (1.3.05). Los 16 pozos nuevos no se atribuyen al modelo (pertenecen al alcance Relining)."
+  - "Espesor subbase 0,20 m y espesor pavimento 0,10 m: defaults EMASESA; el Excel no los especifica."
+  - "S&S = 5.000 EUR (cap 02 S01), GA = 948,90 EUR (cap 03 G01). No existe cap 11 separado ni partidas 11.x dispersas en este expediente."
+  - "Listado completo de partidas Relining marcadas fuera de alcance: GOB.05.2025.001 (121.104), GOB.05.2025.002 (2.249,31), GOB.05.2025.003 (7.810,35), GOB.05.2025.004 (7.570,30), 3.1.14.1.030 (1.191,80), 3.1.17.065 (1.906,74), 3.1.17.030 (579,10), 3.1.9.020 (126,00), GOB.05.2025.005 (2.488,11), 3.1.4.2.010 (1.385,72), 3.1.7.050 (588,26)."

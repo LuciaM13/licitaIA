@@ -1,0 +1,224 @@
+# =====================================================================
+# GOB.25.036 Arsenal - replica receta canary GOB.25.026 (TFG validacion)
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.25.036 Arsenal.xlsx (Hoja1)
+#   - Dump: .planning/research/validacion/_dump_GOB.25.036.json
+#
+# Caracterizacion: instalacion nueva pura, DUAL MATERIAL.
+#   - PE-100 DN90 L=310 m (Manzana Arsenal + Callejon) ENTUBADA
+#   - FD DN100 L=130 m (Cruces calle Valencia/Esperanza + Plaza)
+#   - FD DN80 L=57 m (Plaza Huerta San Luis)
+# Sin SAN. Sin Relining tipico (PE-100 es ENTUBADA, similar tecnica).
+#
+# DECISION ARQUITECTURAL: LicitaIA modela UNA tuberia ABA principal por
+# proyecto. Se modela la PE-100 DN90 L=310m como principal (mayor longitud,
+# 70% del trazado). La FD DN100 L=130m y la FD DN80 L=57m se marcan en
+# partidas_fuera_alcance. Gap esperable atribuible a esta limitacion del
+# modelo (~9 keur de tuberia FD principal no modelada).
+# =====================================================================
+
+expediente: GOB.25.036
+nombre: "Arsenal"
+fuente_xlsx: "data/proyectos_individuales/GOB.25.036 Arsenal.xlsx"
+
+tipo_obra: instalacion_nueva
+
+# Capitulos enteros excluidos del modelo. En este expediente NO existe
+# cap top "11" separado: las partidas 11.x estan distribuidas dentro de
+# los caps 01 (OBRA CIVIL) y 02 (PAVIMENTACION). Se gestionan a nivel
+# partida en partidas_fuera_alcance.
+capitulos_fuera_alcance: []
+
+# Partidas individuales fuera del alcance del modelo. Justificacion:
+#   - Tuberias secundarias del dual material (FD DN100, FD DN80): el
+#     modelo LicitaIA solo soporta una tuberia ABA principal por proyecto.
+#   - Variantes especificas no presentes en el catalogo canonico LicitaIA.
+#   - Partidas alzadas / servicios afectados que el modelo no parametriza
+#     (cap 11 disperso).
+#   - Conexiones complejas a red existente, taponamientos y tomas que
+#     LicitaIA no modela como partidas individuales.
+partidas_fuera_alcance:
+  # --- Tuberias ABA secundarias (dual material) ---
+  - codigo: "3.1.2.1.010"
+    desc: "Tuberia FD, DN 100 mm (Abto.) - Cruces y Plaza"
+    importe: 6215.30
+    motivo: "Tuberia ABA secundaria (FD DN100 L=130m). LicitaIA modela una sola tuberia ABA principal; se ha elegido la PE-100 DN90 L=310m. Limitacion arquitectural del modelo."
+  - codigo: "3.1.2.1.005"
+    desc: "Tuberia FD, DN 80 mm (Abto.) - Plaza Huerta San Luis"
+    importe: 2588.37
+    motivo: "Tuberia ABA secundaria (FD DN80 L=57m). LicitaIA modela una sola tuberia ABA principal; se ha elegido la PE-100 DN90 L=310m. Limitacion arquitectural del modelo."
+  # --- Cap 11 disperso (servicios afectados / mobiliario / desvios) ---
+  - codigo: "11.1.045"
+    desc: "Mobiliario Urbano (PA)"
+    importe: 1714.37
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.015"
+    desc: "Localizacion y proteccion servicios afectados abastecimiento (PA)"
+    importe: 5250.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA)"
+    importe: 4200.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.025"
+    desc: "A justificar por desvios de trafico (PA)"
+    importe: 4200.00
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.040"
+    desc: "Reparacion zocalos (PA)"
+    importe: 7813.30
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  # --- Conduccion provisional (no es tuberia de instalacion definitiva) ---
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE"
+    importe: 5695.20
+    motivo: "PE provisional para mantener servicio durante obra; no es tuberia de instalacion definitiva"
+  # --- Conexiones especiales a red existente y taponamientos ---
+  - codigo: "3.1.14.085"
+    desc: "Conexion FD, DN 100-100 mm (6 ud)"
+    importe: 13172.46
+    motivo: "Conexion compleja a red existente con desague, bombeo y demolicion; LicitaIA no modela conexiones individuales"
+  - codigo: "3.1.14.1.055"
+    desc: "Conexion PE-FD, DN 110/150/160-70/80/100 mm (3 ud)"
+    importe: 3231.69
+    motivo: "Conexion compleja a red existente; LicitaIA no modela conexiones individuales"
+  - codigo: "3.1.17.025"
+    desc: "Taponamiento FD, DN 60-100 mm (8 ud)"
+    importe: 2160.08
+    motivo: "Taponamiento provisional/definitivo; LicitaIA no modela taponamientos individuales"
+  - codigo: "3.1.7.050"
+    desc: "Toma de agua en red de agua potable (6 ud)"
+    importe: 1764.78
+    motivo: "Toma de agua para riego/limpieza durante obra; no modelada por LicitaIA"
+  - codigo: "3.1.1.015"
+    desc: "Plano liquidacion redes (1 ud)"
+    importe: 49.27
+    motivo: "Documentacion final de obra; LicitaIA no modela planos de liquidacion"
+  # --- Cap 02 - alcorque (variante especifica no en catalogo) ---
+  - codigo: "4.3.130"
+    desc: "Formacion de alcorque 0,8x1 m (2 ud)"
+    importe: 716.76
+    motivo: "Alcorque con bordillo bicapa+granito no modelado en pavimentacion_aba canonica"
+
+parametros:
+
+  # -- ABASTECIMIENTO -----------------------------------------------
+  # Tuberia principal: PE-100 DN90 L=310m (Manzana Arsenal 270m +
+  # Callejon 40m). Es la de mayor longitud (70% del trazado total ABA).
+  # ENTUBADA: insertada en conducto existente, tecnica similar a relining.
+  aba:
+    tipo: PE-100
+    dn: 90
+    longitud_m: 310.0       # partida 3.1.2.3.080 "Tuberia PE-100, DN 90 mm, PN 16 (Abto.) ENTUBADA"
+    profundidad_m: 0.90     # profundidad visible en mediciones de excavacion
+                            # (filas 7-10: cruces calle ø100/ø80 con altura 0.9-1.0 m)
+                            # Conservador: 0.90 m. La PE entubada en realidad
+                            # no requiere zanja convencional, pero LicitaIA
+                            # asume zanja; valor mas plausible del Excel.
+
+  # Sin SAN
+
+  # -- PAVIMENTACION ABA --------------------------------------------
+  # Totales reales del cap 02 (Excel filas 132-179):
+  #   - acerado_m2 = 473 m2 (partida 4.1.4.040 = 1.2.05; coincide demolicion/reposicion)
+  #     Arsenal 0.35*270*2 = 189 + Plaza Huerta San Luis 1*142*2 = 284
+  #   - calzada_m2 = 171 m2 (partida 4.5.025 = 1.1.01; coincide)
+  #     Cruces Valencia 90 + Esperanza 45 + Esquinas Arsenal 36
+  #   - bordillo_m = 182 m (partida 4.3.030 = 1.1.45; coincide)
+  #     Manzana FFCC 108.5 + Cruce plaza 12.6 + Zona colegio 60.9
+  pavimentacion_aba:
+    calzada_m2: 171.0
+    calzada_label: "Aglomerado"
+    acerado_m2: 473.0
+    acerado_label: "Baldosa hidraulica tipo cigarrillo 30x30"
+    bordillo_m: 182.0
+    bordillo_label: "Bordillo prefabricado bicapa 10x20x100"
+
+  # -- SUBBASE ABA --------------------------------------------------
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20                   # default EMASESA; no especificado en Excel
+
+  # -- MATERIALES A DEMOLER -----------------------------------------
+  # Defaults estandar EMASESA, ajustados a las descripciones reales:
+  #   - calzada demolida (1.1.01): "mezcla asfaltica" -> aglomerado
+  #   - acerado demolido (1.2.05): "soleria+solera"   -> losa_hidraulica
+  #   - bordillo levantado (1.1.45): "hidraulico s/ hormigon" -> granitico (default)
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+
+  # -- ACOMETIDAS ---------------------------------------------------
+  # Cap 03 ACOMETIDAS ABASTECIMIENTO (Excel filas 180-191):
+  #   3.1.9.065 (Acom abto >63 mm PE-100 con dem sin reposic):  1 ud @ 644,29  =    644,29
+  #   3.1.9.030 (Acom Abto <=63 mm PE-80 sin dem ni repos <6m): 61 ud @ 240,16 = 14649,76
+  #     (Plaza Huerta San Luis 26 + Arsenal 30 + En prevision 5)
+  #   Total ABA = 62 uds, importe real = 15.294,05 EUR
+  #
+  # NOTA cobertura catalogo:
+  #   La variante mayoritaria es la <=63mm PE-80 SIN demolicion ni reposicion
+  #   de pavimento, precio 240,16 EUR/ud. Mas barata que la generica EMASESA
+  #   (~292 EUR/ud). Diferencia atribuible a cobertura de catalogo.
+  acometidas:
+    aba_n: 62
+    san_n: 0
+
+  # -- PARAMETROS DE OBRA -------------------------------------------
+  obra:
+    pct_manual: 0.85                  # solo hay 2.2.3.2.002 "Exc. tierras bajo
+                                      # rendimiento... mayoritariamente manual
+                                      # con apoyo de pequena maquinaria"
+                                      # Estimacion conservadora: 0.85
+    instalacion_valvuleria: enterrada # cap 01: 3 ud DN80 enterradas (3.1.3.1.1.005)
+                                      # + 10 ud DN100 en pozo (3.1.3.1.2.010)
+                                      # Mayoria por unidades es en pozo, pero la
+                                      # principal del trazado PE es enterrada
+    desmontaje_tipo: none
+    desmontaje_longitud_m: 0.0
+    pozos_existentes_aba: demolicion  # 1.3.05 "Demolicion pozo de registro existente"
+    pozos_existentes_aba_n: 5         #   5 uds (valvulas existentes)
+    pozos_existentes_san: none
+    pozos_existentes_san_n: 0
+    espesor_pavimento_m: 0.10         # default EMASESA; no especificado en Excel
+
+  # -- IMBORNALES ---------------------------------------------------
+  imbornales:
+    tipo: none
+    n: 0
+    nuevo_label: ""
+
+  # -- PORCENTAJES --------------------------------------------------
+  # IMPORTANTE: porcentajes a 0 segun procedimiento del experimento.
+  # Se ejecuta primero con 0, se lee base_ss del log, y se deriva
+  #   pct_seguridad = _ss_eur_objetivo / base_ss
+  #   pct_gestion  = _ga_eur_objetivo / base_ss
+  #
+  # _ss_eur_objetivo: cap 04 SEGURIDAD Y SALUD = S01 = 9500,00 EUR
+  # _ga_eur_objetivo: cap 05 GESTION AMBIENTAL G01 (4821,89) + P01 Proteccion
+  #                   Arbolado (5706,41, listado en cap 01 por error de
+  #                   maquetacion del Excel, pero es GA canonicamente)
+  #                   = 10.528,30 EUR
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 9500.00         # cap 04 partida S01
+    _ga_eur_objetivo: 10528.30        # cap 05 G01 + P01 Proteccion Arbolado
+
+notas:
+  - "Replica de la receta canary GOB.25.026, iteracion 1."
+  - "DUAL MATERIAL: PE-100 DN90 L=310m (principal) + FD DN100 L=130m + FD DN80 L=57m. LicitaIA modela solo la PE-100 DN90 (mayor longitud, 70% del trazado) como tuberia ABA principal. Las dos tuberias FD se marcan en partidas_fuera_alcance. Gap esperable ~9 keur por limitacion arquitectural."
+  - "PE-100 ENTUBADA: la partida 3.1.2.3.080 indica insercion en conducto existente (similar a relining), pero LicitaIA no tiene tipo 'PE entubada'; se modela como instalacion nueva PE-100 estandar. Posible sobreestimacion de obra civil asociada."
+  - "Profundidad 0.90 m: valor visible en mediciones de excavacion (cruces calle Valencia/Esperanza ø100, Plaza Huerta San Luis ø80). Acceso a tuberia y conexiones tienen 1.5 m, pero son volumenes puntuales."
+  - "Espesor subbase 0.20 m: default EMASESA; el Excel no lo especifica."
+  - "Espesor pavimento 0.10 m: default EMASESA; el Excel no lo especifica."
+  - "pct_manual = 0.85: la unica partida de excavacion (2.2.3.2.002) describe 'mayoritariamente manual con apoyo de pequena maquinaria'. No hay desglose explicito mecanica/manual."
+  - "Pozos existentes ABA = 5 (partida 1.3.05 'Demolicion pozo de registro existente - valvulas existentes'). Hay ademas 1 pozo nuevo (3.1.10.050) por necesidades de obra; no se modela como existente."
+  - "Cap 11 en este expediente NO es cap top separado: las 5 partidas 11.x estan distribuidas entre caps 01 (4 partidas) y 02 (1 partida); cada una listada en partidas_fuera_alcance. Total cap 11 disperso = 23.177,67 EUR (coincide con dump)."
+  - "Conduccion provisional PE (3.1.9.020, 5695,20) marcada fuera de alcance: tuberia provisional, no instalacion definitiva."
+  - "Conexiones a red existente (3.1.14.085 13172,46 y 3.1.14.1.055 3231,69) y taponamientos (3.1.17.025 2160,08) marcados fuera de alcance: LicitaIA no modela conexiones individuales con desague/bombeo."
+  - "Acometidas: 62 uds totales (1 ud >63mm + 61 ud <=63mm). La variante mayoritaria es <=63mm PE-80 SIN demolicion ni reposicion de pavimento (240,16 EUR/ud)."
+  - "S&S = 9.500,00 EUR (cap 04 S01)."
+  - "GA = 10.528,30 EUR (cap 05 G01 4821,89 + P01 Proteccion Arbolado 5706,41 que aparece bajo cap 01 en el Excel pero es canonicamente GA)."

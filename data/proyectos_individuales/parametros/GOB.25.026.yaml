@@ -1,0 +1,181 @@
+# =====================================================================
+# GOB.25.026 Sarandi - canary del experimento de validacion TFG
+# =====================================================================
+# Transcripcion manual a partir de:
+#   - Excel: data/proyectos_individuales/GOB.25.026 Sarandi.xlsx (Hoja1)
+#   - Dump: .planning/research/validacion/_dump_GOB.25.026.json
+#   - Mapeo labels: .planning/research/validacion/mapeo_labels.md
+#
+# Caracterizacion: instalacion nueva pura, ABA puro FD DN100,
+# sin Relining, sin SAN.
+#
+# Iteracion 2 (post canary run1): completados m2 reales del cap 03,
+# anadidos P01 al GA, marcadas variantes huerfanas fuera de alcance.
+# =====================================================================
+
+expediente: GOB.25.026
+nombre: "Sarandi"
+fuente_xlsx: "data/proyectos_individuales/GOB.25.026 Sarandí.xlsx"
+
+tipo_obra: instalacion_nueva
+
+# Capitulos enteros excluidos del modelo LicitaIA. En este expediente
+# NO existe cap top "11" separado: las partidas 11.x estan distribuidas
+# dentro de los caps 01 y 03 (servicios afectados, mobiliario, desvios,
+# zocalos, pasarelas). Se gestionan a nivel partida.
+capitulos_fuera_alcance: []
+
+# Partidas individuales fuera del alcance del modelo. Justificacion:
+#   - Variantes especificas no presentes en el catalogo canonico LicitaIA
+#     y cuya diferencia de precio unitario es >>20% del precio canonico
+#     mas cercano (criterio: opcion (b) en el procedimiento del experimento).
+#   - Partidas alzadas / servicios afectados que el modelo LicitaIA no
+#     parametriza (cap 11 disperso).
+partidas_fuera_alcance:
+  # Cap 03 - variantes de pavimentacion no presentes en catalogo:
+  - codigo: "4.1.4.120"
+    desc: "Paso deprimido minusvalidos"
+    importe: 6864.62
+    motivo: "Variante especifica (baldosa rojo invidentes 40x40x4 con paso deprimido) no presente en catalogo acerados_aba; precio unitario 980,66 EUR/ud sin equivalente canonico"
+  - codigo: "4.6.020"
+    desc: "Fresado de aglomerado existente"
+    importe: 964.90
+    motivo: "Operacion de preparacion (no reposicion); LicitaIA no la modela como pavimento"
+  # Cap 03 - partidas alzadas 11.x dispersas (servicios afectados / mobiliario):
+  - codigo: "11.1.010"
+    desc: "Reparacion mobiliario urbano (PA)"
+    importe: 1002.55
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.040"
+    desc: "Reparacion zocalos (PA)"
+    importe: 2979.12
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.030"
+    desc: "Desvios y corte de trafico temporal abastecimiento (PA)"
+    importe: 3307.50
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  # Cap 01 - partidas alzadas 11.x dispersas:
+  - codigo: "11.1.005"
+    desc: "Pasarelas y accesos provisionales (PA)"
+    importe: 3443.33
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  - codigo: "11.1.015"
+    desc: "Localizacion y proteccion servicios afectados abastecimiento (PA)"
+    importe: 2152.50
+    motivo: "Partida alzada cap 11; fuera del modelo LicitaIA"
+  # Cap 01 - conduccion provisional (no es tuberia de zanja):
+  - codigo: "3.1.9.020"
+    desc: "Conduccion provisional de PE"
+    importe: 3458.70
+    motivo: "PE provisional para mantener servicio durante obra; no es tuberia de instalacion definitiva"
+
+parametros:
+
+  # ── ABASTECIMIENTO ──────────────────────────────────────────────────
+  aba:
+    tipo: FD
+    dn: 100
+    longitud_m: 179.0       # partida 3.1.2.1.010 "Tuberia FD, DN 100 mm (Abto.)"
+    profundidad_m: 1.40     # mediana del rango "<2,50m" visible en titulos
+                            # de excavacion (2.2.3.2.001/010). Valor
+                            # conservador y defendible para TFG.
+
+  # Sin SAN
+
+  # ── PAVIMENTACION ABA ───────────────────────────────────────────────
+  # Totales reales del cap 03 (Excel filas 116-204):
+  #   - calzada_m2 = 699.2 m2 = 92 m * 7,6 m (Calle Sarandi)
+  #     Se mide por la superficie de fresado (4.6.020) = m2 reales de
+  #     calzada afectada. La partida 4.1.1.020 reporta volumen (34.96 m3)
+  #     porque incluye espesor 5 cm; LicitaIA usa m2 superficiales.
+  #   - acerado_m2 = 183.7 m2 (partida 4.1.4.065 + base 4.2.010)
+  #   - bordillo_m = 113.5 m (partida 4.3.040, coincide con levantado 1.1.45)
+  pavimentacion_aba:
+    calzada_m2: 699.2                 # m2 reales de calzada Calle Sarandi
+    calzada_label: "Aglomerado"
+    acerado_m2: 183.7                 # m2 acerado Calle Alhami
+    acerado_label: "Baldosa terrazo 40x40"
+    bordillo_m: 113.5                 # m bordillo bicapa 17x28x100
+    bordillo_label: "Bordillo bicapa 17x28"
+
+  # ── SUBBASE ABA ─────────────────────────────────────────────────────
+  subbase_aba:
+    label: "Base albero compactado"
+    espesor_m: 0.20                   # default EMASESA; no especificado en Excel
+
+  # ── MATERIALES A DEMOLER ────────────────────────────────────────────
+  # Defaults estandar EMASESA, ajustados a las descripciones reales:
+  #   - calzada demolida: 121.44 m2 "aglomerado y hormigon" -> aglomerado
+  #   - acerado demolido: 183.7 m2 "soleria+solera"        -> losa_hidraulica
+  #   - bordillo levantado: 113.5 m "hidraulico s/ hormigon" -> granitico (default)
+  materiales_demo:
+    bordillo_aba: granitico
+    acerado_aba: losa_hidraulica
+    calzada_aba: aglomerado
+
+  # ── ACOMETIDAS ──────────────────────────────────────────────────────
+  # Cap 05 ACOMETIDAS ABASTECIMIENTO (Excel filas 206-214):
+  #   3.1.9.050 (Acom Abto <=63 PE-80 dem y rep <6m): 14 uds @ 439,36 = 6151,04
+  #   3.1.9.055 (Acom Abto <=63 PE-80 dem y rep >6m): 11 uds @ 488,02 = 5368,22
+  #   Total ABA = 25 uds, importe real = 11.519,26 EUR
+  #
+  # NOTA cobertura catalogo:
+  #   El proyecto usa la variante 'Acom Abto <=63 mm PE-80 dem y repos de
+  #   pavto' (precios reales 439-488 EUR/ud). El catalogo LicitaIA usa el
+  #   acometida generica EMASESA (precio infravalora ~43%). Diferencia
+  #   atribuible a cobertura de catalogo, no a transcripcion. Se mantiene
+  #   aba_n=25 (conteo correcto) y se documenta el gap esperado.
+  acometidas:
+    aba_n: 25
+    san_n: 0
+
+  # ── PARAMETROS DE OBRA ──────────────────────────────────────────────
+  obra:
+    pct_manual: 0.34                  # ratio exc_manual / (manual+mecanica)
+                                      # cap 01: 100.59 m3 manual / 291.97 m3 total = 0.3445
+    instalacion_valvuleria: enterrada # 2 valvulas enterradas + 1 en pozo;
+                                      # mayoria enterrada
+    desmontaje_tipo: none
+    desmontaje_longitud_m: 0.0
+    pozos_existentes_aba: none        # 1 pozo nuevo "por necesidades de obra"
+    pozos_existentes_aba_n: 0         #   no hay pozos existentes a demoler/anular
+    pozos_existentes_san: none
+    espesor_pavimento_m: 0.10         # default EMASESA; no especificado en Excel
+
+  # ── IMBORNALES ──────────────────────────────────────────────────────
+  imbornales:
+    tipo: none
+    n: 0
+    nuevo_label: ""
+
+  # ── PORCENTAJES ─────────────────────────────────────────────────────
+  # IMPORTANTE: porcentajes a 0 segun procedimiento del experimento.
+  # Se ejecuta primero con 0, se lee base_ss del log, y se deriva
+  #   pct_seguridad = _ss_eur_objetivo / base_ss
+  #   pct_gestion  = _ga_eur_objetivo / base_ss
+  #
+  # _ga_eur_objetivo: subtotal REAL del cap 08 GESTION AMBIENTAL
+  #   incluye 08.01 Gestion residuos (3505,09) + P01 Proteccion Arbolado (2872,37)
+  #   = 6377,46 EUR (valor real cap 08 segun Excel fila 231).
+  porcentajes:
+    pct_seguridad: 0.0
+    pct_gestion: 0.0
+    pct_servicios_afectados: 0.0
+    _ss_eur_objetivo: 3000.00         # cap 07 partida S01
+    _ga_eur_objetivo: 6377.46         # cap 08 = 08.01 + P01
+
+notas:
+  - "Canary del experimento de validacion TFG, iteracion 2."
+  - "Profundidad 1.40 m asumida como mediana del rango '<2,50m' visible en titulos de excavacion. Revisar si memoria del expediente da otro valor."
+  - "Espesor subbase 0.20 m: default EMASESA; el Excel no lo especifica."
+  - "Espesor pavimento 0.10 m: default EMASESA; el Excel no lo especifica."
+  - "pct_manual = 0.34 derivado del cap 01 (exc_manual / exc_total)."
+  - "Bordillo demolido es 'hidraulico sobre hormigon' (113.5 m); se mantiene default 'granitico' por convencion EMASESA."
+  - "calzada_m2 = 699.2 m2 (superficie real Calle Sarandi 92x7.6); el AC 16 surf reporta volumen (34.96 m3) por incluir espesor 5 cm, pero LicitaIA usa m2 superficiales."
+  - "Cap 11 en este expediente NO es un cap top separado: las partidas 11.x estan distribuidas entre caps 01 y 03; cada una listada en partidas_fuera_alcance."
+  - "Paso deprimido minusvalidos (4.1.4.120, 6864.62 EUR) marcado fuera de alcance: variante especifica de baldosa con paso deprimido no presente en catalogo acerados_aba."
+  - "Fresado aglomerado (4.6.020) marcado fuera de alcance: operacion previa, no reposicion."
+  - "Conduccion provisional PE (3.1.9.020) marcada fuera de alcance: tuberia provisional, no instalacion definitiva."
+  - "Pozo registro 3.1.10.050 (1 ud) es NUEVO 'por necesidades de obra', no demolicion ni anulacion de pozo existente."
+  - "Acometidas: variante 'Acom Abto <=63 mm PE-80 dem/repos pavto' (439-488 EUR/ud) supera al precio del generico EMASESA en catalogo LicitaIA. Diferencia atribuible a cobertura de catalogo, no a transcripcion."
+  - "S&S = 3000.00 EUR (cap 07), GA = 6377.46 EUR (cap 08 incluyendo P01 Proteccion Arbolado)."

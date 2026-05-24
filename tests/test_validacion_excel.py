@@ -18,8 +18,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.domain.geometria import calcular_geometria
-from src.domain.financiero import calcular_resumen
+from src.modelo.geometria import calcular_geometria
+from src.modelo.financiero import calcular_resumen
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -4,8 +4,8 @@ Capítulos de superficie - demolición, pavimentación, sub-base y acometidas.
 Cada función recibe cantidades y precios ya resueltos y devuelve
 (subtotal: float, partidas: dict[str, float]) | None.
 
-  - NO importa de src.domain
-  - NO importa de src.reglas
+  - NO importa de src.modelo
+  - NO importa de src.sistema_experto
   - NO importa streamlit
 """
 

@@ -9,13 +9,13 @@ import streamlit as st
 
 logger = logging.getLogger(__name__)
 
-from src.aplicacion.historial import (
+from src.presupuesto.historial import (
     listar_presupuestos,
     obtener_presupuesto,
     eliminar_presupuesto,
     contar_presupuestos,
 )
-from src.infraestructura.utils import euro
+from src.ui.moneda import euro
 from src.ui.session import claves as sk
 
 _ETIQUETAS_TRAZ = ["Entibación", "Pozo de registro", "Valvulería", "Desmontaje"]

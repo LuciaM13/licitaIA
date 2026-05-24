@@ -5,29 +5,28 @@ CREATE TABLE "acerados" (
                 label  TEXT NOT NULL,
                 unidad TEXT NOT NULL CHECK(unidad IN ('m', 'm2', 'm3', 'ud')),
                 precio INTEGER NOT NULL CHECK(precio > 0),
-                factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0),
                 UNIQUE(red, label)
             );
-INSERT INTO "acerados" VALUES(2081,'ABA','Baldosa cigarrillo','m2',1075,1.0);
-INSERT INTO "acerados" VALUES(2082,'ABA','Baldosa granallada','m2',2389,1.0);
-INSERT INTO "acerados" VALUES(2083,'ABA','Baldosa hexagonal','m2',1550,1.0);
-INSERT INTO "acerados" VALUES(2084,'ABA','Baldosa hidráulica 40x40x4','m2',1213,1.0);
-INSERT INTO "acerados" VALUES(2085,'ABA','Baldosa terrazo 40x40','m2',1736,1.0);
-INSERT INTO "acerados" VALUES(2086,'ABA','Granito','m2',8780,1.0);
-INSERT INTO "acerados" VALUES(2087,'ABA','Hormigón','m2',5028,1.0);
-INSERT INTO "acerados" VALUES(2088,'ABA','Losa hidráulica','m2',3890,1.0);
-INSERT INTO "acerados" VALUES(2089,'ABA','Losa terrazo','m2',4086,1.0);
-INSERT INTO "acerados" VALUES(2090,'ABA','Plaquetas de gres','m2',16603,1.0);
-INSERT INTO "acerados" VALUES(2091,'SAN','Baldosa cigarrillo','m2',1075,1.0);
-INSERT INTO "acerados" VALUES(2092,'SAN','Baldosa granallada','m2',2389,1.0);
-INSERT INTO "acerados" VALUES(2093,'SAN','Baldosa hexagonal','m2',1550,1.0);
-INSERT INTO "acerados" VALUES(2094,'SAN','Baldosa hidráulica 40x40x4','m2',1213,1.0);
-INSERT INTO "acerados" VALUES(2095,'SAN','Baldosa terrazo 40x40','m2',1736,1.0);
-INSERT INTO "acerados" VALUES(2096,'SAN','Granito','m2',8064,1.0);
-INSERT INTO "acerados" VALUES(2097,'SAN','Hormigón','m2',5028,1.0);
-INSERT INTO "acerados" VALUES(2098,'SAN','Losa hidráulica','m2',3537,1.0);
-INSERT INTO "acerados" VALUES(2099,'SAN','Losa terrazo','m2',4114,1.0);
-INSERT INTO "acerados" VALUES(2100,'SAN','Plaquetas de gres','m2',16603,1.0);
+INSERT INTO "acerados" VALUES(2081,'ABA','Baldosa cigarrillo','m2',1075);
+INSERT INTO "acerados" VALUES(2082,'ABA','Baldosa granallada','m2',2389);
+INSERT INTO "acerados" VALUES(2083,'ABA','Baldosa hexagonal','m2',1550);
+INSERT INTO "acerados" VALUES(2084,'ABA','Baldosa hidráulica 40x40x4','m2',1213);
+INSERT INTO "acerados" VALUES(2085,'ABA','Baldosa terrazo 40x40','m2',1736);
+INSERT INTO "acerados" VALUES(2086,'ABA','Granito','m2',8780);
+INSERT INTO "acerados" VALUES(2087,'ABA','Hormigón','m2',5028);
+INSERT INTO "acerados" VALUES(2088,'ABA','Losa hidráulica','m2',3890);
+INSERT INTO "acerados" VALUES(2089,'ABA','Losa terrazo','m2',4086);
+INSERT INTO "acerados" VALUES(2090,'ABA','Plaquetas de gres','m2',16603);
+INSERT INTO "acerados" VALUES(2091,'SAN','Baldosa cigarrillo','m2',1075);
+INSERT INTO "acerados" VALUES(2092,'SAN','Baldosa granallada','m2',2389);
+INSERT INTO "acerados" VALUES(2093,'SAN','Baldosa hexagonal','m2',1550);
+INSERT INTO "acerados" VALUES(2094,'SAN','Baldosa hidráulica 40x40x4','m2',1213);
+INSERT INTO "acerados" VALUES(2095,'SAN','Baldosa terrazo 40x40','m2',1736);
+INSERT INTO "acerados" VALUES(2096,'SAN','Granito','m2',8064);
+INSERT INTO "acerados" VALUES(2097,'SAN','Hormigón','m2',5028);
+INSERT INTO "acerados" VALUES(2098,'SAN','Losa hidráulica','m2',3537);
+INSERT INTO "acerados" VALUES(2099,'SAN','Losa terrazo','m2',4114);
+INSERT INTO "acerados" VALUES(2100,'SAN','Plaquetas de gres','m2',16603);
 CREATE TABLE acometida_defecto (
     red  TEXT PRIMARY KEY CHECK(red IN ('ABA', 'SAN')),
     tipo TEXT NOT NULL
@@ -67,25 +66,23 @@ CREATE TABLE "bordillos" (
                 id    INTEGER PRIMARY KEY AUTOINCREMENT,
                 label  TEXT NOT NULL UNIQUE,
                 unidad TEXT NOT NULL CHECK(unidad IN ('m', 'm2', 'ud')),
-                precio INTEGER NOT NULL CHECK(precio > 0),
-                factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0)
+                precio INTEGER NOT NULL CHECK(precio > 0)
             );
-INSERT INTO "bordillos" VALUES(417,'Bordillo bicapa 10x20','m',937,1.0);
-INSERT INTO "bordillos" VALUES(418,'Bordillo bicapa 17x28','m',1546,1.0);
-INSERT INTO "bordillos" VALUES(419,'Bordillo de hormigón','m',1524,1.0);
-INSERT INTO "bordillos" VALUES(420,'Bordillo granítico','m',2181,1.0);
+INSERT INTO "bordillos" VALUES(417,'Bordillo bicapa 10x20','m',937);
+INSERT INTO "bordillos" VALUES(418,'Bordillo bicapa 17x28','m',1546);
+INSERT INTO "bordillos" VALUES(419,'Bordillo de hormigón','m',1524);
+INSERT INTO "bordillos" VALUES(420,'Bordillo granítico','m',2181);
 CREATE TABLE "calzadas" (
                 id    INTEGER PRIMARY KEY AUTOINCREMENT,
                 label  TEXT NOT NULL UNIQUE,
                 unidad TEXT NOT NULL CHECK(unidad IN ('m2', 'm3')),
-                precio INTEGER NOT NULL CHECK(precio > 0),
-                factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0)
+                precio INTEGER NOT NULL CHECK(precio > 0)
             );
-INSERT INTO "calzadas" VALUES(521,'Adoquín','m2',3355,1.0);
-INSERT INTO "calzadas" VALUES(522,'Aglomerado','m3',13299,1.0);
-INSERT INTO "calzadas" VALUES(523,'Base zahorra','m3',2234,1.0);
-INSERT INTO "calzadas" VALUES(524,'Capa base pavimento','m3',11175,1.0);
-INSERT INTO "calzadas" VALUES(525,'Hormigón','m3',11160,1.0);
+INSERT INTO "calzadas" VALUES(521,'Adoquín','m2',3355);
+INSERT INTO "calzadas" VALUES(522,'Aglomerado','m3',13299);
+INSERT INTO "calzadas" VALUES(523,'Base zahorra','m3',2234);
+INSERT INTO "calzadas" VALUES(524,'Capa base pavimento','m3',11175);
+INSERT INTO "calzadas" VALUES(525,'Hormigón','m3',11160);
 CREATE TABLE config (
     clave TEXT PRIMARY KEY,
     valor REAL NOT NULL
@@ -120,29 +117,28 @@ CREATE TABLE "demolicion" (
                 unidad TEXT NOT NULL CHECK(unidad IN ('m', 'm2', 'm3', 'ud')),
                 material TEXT NOT NULL DEFAULT 'generico',
                 precio INTEGER NOT NULL CHECK(precio > 0),
-                factor_ci REAL NOT NULL DEFAULT 1.0 CHECK(factor_ci > 0),
                 UNIQUE(red, unidad, material)
             );
-INSERT INTO "demolicion" VALUES(865,'ABA','Demolición acerado hormigón','m2','hormigon_acerado',1400,1.0);
-INSERT INTO "demolicion" VALUES(866,'ABA','Demolición acerado losa hidráulica','m2','losa_hidraulica',1400,1.0);
-INSERT INTO "demolicion" VALUES(867,'ABA','Demolición acerado losa terrazo','m2','losa_terrazo',1400,1.0);
-INSERT INTO "demolicion" VALUES(868,'ABA','Demolición bordillo','m','generico',403,1.0);
-INSERT INTO "demolicion" VALUES(869,'ABA','Demolición bordillo granítico','m','granitico',532,1.0);
-INSERT INTO "demolicion" VALUES(870,'ABA','Demolición bordillo hidráulico','m','hidraulico',423,1.0);
-INSERT INTO "demolicion" VALUES(871,'ABA','Demolición calzada','m2','generico',1296,1.0);
-INSERT INTO "demolicion" VALUES(872,'ABA','Demolición calzada adoquín','m2','adoquin',1505,1.0);
-INSERT INTO "demolicion" VALUES(873,'ABA','Demolición calzada aglomerado','m2','aglomerado',1361,1.0);
-INSERT INTO "demolicion" VALUES(874,'ABA','Demolición calzada hormigón','m2','hormigon',1660,1.0);
-INSERT INTO "demolicion" VALUES(875,'SAN','Demolición acerado hormigón','m2','hormigon_acerado',1400,1.0);
-INSERT INTO "demolicion" VALUES(876,'SAN','Demolición acerado losa hidráulica','m2','losa_hidraulica',1400,1.0);
-INSERT INTO "demolicion" VALUES(877,'SAN','Demolición acerado losa terrazo','m2','losa_terrazo',1400,1.0);
-INSERT INTO "demolicion" VALUES(878,'SAN','Demolición bordillo','m','generico',403,1.0);
-INSERT INTO "demolicion" VALUES(879,'SAN','Demolición bordillo granítico','m','granitico',532,1.0);
-INSERT INTO "demolicion" VALUES(880,'SAN','Demolición bordillo hidráulico','m','hidraulico',423,1.0);
-INSERT INTO "demolicion" VALUES(881,'SAN','Demolición calzada','m2','generico',1296,1.0);
-INSERT INTO "demolicion" VALUES(882,'SAN','Demolición calzada adoquín','m2','adoquin',1505,1.0);
-INSERT INTO "demolicion" VALUES(883,'SAN','Demolición calzada aglomerado','m2','aglomerado',1361,1.0);
-INSERT INTO "demolicion" VALUES(884,'SAN','Demolición calzada hormigón','m2','hormigon',1660,1.0);
+INSERT INTO "demolicion" VALUES(865,'ABA','Demolición acerado hormigón','m2','hormigon_acerado',1400);
+INSERT INTO "demolicion" VALUES(866,'ABA','Demolición acerado losa hidráulica','m2','losa_hidraulica',1400);
+INSERT INTO "demolicion" VALUES(867,'ABA','Demolición acerado losa terrazo','m2','losa_terrazo',1400);
+INSERT INTO "demolicion" VALUES(868,'ABA','Demolición bordillo','m','generico',403);
+INSERT INTO "demolicion" VALUES(869,'ABA','Demolición bordillo granítico','m','granitico',532);
+INSERT INTO "demolicion" VALUES(870,'ABA','Demolición bordillo hidráulico','m','hidraulico',423);
+INSERT INTO "demolicion" VALUES(871,'ABA','Demolición calzada','m2','generico',1296);
+INSERT INTO "demolicion" VALUES(872,'ABA','Demolición calzada adoquín','m2','adoquin',1505);
+INSERT INTO "demolicion" VALUES(873,'ABA','Demolición calzada aglomerado','m2','aglomerado',1361);
+INSERT INTO "demolicion" VALUES(874,'ABA','Demolición calzada hormigón','m2','hormigon',1660);
+INSERT INTO "demolicion" VALUES(875,'SAN','Demolición acerado hormigón','m2','hormigon_acerado',1400);
+INSERT INTO "demolicion" VALUES(876,'SAN','Demolición acerado losa hidráulica','m2','losa_hidraulica',1400);
+INSERT INTO "demolicion" VALUES(877,'SAN','Demolición acerado losa terrazo','m2','losa_terrazo',1400);
+INSERT INTO "demolicion" VALUES(878,'SAN','Demolición bordillo','m','generico',403);
+INSERT INTO "demolicion" VALUES(879,'SAN','Demolición bordillo granítico','m','granitico',532);
+INSERT INTO "demolicion" VALUES(880,'SAN','Demolición bordillo hidráulico','m','hidraulico',423);
+INSERT INTO "demolicion" VALUES(881,'SAN','Demolición calzada','m2','generico',1296);
+INSERT INTO "demolicion" VALUES(882,'SAN','Demolición calzada adoquín','m2','adoquin',1505);
+INSERT INTO "demolicion" VALUES(883,'SAN','Demolición calzada aglomerado','m2','aglomerado',1361);
+INSERT INTO "demolicion" VALUES(884,'SAN','Demolición calzada hormigón','m2','hormigon',1660);
 CREATE TABLE "desmontaje" (
                 id    INTEGER PRIMARY KEY AUTOINCREMENT,
                 label    TEXT NOT NULL UNIQUE,

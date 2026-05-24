@@ -28,8 +28,8 @@ from pathlib import Path
 
 import pytest
 
-from src.infraestructura.db import DB_PATH
-from src.infraestructura.db_precios import cargar_todo
+from src.almacenamiento import DB_PATH
+from src.catalogo.repositorio import cargar_todo
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOGO_JSON = ROOT / "data" / "catalogo_oficial.json"

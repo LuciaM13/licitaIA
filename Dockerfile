@@ -1,8 +1,7 @@
 FROM python:3.11-slim
 
 LABEL org.opencontainers.image.title="LicitaIA" \
-      org.opencontainers.image.description="Calculadora de presupuestos EMASESA" \
-      org.opencontainers.image.source="https://github.com/LuciaM13/licitaIA"
+      org.opencontainers.image.description="Calculadora de presupuestos EMASESA"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,9 +10,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Dependencias del sistema necesarias para compilar clipspy cuando PyPI no
-# sirve wheel para la arquitectura del contenedor. Se purgan tras instalar
-# los paquetes Python para mantener la imagen final pequeña.
+# Build deps para compilar clipspy si PyPI no tiene wheel para la arquitectura.
+# Se purgan al final para mantener la imagen ligera.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential gcc \
     && rm -rf /var/lib/apt/lists/*
@@ -24,10 +22,29 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && apt-get purge -y --auto-remove build-essential gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia del código (app_licitaia.py, pages/, src/, data/, .streamlit/)
-COPY . .
+# Codigo de la app (solo lo que la Streamlit usa en runtime).
+COPY app_licitaia.py ./
+COPY pages/ ./pages/
+COPY .streamlit/ ./.streamlit/
 
-# Usuario no-root: propietario de /app para poder escribir en data/
+# Modulos src/ usados por la app. validacion_proyectos/ queda fuera: solo lo
+# usan tests y el notebook TFG, no la UI.
+COPY src/__init__.py ./src/
+COPY src/almacenamiento/ ./src/almacenamiento/
+COPY src/catalogo/ ./src/catalogo/
+COPY src/exportar/ ./src/exportar/
+COPY src/modelo/ ./src/modelo/
+COPY src/presupuesto/ ./src/presupuesto/
+COPY src/sistema_experto/ ./src/sistema_experto/
+COPY src/soporte/ ./src/soporte/
+COPY src/ui/ ./src/ui/
+
+# Datos minimos para que la app arranque (BD + catalogo + logo).
+COPY data/precios.db data/catalogo_oficial.json ./data/
+COPY data/static/ ./data/static/
+
+# Usuario no-root con propiedad de /app (la app escribe en data/ al guardar
+# presupuestos en historial y al editar catalogo).
 RUN useradd --create-home --shell /bin/bash licitaia \
     && chown -R licitaia:licitaia /app
 USER licitaia

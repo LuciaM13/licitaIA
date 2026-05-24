@@ -20,6 +20,6 @@ os.chdir(_project_root)
 # Añadir tests/ al path para que helpers.py sea importable
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.infraestructura.db import init_db  # noqa: E402
+from src.almacenamiento import init_db  # noqa: E402
 
 init_db()
